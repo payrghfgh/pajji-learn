@@ -33,8 +33,12 @@ export default function Home() {
   const [curBook, setCurBook] = useState<Book | null>(null);
   const [curChapter, setCurChapter] = useState<Chapter | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false); // New: Student View Toggle
   const [activeTab, setActiveTab] = useState<string>("Summary");
   const [passInput, setPassInput] = useState("");
+
+  // Logic: Am I actually allowed to edit right now?
+  const canEdit = isOwner && !isPreviewMode;
 
   useEffect(() => {
     const saved = localStorage.getItem("isPajjiAdmin");
@@ -46,14 +50,14 @@ export default function Home() {
   }, []);
 
   const save = async (nb: Book[]) => {
+    if (!canEdit) return;
     try {
       await setDoc(doc(db, "data", "pajji_database"), { books: nb });
     } catch (e) {
-      alert("Still too large! Try a smaller image or a screenshot.");
+      alert("Error saving. Image might be too large.");
     }
   };
 
-  // --- IMAGE COMPRESSOR (The Magic Fix) ---
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -63,22 +67,21 @@ export default function Home() {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 800; // Resizes to max 800px width
+          const MAX_WIDTH = 800;
           const scaleSize = MAX_WIDTH / img.width;
           canvas.width = MAX_WIDTH;
           canvas.height = img.height * scaleSize;
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", 0.7)); // 70% quality JPEG
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
         };
       };
     });
   };
 
-  // --- ACTIONS ---
   const handleCoverUpload = async (bookId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !canEdit) return;
     const compressed = await compressImage(file);
     const updated = books.map(b => b.id === bookId ? { ...b, image: compressed } : b);
     save(updated);
@@ -86,9 +89,8 @@ export default function Home() {
 
   const handleChapterFile = async (e: React.ChangeEvent<HTMLInputElement>, field: keyof Chapter) => {
     const file = e.target.files?.[0];
-    if (!file || !curChapter || !curBook) return;
+    if (!file || !curChapter || !curBook || !canEdit) return;
     
-    let finalData: string;
     if (file.type === "application/pdf") {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -96,9 +98,8 @@ export default function Home() {
         const updatedCh = { ...curChapter, [field]: reader.result as string };
         updateAndSaveChapter(updatedCh);
       };
-      return;
     } else {
-      finalData = await compressImage(file);
+      const finalData = await compressImage(file);
       const updatedCh = { ...curChapter, [field]: finalData };
       updateAndSaveChapter(updatedCh);
     }
@@ -115,7 +116,6 @@ export default function Home() {
 
   const filteredBooks = books.filter(b => b.title.toLowerCase().includes(search.toLowerCase()));
 
-  // --- STYLES ---
   const navBtn = (a: boolean) => ({
     display: "block", width: "100%", padding: "12px", textAlign: "left" as const, borderRadius: "8px", border: "none",
     background: a ? "#10b981" : "transparent", color: a ? "#fff" : "#444", fontWeight: "bold" as const, cursor: "pointer", marginBottom: "5px"
@@ -126,40 +126,39 @@ export default function Home() {
       {/* SIDEBAR */}
       <div style={{ width: "260px", background: "#fff", borderRight: "1px solid #ddd", padding: "20px", display: "flex", flexDirection: "column" }}>
         <h2 style={{ color: "#10b981", cursor: "pointer" }} onClick={() => setView("dashboard")}>Pajji Learn</h2>
+        
         <nav style={{ flex: 1, marginTop: "20px" }}>
           <button onClick={() => setView("dashboard")} style={navBtn(view === "dashboard")}>🏠 Dashboard</button>
           <button onClick={() => setView("library")} style={navBtn(view === "library")}>📚 Library</button>
         </nav>
+
+        {isOwner && (
+          <div style={{ marginBottom: "20px", padding: "10px", background: "#f0fdf4", borderRadius: "10px", border: "1px solid #bbf7d0" }}>
+            <p style={{ fontSize: "12px", margin: "0 0 10px 0", color: "#166534", fontWeight: "bold" }}>ADMIN TOOLS</p>
+            <label style={{ display: "flex", alignItems: "center", cursor: "pointer", fontSize: "14px" }}>
+              <input type="checkbox" checked={isPreviewMode} onChange={() => setIsPreviewMode(!isPreviewMode)} style={{ marginRight: "10px" }} />
+              Student View
+            </label>
+          </div>
+        )}
+
         {!isOwner ? (
           <div>
             <input type="password" placeholder="Key" value={passInput} onChange={e => setPassInput(e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #ddd" }} />
             <button onClick={() => { if(passInput === "pajindersinghpajji") { setIsOwner(true); localStorage.setItem("isPajjiAdmin", "true"); setPassInput(""); }}} style={{ width: "100%", marginTop: "5px", background: "#10b981", color: "#fff", border: "none", padding: "8px", borderRadius: "5px", cursor: "pointer" }}>Login</button>
           </div>
         ) : (
-          <button onClick={() => {setIsOwner(false); localStorage.removeItem("isPajjiAdmin");}} style={{color: "red", border: "none", background: "none", cursor: "pointer", fontWeight: "bold"}}>Logout Admin</button>
+          <button onClick={() => {setIsOwner(false); setIsPreviewMode(false); localStorage.removeItem("isPajjiAdmin");}} style={{color: "red", border: "none", background: "none", cursor: "pointer", fontWeight: "bold", textAlign: "left"}}>Logout</button>
         )}
       </div>
 
       {/* MAIN */}
       <div style={{ flex: 1, padding: "40px", overflowY: "auto" }}>
-        {view === "dashboard" && (
-            <div>
-                <h1>Welcome, User</h1>
-                <p>You have {books.length} books in your library.</p>
-            </div>
-        )}
-
         {view === "library" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px" }}>
               <h1>My Library</h1>
-              <input 
-                type="text" 
-                placeholder="Search books..." 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
-                style={{ padding: "10px", borderRadius: "20px", border: "1px solid #ddd", width: "250px" }}
-              />
+              <input type="text" placeholder="Search books..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: "10px", borderRadius: "20px", border: "1px solid #ddd", width: "250px" }} />
             </div>
             <div style={{ display: "flex", gap: "25px", flexWrap: "wrap" }}>
               {filteredBooks.map(b => (
@@ -168,52 +167,48 @@ export default function Home() {
                     <img src={b.image} style={{ width: "100%", height: "260px", objectFit: "cover", borderRadius: "12px", boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }} />
                     <p style={{ textAlign: "center" as const, fontWeight: "bold" as const, marginTop: "10px" }}>{b.title}</p>
                   </div>
-                  {isOwner && (
-                    <label style={{ position: "absolute", top: "5px", left: "5px", background: "#10b981", color: "#fff", width: "30px", height: "30px", borderRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer" }}>
+                  {canEdit && (
+                    <label style={{ position: "absolute", top: "5px", left: "5px", background: "#10b981", color: "#fff", width: "30px", height: "30px", borderRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer", zIndex: 10 }}>
                       ✎ <input type="file" hidden accept="image/*" onChange={(e) => handleCoverUpload(b.id, e)} />
                     </label>
                   )}
                 </div>
               ))}
             </div>
+            {canEdit && <button onClick={() => {
+                const t = prompt("Book Title?");
+                if(t) save([...books, { id: Date.now().toString(), title: t, image: "https://placehold.co/400x600?text="+t, chapters: [] }]);
+            }} style={{marginTop: "30px", padding: "10px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer"}}>+ Add New Book</button>}
           </div>
         )}
 
         {view === "chapters" && curBook && (
             <div>
-                <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", cursor: "pointer", fontWeight: "bold", marginBottom: "10px"}}>← Back to Library</button>
+                <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", cursor: "pointer", fontWeight: "bold", marginBottom: "10px"}}>← Back</button>
                 <h1>{curBook.title}</h1>
                 {curBook.chapters.map((ch, idx) => (
                     <div key={ch.id} style={{background: "#fff", padding: "15px", borderRadius: "10px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
                         <span>{idx + 1}. {ch.title}</span>
                         <div>
                             <button onClick={() => {setCurChapter(ch); setView("study");}} style={{padding: "5px 15px", borderRadius: "5px", border: "1px solid #ddd", cursor: "pointer"}}>Study</button>
-                            {isOwner && <button onClick={() => {setCurChapter(ch); setView("edit");}} style={{marginLeft: "5px", padding: "5px 15px", borderRadius: "5px", background: "#2196f3", color: "#fff", border: "none", cursor: "pointer"}}>Edit</button>}
+                            {canEdit && <button onClick={() => {setCurChapter(ch); setView("edit");}} style={{marginLeft: "5px", padding: "5px 15px", borderRadius: "5px", background: "#2196f3", color: "#fff", border: "none", cursor: "pointer"}}>Edit</button>}
                         </div>
                     </div>
                 ))}
-                {isOwner && <button onClick={() => {
+                {canEdit && <button onClick={() => {
                     const t = prompt("Lesson Title?");
                     if(t) {
                         const nc = { id: Date.now().toString(), title: t, summary: "", sketchNote: "", infographic: "", slides: "", mindMap: "", video: "" };
-                        const ub = books.map(b => b.id === curBook.id ? {...b, chapters: [...b.chapters, nc]} : b);
-                        save(ub);
+                        save(books.map(b => b.id === curBook.id ? {...b, chapters: [...b.chapters, nc]} : b));
                     }
                 }} style={{marginTop: "20px", padding: "10px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer"}}>+ Add Lesson</button>}
             </div>
         )}
 
+        {/* ... Rest of Edit and Study logic stays the same ... */}
         {view === "edit" && curChapter && (
             <div style={{background: "#fff", padding: "30px", borderRadius: "15px"}}>
                 <h2>Editing: {curChapter.title}</h2>
-                <label style={{display: "block", marginTop: "10px"}}>Lesson Title</label>
-                <input style={{width: "100%", padding: "10px", marginTop: "5px"}} value={curChapter.title} onChange={(e) => {
-                    const uc = {...curChapter, title: e.target.value};
-                    setCurChapter(uc);
-                    const ub = books.map(b => b.id === curBook?.id ? {...b, chapters: b.chapters.map(c => c.id === uc.id ? uc : c)} : b);
-                    save(ub);
-                }} />
-                
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px"}}>
                     {["sketchNote", "infographic", "slides", "mindMap"].map(f => (
                         <div key={f} style={{border: "1px dashed #ccc", padding: "15px", borderRadius: "10px", textAlign: "center" as const}}>
@@ -222,13 +217,13 @@ export default function Home() {
                         </div>
                     ))}
                 </div>
-                <button onClick={() => setView("chapters")} style={{marginTop: "20px", padding: "10px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer"}}>Done</button>
+                <button onClick={() => setView("chapters")} style={{marginTop: "20px", padding: "10px 20px", background: "#10b981", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer"}}>Save & Close</button>
             </div>
         )}
 
         {view === "study" && curChapter && (
             <div>
-                 <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", cursor: "pointer", fontWeight: "bold", marginBottom: "10px"}}>← Back to Lessons</button>
+                 <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", cursor: "pointer", fontWeight: "bold", marginBottom: "10px"}}>← Back</button>
                  <h1>{curChapter.title}</h1>
                  <div style={{display: "flex", gap: "10px", margin: "20px 0"}}>
                     {["Summary", "Sketch Note", "Infographic", "Slides", "Mind Map", "Video"].map(t => (
@@ -236,7 +231,7 @@ export default function Home() {
                     ))}
                  </div>
                  <div style={{background: "#fff", padding: "20px", borderRadius: "15px", minHeight: "400px", textAlign: "center" as const}}>
-                    {activeTab === "Summary" && <p style={{textAlign: "left" as const}}>{curChapter.summary || "No summary yet."}</p>}
+                    {activeTab === "Summary" && <p style={{textAlign: "left" as const}}>{curChapter.summary || "No summary notes yet."}</p>}
                     {activeTab !== "Summary" && activeTab !== "Video" && (
                         curChapter[activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", "") as keyof Chapter] ? (
                             curChapter[activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", "") as keyof Chapter].startsWith("data:application/pdf") ? (
@@ -247,6 +242,23 @@ export default function Home() {
                         ) : <p>Nothing uploaded here yet.</p>
                     )}
                  </div>
+            </div>
+        )}
+
+        {view === "dashboard" && (
+            <div>
+                <h1>Pajji's Learning Dashboard</h1>
+                <p>Track your progress and manage your library.</p>
+                <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+                  <div style={{ background: "#fff", padding: "20px", borderRadius: "15px", flex: 1, textAlign: "center" }}>
+                    <h2>{books.length}</h2>
+                    <p>Total Books</p>
+                  </div>
+                  <div style={{ background: "#fff", padding: "20px", borderRadius: "15px", flex: 1, textAlign: "center" }}>
+                    <h2>{books.reduce((acc, b) => acc + b.chapters.length, 0)}</h2>
+                    <p>Total Lessons</p>
+                  </div>
+                </div>
             </div>
         )}
       </div>
