@@ -25,7 +25,7 @@ interface Book {
 
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDxQsrI8R2FdVwRCkwMEftvu0570J6MoVg",
+  apiKey: "AIzaSyDlpzm9cWYWtpp0chYAK_jKtMcf_SOTnVU",
   authDomain: "pajji-learn.firebaseapp.com",
   projectId: "pajji-learn",
   storageBucket: "pajji-learn.firebasestorage.app",
