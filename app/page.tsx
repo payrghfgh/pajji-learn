@@ -247,7 +247,7 @@ export default function Home() {
 
         {view === "dashboard" && (
             <div>
-                <h1>Pajji's Learning Dashboard</h1>
+                <h1>Welcome, User</h1>
                 <p>Track your progress and manage your library.</p>
                 <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
                   <div style={{ background: "#fff", padding: "20px", borderRadius: "15px", flex: 1, textAlign: "center" }}>
