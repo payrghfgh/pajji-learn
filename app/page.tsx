@@ -131,7 +131,7 @@ export default function Home() {
         
         {view === "dashboard" && (
             <div style={{maxWidth: "800px", margin: "0 auto", textAlign: "center"}}>
-                <h1 style={{fontSize: "48px", fontWeight: "900", marginBottom: "10px"}}>Welcome, <span style={{color: "#10b981"}}>Pajji!</span></h1>
+                <h1 style={{fontSize: "48px", fontWeight: "900", marginBottom: "10px"}}>Welcome, <span style={{color: "#10b981"}}>Learner!</span></h1>
                 <div style={{display: "flex", gap: "25px", justifyContent: "center", marginTop: "40px"}}>
                     <div style={{background: "#fff", padding: "30px", borderRadius: "20px", width: "180px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)"}}>
                         <h2 style={{fontSize: "32px", color: "#10b981", margin: 0}}>{books.length}</h2>
