@@ -144,7 +144,7 @@ export default function Home() {
       <div style={{ flex: 1, padding: "40px", overflowY: "auto" }}>
         {view === "dashboard" && (
             <div>
-                <h1>Welcome, Pajji</h1>
+                <h1>Welcome, User</h1>
                 <p>You have {books.length} books in your library.</p>
             </div>
         )}
