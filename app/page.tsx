@@ -144,7 +144,7 @@ export default function Home() {
         {view === "dashboard" && (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
             <div style={{ background: "linear-gradient(135deg, #10b981, #059669)", padding: "40px", borderRadius: "24px", color: "#fff", marginBottom: "30px", boxShadow: "0 20px 40px rgba(16, 185, 129, 0.15)" }}>
-              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome back, Pajji!👋</h1>
+              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome back, Learner!👋</h1>
               <p style={{ opacity: 0.9, fontSize: "18px", marginTop: "10px" }}>Ready to learn something new today?</p>
             </div>
 
