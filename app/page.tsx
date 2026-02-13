@@ -170,7 +170,7 @@ export default function Home() {
         {view === "dashboard" && searchQuery.length === 0 && (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
             <div style={{ background: "linear-gradient(135deg, #10b981, #059669)", padding: "40px", borderRadius: "24px", color: "#fff", marginBottom: "30px" }}>
-              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome back, Pajji!👋</h1>
+              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome back, Learner!👋</h1>
               <p style={{ opacity: 0.9, fontSize: "18px", marginTop: "10px" }}>Select a book from the library or search for a lesson above.</p>
             </div>
             <div style={{ display: "flex", gap: "20px" }}>
