@@ -157,7 +157,7 @@ export default function Home() {
         {view === "dashboard" && (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
             <div style={{ background: "linear-gradient(135deg, #10b981, #059669)", padding: "40px", borderRadius: "24px", color: "#fff", marginBottom: "30px" }}>
-              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome, Pajji! 👋</h1>
+              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome, Learner! 👋</h1>
               <p style={{ opacity: 0.9, fontSize: "18px", marginTop: "10px" }}>Quickly access your lessons below.</p>
             </div>
 
