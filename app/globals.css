@@ -1,0 +1,7 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #f5e6cc !important; /* creme */
+  color: #000000 !important; /* black text */
+  font-family: sans-serif;
+}
