@@ -108,6 +108,16 @@ export default function Home() {
     save(updated);
   };
 
+  const deleteChapter = (chapterId: string) => {
+    if (!curBook || !confirm("Are you sure you want to delete this lesson?")) return;
+    const updatedBooks = books.map((b) =>
+      b.id === curBook.id
+        ? { ...b, chapters: b.chapters.filter((c) => c.id !== chapterId) }
+        : b
+    );
+    save(updatedBooks);
+  };
+
   const updateChapter = (field: keyof Chapter, val: string) => {
     if (!curBook || !curChapter) return;
     const updatedCh: Chapter = { ...curChapter, [field]: val };
@@ -187,7 +197,7 @@ export default function Home() {
               {books.map(b => (
                 <div key={b.id} onClick={() => { setCurBook(b); setView("chapters"); }} style={{ width: "160px", cursor: "pointer" }}>
                   <img src={b.image} style={{ width: "100%", height: "230px", borderRadius: "10px", objectFit: "cover", boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }} />
-                  <p style={{ fontWeight: "bold", textAlign: "center", marginTop: "10px" }}>{b.title}</p>
+                  <p style={{ fontWeight: "bold", textAlign: "center" as const, marginTop: "10px" }}>{b.title}</p>
                 </div>
               ))}
             </div>
@@ -207,7 +217,12 @@ export default function Home() {
                   <span>{i+1}. {ch.title}</span>
                   <div>
                     <button onClick={() => { setCurChapter(ch); setView("study"); setActiveTab("Summary"); }} style={subBtn}>Study</button>
-                    {isOwner && <button onClick={() => { setCurChapter(ch); setView("edit"); }} style={{...subBtn, background:"#2196f3", color:"#fff", marginLeft:"5px"}}>Edit</button>}
+                    {isOwner && (
+                      <>
+                        <button onClick={() => { setCurChapter(ch); setView("edit"); }} style={{...subBtn, background:"#2196f3", color:"#fff", marginLeft:"5px"}}>Edit</button>
+                        <button onClick={() => deleteChapter(ch.id)} style={{...subBtn, background:"#f44336", color:"#fff", marginLeft:"5px"}}>Delete</button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -247,7 +262,7 @@ export default function Home() {
               {activeTab === "Summary" && <p style={{whiteSpace:"pre-wrap"}}>{curChapter.summary || "No summary yet."}</p>}
               {activeTab === "Video" && (curChapter.video ? <a href={curChapter.video} target="_blank">Watch Lesson</a> : "No video link.")}
               {!["Summary", "Video"].includes(activeTab) && (
-                <div style={{ textAlign: "center" }}>
+                <div style={{ textAlign: "center" as const }}>
                   {getChapterField(curChapter, activeTab) ? (
                     <img src={getChapterField(curChapter, activeTab) as string} style={{ maxWidth: "100%", borderRadius: "10px" }} />
                   ) : <p>Nothing uploaded for {activeTab} yet.</p>}
@@ -267,7 +282,7 @@ const navBtn = (active: boolean) => ({
   display: "block",
   width: "100%",
   padding: "12px",
-  textAlign: "left",
+  textAlign: "left" as const,
   borderRadius: "8px",
   border: "none",
   background: active ? "#10b981" : "transparent",
@@ -276,9 +291,10 @@ const navBtn = (active: boolean) => ({
   cursor: "pointer",
   marginBottom: "5px"
 });
-const primaryBtn = { background: "#10b981", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" };
+
+const primaryBtn = { background: "#10b981", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" as const };
 const subBtn = { padding: "8px 15px", borderRadius: "5px", border: "1px solid #ddd", background: "#fff", cursor: "pointer" };
 const rowStyle = { background: "#fff", padding: "15px", borderRadius: "10px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid #eee" };
-const statCard = { background: "#fff", padding: "20px", borderRadius: "15px", textAlign: "center", flex: 1, boxShadow: "0 2px 5px rgba(0,0,0,0.05)" };
+const statCard = { background: "#fff", padding: "20px", borderRadius: "15px", textAlign: "center" as const, flex: 1, boxShadow: "0 2px 5px rgba(0,0,0,0.05)" };
 const inp = { width: "100%", padding: "12px", border: "1px solid #ddd", borderRadius: "8px", marginTop: "10px", marginBottom: "10px" };
-const tabBtn = (active: boolean) => ({ padding: "8px 18px", borderRadius: "20px", background: active ? "#10b981" : "#fff", color: active ? "#fff" : "#333", border: "1px solid #ddd", cursor: "pointer", fontWeight: "600" });
+const tabBtn = (active: boolean) => ({ padding: "8px 18px", borderRadius: "20px", background: active ? "#10b981" : "#fff", color: active ? "#fff" : "#333", border: "1px solid #ddd", cursor: "pointer", fontWeight: "600" as const });
