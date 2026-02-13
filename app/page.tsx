@@ -57,7 +57,7 @@ export default function Home() {
       setSaveStatus("Saved ✅");
       setTimeout(() => setSaveStatus(""), 2000);
     } catch (e) {
-      alert("Error: Text too large or connection issue.");
+      alert("Database error: If uploading files, ensure they are small (under 1MB). For large files, please use links.");
       setSaveStatus("Error ❌");
     }
   };
@@ -68,6 +68,23 @@ export default function Home() {
     } : b);
     setBooks(newList);
     pushSave(newList);
+  };
+
+  // --- FILE UPLOAD LOGIC ---
+  const handleFileUpload = (e: any, key: string) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 1048576) {
+      alert("File is too large (Max 1MB). Please use a link for large files.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event: any) => {
+      updateField(key, event.target.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const deleteItem = (type: 'book' | 'lesson', id: string) => {
@@ -95,7 +112,7 @@ export default function Home() {
   const allLessons = books.flatMap(b => (b.chapters || []).map((c: any) => ({ ...c, bookTitle: b.title, bookData: b })));
   const filteredLessons = allLessons.filter(l => l.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  if (loading) return <div style={{padding: "50px", textAlign: "center", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
+  if (loading) return <div style={{padding: "50px", textAlign: "center", color: "#10b981", fontWeight: "900", fontFamily: "sans-serif"}}>PAJJI LEARN...</div>;
 
   return (
     <div className="app-container">
@@ -107,7 +124,8 @@ export default function Home() {
         .nav-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; text-align: left; margin-bottom: 8px; font-size: 15px; }
         .tab-grid { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 20px; }
         .tab-btn { padding: 10px 18px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-        .search-bar { width: 100%; padding: 15px 20px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 16px; margin-bottom: 30px; }
+        .search-bar { width: 100%; padding: 15px 20px; border-radius: 15px; border: 1px solid #e2e8f0; font-size: 16px; margin-bottom: 30px; outline: none; }
+        .edit-card { border: 1px solid #eee; padding: 15px; borderRadius: 15px; display: flex; flex-direction: column; gap: 10px; }
         
         @media (max-width: 768px) {
           .app-container { flex-direction: column; }
@@ -139,33 +157,22 @@ export default function Home() {
         {view === "dashboard" && (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
             <div style={{ background: "linear-gradient(135deg, #10b981, #059669)", padding: "40px", borderRadius: "24px", color: "#fff", marginBottom: "30px" }}>
-              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome, Pajji!👋</h1>
-              <p style={{ opacity: 0.9, fontSize: "18px", marginTop: "10px" }}>Manage your books and lessons below.</p>
+              <h1 style={{ fontSize: "36px", fontWeight: "900", margin: 0 }}>Welcome, Pajji! 👋</h1>
+              <p style={{ opacity: 0.9, fontSize: "18px", marginTop: "10px" }}>Quickly access your lessons below.</p>
             </div>
 
-            <input type="text" className="search-bar" placeholder="🔍 Search any lesson..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <input type="text" className="search-bar" placeholder="🔍 Search any lesson title..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
 
-            {searchQuery ? (
-              <div style={{display: "grid", gap: "10px"}}>
-                {filteredLessons.map(l => (
-                  <div key={l.id} onClick={() => {setCurBook(l.bookData); setCurChapter(l); setView("study");}} style={{background: "#fff", padding: "15px", borderRadius: "12px", border: "1px solid #e2e8f0", cursor: "pointer", display: "flex", justifyContent: "space-between"}}>
-                    <span style={{fontWeight: "bold"}}>{l.title}</span>
-                    <span style={{fontSize: "12px", color: "#10b981", fontWeight: "bold"}}>{l.bookTitle.toUpperCase()}</span>
-                  </div>
-                ))}
+            <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+              <div style={{background: "#fff", padding: "20px", borderRadius: "20px", border: "1px solid #e2e8f0", flex: 1}}>
+                <p style={{color: "#64748b", fontSize: "12px", fontWeight: "bold"}}>TOTAL BOOKS</p>
+                <h2 style={{fontSize: "32px", fontWeight: "900"}}>{books.length}</h2>
               </div>
-            ) : (
-              <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-                <div style={{background: "#fff", padding: "20px", borderRadius: "20px", border: "1px solid #e2e8f0", flex: 1}}>
-                  <p style={{color: "#64748b", fontSize: "12px", fontWeight: "bold"}}>TOTAL BOOKS</p>
-                  <h2 style={{fontSize: "32px", fontWeight: "900"}}>{books.length}</h2>
-                </div>
-                <div style={{background: "#fff", padding: "20px", borderRadius: "20px", border: "1px solid #e2e8f0", flex: 1}}>
-                  <p style={{color: "#64748b", fontSize: "12px", fontWeight: "bold"}}>TOTAL LESSONS</p>
-                  <h2 style={{fontSize: "32px", fontWeight: "900"}}>{allLessons.length}</h2>
-                </div>
+              <div style={{background: "#fff", padding: "20px", borderRadius: "20px", border: "1px solid #e2e8f0", flex: 1}}>
+                <p style={{color: "#64748b", fontSize: "12px", fontWeight: "bold"}}>TOTAL LESSONS</p>
+                <h2 style={{fontSize: "32px", fontWeight: "900"}}>{allLessons.length}</h2>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -174,12 +181,12 @@ export default function Home() {
           <div>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px"}}>
                 <h1 style={{fontWeight: "900", fontSize: "32px"}}>Library</h1>
-                {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) pushSave([...books, {id: Date.now().toString(), title: t, chapters: []}])}} style={{background: "#10b981", color: "#fff", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "bold"}}>+ New Book</button>}
+                {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) pushSave([...books, {id: Date.now().toString(), title: t, chapters: []}])}} style={{background: "#10b981", color: "#fff", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "bold", cursor: "pointer"}}>+ New Book</button>}
             </div>
             <div style={{display: "flex", gap: "25px", flexWrap: "wrap", justifyContent: "center"}}>
               {books.map(b => (
                 <div key={b.id} style={{position: "relative", width: "160px"}}>
-                  <div onClick={() => {setCurBook(b); setView("chapters");}} style={{height: "220px", background: "linear-gradient(135deg, #10b981, #059669)", borderRadius: "20px", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "40px", cursor: "pointer"}}>📖</div>
+                  <div onClick={() => {setCurBook(b); setView("chapters");}} style={{height: "220px", background: "linear-gradient(135deg, #10b981, #059669)", borderRadius: "20px", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "40px", cursor: "pointer", boxShadow: "0 10px 20px rgba(0,0,0,0.05)"}}>📖</div>
                   <p style={{textAlign: "center", fontWeight: "900", marginTop: "12px"}}>{b.title}</p>
                   {isOwner && <button onClick={() => deleteItem('book', b.id)} style={{position: "absolute", top: "-5px", right: "-5px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "50%", width: "28px", height: "28px", cursor: "pointer"}}>×</button>}
                 </div>
@@ -191,18 +198,18 @@ export default function Home() {
         {/* CHAPTER LIST */}
         {view === "chapters" && curBook && (
           <div>
-            <button onClick={() => setView("library")} style={{color: "#10b981", fontWeight: "bold", background: "none", border: "none", marginBottom: "20px"}}>← Back</button>
+            <button onClick={() => setView("library")} style={{color: "#10b981", fontWeight: "bold", background: "none", border: "none", marginBottom: "20px", cursor: "pointer"}}>← Back</button>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px"}}>
                 <h1 style={{fontWeight: "900", fontSize: "32px"}}>{curBook.title}</h1>
-                {isOwner && <button onClick={() => {const t = prompt("Lesson Name?"); if(t) { const newList = books.map(b => b.id === curBook.id ? {...b, chapters: [...(b.chapters || []), {id: Date.now().toString(), title: t}]} : b); setBooks(newList); pushSave(newList); }}} style={{background: "#10b981", color: "#fff", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "bold"}}>+ Add Lesson</button>}
+                {isOwner && <button onClick={() => {const t = prompt("Lesson Name?"); if(t) { const newList = books.map(b => b.id === curBook.id ? {...b, chapters: [...(b.chapters || []), {id: Date.now().toString(), title: t}]} : b); setBooks(newList); pushSave(newList); }}} style={{background: "#10b981", color: "#fff", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "bold", cursor: "pointer"}}>+ Add Lesson</button>}
             </div>
             {curBook.chapters?.map((ch: any) => (
               <div key={ch.id} style={{background: "#fff", padding: "20px", borderRadius: "15px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid #e2e8f0"}}>
                 <span style={{fontWeight: "bold", fontSize: "18px"}}>{ch.title}</span>
                 <div style={{display: "flex", gap: "8px"}}>
-                  <button onClick={() => {setCurChapter(ch); setView("study");}} style={{padding: "10px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff"}}>Study</button>
-                  {isOwner && <button onClick={() => {setCurChapter(ch); setView("edit");}} style={{background: "#3b82f6", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 20px"}}>Edit</button>}
-                  {isOwner && <button onClick={() => deleteItem('lesson', ch.id)} style={{background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "10px", padding: "10px 15px"}}>🗑️</button>}
+                  <button onClick={() => {setCurChapter(ch); setView("study");}} style={{padding: "10px 20px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", cursor: "pointer"}}>Study</button>
+                  {isOwner && <button onClick={() => {setCurChapter(ch); setView("edit");}} style={{background: "#3b82f6", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 20px", cursor: "pointer"}}>Edit</button>}
+                  {isOwner && <button onClick={() => deleteItem('lesson', ch.id)} style={{background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "10px", padding: "10px 15px", cursor: "pointer"}}>🗑️</button>}
                 </div>
               </div>
             ))}
@@ -211,20 +218,28 @@ export default function Home() {
 
         {/* EDIT VIEW */}
         {view === "edit" && curChapter && (
-             <div style={{background: "#fff", padding: "40px", borderRadius: "25px", boxShadow: "0 10px 40px rgba(0,0,0,0.05)"}}>
-                <button onClick={() => setView("chapters")} style={{background: "#10b981", color: "#fff", padding: "12px 30px", border: "none", borderRadius: "12px", fontWeight: "bold", marginBottom: "30px"}}>Save & Close</button>
+             <div style={{background: "#fff", padding: "40px", borderRadius: "25px"}}>
+                <button onClick={() => setView("chapters")} style={{background: "#10b981", color: "#fff", padding: "12px 30px", border: "none", borderRadius: "12px", fontWeight: "bold", marginBottom: "30px", cursor: "pointer"}}>Save & Close</button>
                 
                 <p style={{fontWeight: "bold"}}>Lesson Summary:</p>
-                <textarea style={{width: "100%", height: "150px", padding: "15px", borderRadius: "10px", border: "1px solid #ddd"}} value={curChapter.summary || ""} onChange={(e) => updateField("summary", e.target.value)} placeholder="Type summary here..." />
+                <textarea style={{width: "100%", height: "120px", padding: "15px", borderRadius: "10px", border: "1px solid #ddd"}} value={curChapter.summary || ""} onChange={(e) => updateField("summary", e.target.value)} />
                 
                 <p style={{fontWeight: "bold", marginTop: "20px"}}>QnA Section:</p>
-                <textarea style={{width: "100%", height: "150px", padding: "15px", borderRadius: "10px", border: "1px solid #ddd"}} value={curChapter.qna || ""} onChange={(e) => updateField("qna", e.target.value)} placeholder="Type Q&A here..." />
+                <textarea style={{width: "100%", height: "120px", padding: "15px", borderRadius: "10px", border: "1px solid #ddd"}} value={curChapter.qna || ""} onChange={(e) => updateField("qna", e.target.value)} />
 
-                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "30px"}}>
-                    {["video", "slides", "bookPdf", "infographic", "mindMap"].map(f => (
-                        <div key={f} style={{border: "1px solid #eee", padding: "15px", borderRadius: "15px"}}>
+                <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px", marginTop: "30px"}}>
+                    <div className="edit-card">
+                        <p style={{fontSize: "12px", fontWeight: "900", color: "#64748b"}}>VIDEO (YouTube Link Only)</p>
+                        <input type="text" style={{width: "100%", padding: "8px"}} value={curChapter.video || ""} onChange={(e) => updateField("video", e.target.value)} placeholder="Paste link..." />
+                    </div>
+                    {["slides", "bookPdf", "infographic", "mindMap"].map(f => (
+                        <div key={f} className="edit-card">
                             <p style={{fontSize: "12px", fontWeight: "900", color: "#64748b"}}>{f.toUpperCase()}</p>
                             <input type="text" style={{width: "100%", padding: "8px"}} value={curChapter[f] || ""} onChange={(e) => updateField(f, e.target.value)} placeholder="Paste link..." />
+                            <div style={{display: "flex", alignItems: "center", gap: "10px"}}>
+                                <span style={{fontSize: "11px", color: "#94a3b8"}}>OR</span>
+                                <input type="file" onChange={(e) => handleFileUpload(e, f)} style={{fontSize: "11px"}} />
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -234,23 +249,32 @@ export default function Home() {
         {/* STUDY VIEW */}
         {view === "study" && curChapter && (
           <div>
-            <button onClick={() => setView("chapters")} style={{color: "#10b981", fontWeight: "bold", background: "none", border: "none", marginBottom: "20px"}}>← Back</button>
+            <button onClick={() => setView("chapters")} style={{color: "#10b981", fontWeight: "bold", background: "none", border: "none", marginBottom: "20px", cursor: "pointer"}}>← Back</button>
             <h1 style={{fontSize: "32px", fontWeight: "900", marginBottom: "20px"}}>{curChapter.title}</h1>
             <div className="tab-grid">
-              {["Summary", "Video", "Book PDF", "Slides", "Infographic", "Mind Map", "QnA"].map(t => (
+              {["Summary", "QnA", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                 <button key={t} onClick={() => setActiveTab(t)} className="tab-btn" style={{ background: activeTab === t ? "#10b981" : "#fff", color: activeTab === t ? "#fff" : "#64748b" }}>{t}</button>
               ))}
             </div>
-            <div style={{background: "#fff", padding: "40px", borderRadius: "30px", minHeight: "500px", boxShadow: "0 10px 40px rgba(0,0,0,0.05)"}}>
-               {activeTab === "Summary" && <div style={{whiteSpace: "pre-wrap", fontSize: "18px", lineHeight: "1.8"}}>{curChapter.summary || "No notes."}</div>}
-               {activeTab === "QnA" && <div style={{whiteSpace: "pre-wrap", fontSize: "18px", lineHeight: "1.8"}}>{curChapter.qna || "No Q&A added."}</div>}
-               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="500px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px"}} /> : "No video.")}
+            <div style={{background: "#fff", padding: "40px", borderRadius: "30px", minHeight: "500px", position: "relative"}}>
+               {(activeTab === "Summary" || activeTab === "QnA") && (
+                 <>
+                   <button 
+                     onClick={() => {navigator.clipboard.writeText(activeTab === "Summary" ? curChapter.summary : curChapter.qna); alert("Copied!");}}
+                     style={{position: "absolute", top: "20px", right: "20px", background: "#f1f5f9", border: "none", padding: "8px 15px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}
+                   >📋 Copy Text</button>
+                   <div style={{whiteSpace: "pre-wrap", fontSize: "18px", lineHeight: "1.8", marginTop: "20px"}}>
+                     {activeTab === "Summary" ? (curChapter.summary || "No summary added.") : (curChapter.qna || "No Q&A added.")}
+                   </div>
+                 </>
+               )}
+               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="500px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px"}} /> : "No video linked.")}
                {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (
                  (() => {
                    const k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", "");
                    let link = curChapter[k];
-                   if (!link) return "No content.";
-                   if (link.includes("drive.google.com")) link = link.replace("/view", "/preview").split("?")[0];
+                   if (!link) return "No content available.";
+                   if (typeof link === 'string' && link.includes("drive.google.com")) link = link.replace("/view", "/preview").split("?")[0];
                    return <iframe src={link} width="100%" height="800px" style={{border: "none", borderRadius: "15px"}} />;
                  })()
                )}
