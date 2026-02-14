@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { initializeApp, getApps } from "firebase/app";
-import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut 
+  getFirestore, doc, onSnapshot, setDoc, getDoc, 
+  updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, limit, getDocs 
+} from "firebase/firestore";
+import { 
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+  signInAnonymously, onAuthStateChanged, signOut 
 } from "firebase/auth";
 
 // --- FIREBASE CONFIG ---
@@ -30,9 +30,9 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
   const [curBook, setCurBook] = useState<any>(null);
@@ -41,43 +41,105 @@ export default function Home() {
   const [isOwner, setIsOwner] = useState(false);
   const [activeTab, setActiveTab] = useState("Summary");
   const [saveStatus, setSaveStatus] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [userXP, setUserXP] = useState(0);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
+    // --- AUTO DARK MODE LOGIC ---
+    const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    setTheme(darkQuery.matches ? 'dark' : 'light');
+
+    const themeListener = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+    };
+    darkQuery.addEventListener('change', themeListener);
+
     const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      if (currentUser && currentUser.email === "rushanbindra@gmail.com") {
-        setIsOwner(true);
-        localStorage.setItem("isPajjiAdmin", "true");
-      } else {
-        setIsOwner(localStorage.getItem("isPajjiAdmin") === "true");
-      }
+      if (currentUser?.email === "rushanbindra@gmail.com") setIsOwner(true);
       
       if (currentUser) {
         onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
-          if (ds.exists()) setBooks(ds.data().books || []);
+          if (ds.exists()) {
+            const data = ds.data().books || [];
+            setBooks(data);
+            if (curBook) {
+              const updated = data.find((b: any) => b.id === curBook.id);
+              if (updated) setCurBook(updated);
+            }
+          }
           setLoading(false);
         });
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) setCompletedLessons(userSnap.data().completed || []);
-        else await setDoc(userRef, { completed: [] });
+
+        onSnapshot(doc(db, "users", currentUser.uid), (ds) => {
+          if (ds.exists()) {
+            const data = ds.data();
+            setCompletedLessons(data.completed || []);
+            setUserXP(data.xp || 0);
+          } else {
+            // Initialize user doc (handle null email for guests)
+            setDoc(doc(db, "users", currentUser.uid), { 
+                completed: [], 
+                email: currentUser.email || "guest", 
+                xp: 0 
+            }, { merge: true });
+          }
+        });
+        fetchLeaderboard();
       } else {
         setLoading(false);
       }
     });
-    return () => unsubAuth();
-  }, []);
+
+    return () => {
+      darkQuery.removeEventListener('change', themeListener);
+      unsubAuth();
+    };
+  }, [curBook?.id]);
+
+  const fetchLeaderboard = async () => {
+    try {
+      const q = query(collection(db, "users"), orderBy("xp", "desc"), limit(10));
+      const snap = await getDocs(q);
+      setLeaderboard(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error("Leaderboard error:", e); }
+  };
 
   const markCompleted = async (lessonId: string) => {
     if (!user || completedLessons.includes(lessonId)) return;
+    setSaveStatus("Syncing XP...");
     const userRef = doc(db, "users", user.uid);
     try {
-      await updateDoc(userRef, { completed: arrayUnion(lessonId) });
-      setCompletedLessons([...completedLessons, lessonId]);
-      setSaveStatus("Mastery +100 XP! 🔥");
+      const snap = await getDoc(userRef);
+      const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
+      await setDoc(userRef, { 
+          completed: arrayUnion(lessonId), 
+          xp: currentXP + 100, 
+          email: user.email || "guest" 
+      }, { merge: true });
+      setSaveStatus("Success! +100 XP");
+      fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
-    } catch (e) { console.error(e); }
+    } catch (e) { setSaveStatus("Error"); }
+  };
+
+  const unmasterLesson = async (lessonId: string) => {
+    if (!user || !completedLessons.includes(lessonId)) return;
+    if (!confirm("Are you sure? This will remove 100 XP.")) return;
+    
+    setSaveStatus("Removing mastery...");
+    const userRef = doc(db, "users", user.uid);
+    try {
+      const snap = await getDoc(userRef);
+      const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
+      await setDoc(userRef, { 
+        completed: arrayRemove(lessonId), 
+        xp: Math.max(0, currentXP - 100) 
+      }, { merge: true });
+      setSaveStatus("Mastery Reset");
+      fetchLeaderboard();
+      setTimeout(() => setSaveStatus(""), 3000);
+    } catch (e) { setSaveStatus("Error"); }
   };
 
   const handleAuth = async (e: any) => {
@@ -90,43 +152,36 @@ export default function Home() {
     setLoading(false);
   };
 
-  const handleLogout = () => {
-    signOut(auth);
-    setView("dashboard");
-    setIsOwner(false);
-    setCompletedLessons([]);
-    localStorage.removeItem("isPajjiAdmin");
+  // --- GUEST LOGIN ---
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    try {
+        await signInAnonymously(auth);
+    } catch (err: any) { alert(err.message); }
+    setLoading(false);
   };
 
   const saveAllChanges = async () => {
-    if (!tempChapter) return;
+    if (!tempChapter || !isOwner) return;
     setSaveStatus("Syncing...");
-    const newList = books.map(b => b.id === curBook.id ? {
-      ...b, chapters: b.chapters.map((c: any) => c.id === tempChapter.id ? tempChapter : c)
-    } : b);
-    try {
-      await setDoc(doc(db, "data", "pajji_database"), { books: newList });
-      setBooks(newList);
-      setSaveStatus("Saved ✅");
-      setTimeout(() => setSaveStatus(""), 2000);
-    } catch (e) { setSaveStatus("Error ❌"); }
-  };
-
-  const pushSave = async (newList: any[]) => {
-    setSaveStatus("Syncing...");
-    try {
-      await setDoc(doc(db, "data", "pajji_database"), { books: newList });
-      setSaveStatus("Saved ✅");
-      setTimeout(() => setSaveStatus(""), 2000);
-    } catch (e) { setSaveStatus("Error ❌"); }
+    const newList = books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.map((c: any) => c.id === tempChapter.id ? tempChapter : c) } : b);
+    await setDoc(doc(db, "data", "pajji_database"), { books: newList });
+    setSaveStatus("Saved");
+    setTimeout(() => setSaveStatus(""), 2000);
   };
 
   const deleteItem = (type: 'book' | 'lesson', id: string) => {
-    if (!confirm(`Delete ${type}?`)) return;
-    let newList = type === 'book' ? books.filter(b => b.id !== id) : books.map(b => b.id === curBook.id ? { ...b, chapters: (b.chapters || []).filter((c: any) => c.id !== id) } : b);
-    setBooks(newList);
-    pushSave(newList);
-    if(type === 'book') setView("library");
+    if (!isOwner || !confirm(`Delete this ${type}?`)) return;
+    let newList;
+    if (type === 'book') {
+      newList = books.filter(b => b.id !== id);
+      setView("library");
+    } else {
+      newList = books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.filter((c: any) => c.id !== id) } : b);
+    }
+    setDoc(doc(db, "data", "pajji_database"), { books: newList });
+    setSaveStatus("Deleted");
+    setTimeout(() => setSaveStatus(""), 2000);
   };
 
   const formatYoutubeLink = (url: string) => {
@@ -135,109 +190,163 @@ export default function Home() {
     return vid ? `https://www.youtube.com/embed/${vid}` : url;
   };
 
-  const getSearchResults = () => {
-    if (!searchQuery.trim()) return [];
-    let results: any[] = [];
-    books.forEach(b => b.chapters?.forEach((c: any) => { if(c.title.toLowerCase().includes(searchQuery.toLowerCase())) results.push({...c, parentBook: b}); }));
-    return results;
+  // --- NEW LESSON FUNCTION ---
+  const addLesson = async () => {
+    const title = prompt("Lesson Title?");
+    if (!title || !curBook) return;
+    const newLesson = { id: Date.now().toString(), title: title, summary: "", qna: "", spellings: "", video: "", slides: "", bookPdf: "", infographic: "", mindMap: "" };
+    const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...(b.chapters || []), newLesson] } : b );
+    setSaveStatus("Adding...");
+    await setDoc(doc(db, "data", "pajji_database"), { books: updatedBooks });
+    setSaveStatus("Lesson Added!");
+    setTimeout(() => setSaveStatus(""), 2000);
   };
 
-  const userXP = completedLessons.length * 100;
+  const getUnmastered = () => {
+    let unmastered: any[] = [];
+    books.forEach(book => {
+      book.chapters?.forEach((ch: any) => {
+        if (!completedLessons.includes(ch.id)) {
+          unmastered.push({ ...ch, bookTitle: book.title, parentBook: book });
+        }
+      });
+    });
+    return unmastered;
+  };
+
+  // Helper to get display name
+  const getUserName = (u: any) => {
+      if (!u) return "";
+      if (u.isAnonymous) return "Guest User";
+      return u.email?.split('@')[0] || "User";
+  };
+
   const userLevel = Math.floor(userXP / 500) + 1;
 
-  if (loading) return <div style={{padding: "50px", textAlign: "center", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
+  if (loading) return <div style={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
 
   if (!user) {
     return (
-      <div style={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", fontFamily: "Inter, sans-serif"}}>
-        <div style={{background: "#fff", padding: "40px", borderRadius: "24px", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)", width: "100%", maxWidth: "400px", textAlign: "center"}}>
-          <h1 style={{color: "#10b981", fontWeight: "900", marginBottom: "10px"}}>PAJJI LEARN</h1>
-          <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "15px"}}>
-            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0"}} />
-            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0"}} />
-            <button type="submit" style={{padding: "12px", background: "#10b981", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: "pointer"}}>{isRegistering ? "Sign Up" : "Login"}</button>
+      <div style={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#020617" : "#f1f5f9", fontFamily: "sans-serif"}}>
+        <div style={{background: theme === 'dark' ? "#0f172a" : "#ffffff", padding: "48px", borderRadius: "32px", width: "100%", maxWidth: "420px", border: theme === 'dark' ? "1px solid #1e293b" : "1px solid #e2e8f0"}}>
+          <h1 style={{color: "#10b981", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
+          <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "16px"}}>
+            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "#020617" : "#f1f5f9", border: "1px solid #cbd5e1", color: theme === 'dark' ? "white" : "#0f172a"}} />
+            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "#020617" : "#f1f5f9", border: "1px solid #cbd5e1", color: theme === 'dark' ? "white" : "#0f172a"}} />
+            <button type="submit" style={{padding: "14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}> {isRegistering ? "Register" : "Sign In"} </button>
           </form>
-          <button onClick={() => setIsRegistering(!isRegistering)} style={{marginTop: "20px", background: "none", border: "none", color: "#10b981", cursor: "pointer", fontWeight: "600"}}>
-            {isRegistering ? "Back to Login" : "Create Account"}
-          </button>
+          
+          <div style={{display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px"}}>
+            <button onClick={handleGuestLogin} style={{background: "none", border: "1px solid #10b981", color: "#10b981", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>Continue as Guest 👤</button>
+            <button onClick={() => setIsRegistering(!isRegistering)} style={{background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "14px"}}> {isRegistering ? "Back to Login" : "Create Account"} </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${theme}`}>
       <style>{`
-        :root { --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --border: #e2e8f0; --subtext: #64748b; }
-        @media (prefers-color-scheme: dark) { :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --border: #334155; --subtext: #94a3b8; } }
-        .app-container { display: flex; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
-        .sidebar { width: 260px; background: var(--card); border-right: 2px solid var(--border); padding: 25px; display: flex; flex-direction: column; }
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
-        .logo { color: #10b981; font-size: 24px; font-weight: 900; cursor: pointer; text-align: center; margin-bottom: 30px; }
-        .nav-btn { width: 100%; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; text-align: left; margin-bottom: 8px; transition: 0.2s; }
-        .search-input { width: 100%; padding: 15px 20px; border-radius: 15px; border: 2px solid var(--border); background: var(--card); color: var(--text); outline: none; margin: 0 auto 30px auto; display: block; max-width: 600px; }
-        .card { background: var(--card); border: 1px solid var(--border); padding: 20px; border-radius: 20px; }
-        .tab-btn { padding: 10px 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; background: var(--card); color: var(--subtext); border: 1px solid var(--border); font-size: 13px; }
-        textarea { background: var(--bg); color: var(--text); border: 2px solid var(--border); width: 100%; padding: 15px; border-radius: 12px; min-height: 120px; outline: none; }
+        :root { --accent: #10b981; }
+        .dark { --bg: #020617; --side: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --input-bg: #020617; }
+        .light { --bg: #f8fafc; --side: #ffffff; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --input-bg: #f1f5f9; }
+        .app-container { display: flex; height: 100vh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
+        .sidebar { width: 300px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; }
+        .main-content { flex: 1; padding: 48px; overflow-y: auto; }
+        .card { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; }
+        .nav-btn { width: 100%; padding: 14px 18px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 8px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+        .nav-btn.active { background: var(--accent); color: white; }
+        .tab-btn { padding: 10px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; }
+        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        textarea { width: 100%; min-height: 160px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; }
+        .xp-badge { background: rgba(16, 185, 129, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .theme-btn { margin-bottom: 20px; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .del-btn { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; padding: 8px 12px; borderRadius: 8px; cursor: pointer; font-weight: bold; }
+        .del-btn:hover { background: #ef4444; color: white; }
+        .unmaster-btn { background: none; border: 1px solid #ef444450; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; margin-left: 8px; }
+        .unmaster-btn:hover { background: #ef4444; color: white; }
       `}</style>
 
       <div className="sidebar">
-        <h1 className="logo" onClick={() => setView("dashboard")}>PAJJI LEARN</h1>
-        <div style={{background: "var(--bg)", padding: "15px", borderRadius: "15px", marginBottom: "20px", textAlign: "center"}}>
-          <p style={{fontSize: "12px", color: "var(--subtext)", margin: 0}}>LEVEL {userLevel}</p>
-          <div style={{height: "8px", background: "#e2e8f0", borderRadius: "4px", margin: "8px 0", overflow: "hidden"}}>
-            <div style={{width: `${(userXP % 500) / 5}%`, height: "100%", background: "#10b981"}}></div>
+        <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "40px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
+        
+        <button className="theme-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+          {theme === 'dark' ? "☀️ Light Mode" : "🌙 Dark Mode"}
+        </button>
+
+        <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "20px", borderRadius: "20px", color: "white", marginBottom: "32px"}}>
+          <p style={{fontSize: "11px", fontWeight: "800", opacity: 0.8}}>PROGRESS</p>
+          <h3 style={{fontSize: "16px", marginBottom: "12px"}}>{getUserName(user)}</h3>
+          <div style={{display: "flex", justifyContent: "space-between", fontSize: "12px"}}>
+            <span>Lvl {userLevel}</span>
+            <span>{userXP} XP</span>
           </div>
-          <p style={{fontSize: "14px", fontWeight: "bold"}}>{userXP} XP</p>
         </div>
-        <button className="nav-btn" onClick={() => setView("dashboard")} style={{ background: view === "dashboard" ? "#10b981" : "none", color: view === "dashboard" ? "#fff" : "var(--subtext)" }}>🏠 Dashboard</button>
-        <button className="nav-btn" onClick={() => setView("library")} style={{ background: view === "library" ? "#10b981" : "none", color: view === "library" ? "#fff" : "var(--subtext)" }}>📚 Library</button>
-        <div style={{ marginTop: "auto", textAlign: "center" }}>
-          <p style={{fontSize: "10px", color: "var(--subtext)", marginBottom: "10px"}}>User: <b>{user.email}</b></p>
-          {saveStatus && <p style={{fontSize: "12px", color: "#10b981"}}>{saveStatus}</p>}
-          <button onClick={handleLogout} style={{width: "100%", padding: "10px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer"}}>🚪 Logout</button>
+
+        <nav style={{flex: 1}}>
+          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>🏠 Dashboard</button>
+          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}>📚 Library</button>
+          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}>🏆 Rankings</button>
+        </nav>
+        
+        <div style={{marginTop: "auto"}}>
+          {saveStatus && <p style={{fontSize: "12px", color: "#10b981", fontWeight: "bold", textAlign: "center", marginBottom: "8px"}}>{saveStatus}</p>}
+          <button onClick={() => signOut(auth)} style={{width: "100%", padding: "14px", background: "#ef444415", color: "#ef4444", border: "1px solid #ef444430", borderRadius: "14px", fontWeight: "700", cursor: "pointer"}}>Sign Out</button>
         </div>
       </div>
 
       <div className="main-content">
-        <input type="text" className="search-input" placeholder="🔍 Search lesson..." value={searchQuery} onChange={(e) => {setSearchQuery(e.target.value); setView("dashboard");}} />
+        {view === "dashboard" && (
+          <div style={{maxWidth: "800px"}}>
+            <h1 style={{fontSize: "36px", fontWeight: "900", marginBottom: "24px"}}>Welcome Back</h1>
+            <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "40px"}}>
+              <div className="card"><h3>{userXP} Total XP</h3></div>
+              <div className="card"><h3>{completedLessons.length} Completed</h3></div>
+            </div>
 
-        {searchQuery && (
-          <div style={{maxWidth: "800px", margin: "0 auto"}}>
-            {getSearchResults().map(res => (
-              <div key={res.id} onClick={() => { setCurBook(res.parentBook); setCurChapter(res); setView("study"); setSearchQuery(""); }} style={{background: "var(--card)", padding: "15px", borderRadius: "12px", marginBottom: "10px", cursor: "pointer", display: "flex", justifyContent: "space-between", border: "1px solid var(--border)"}}>
-                <span style={{fontWeight: "bold"}}>{res.title}</span>
-                <span style={{fontSize: "12px", color: "#10b981"}}>{res.parentBook.title}</span>
+            <h2 style={{marginBottom: "16px"}}>Unmastered Lessons</h2>
+            <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
+              {getUnmastered().length > 0 ? getUnmastered().map(ch => (
+                <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px"}}>
+                  <div>
+                    <p style={{fontSize: "12px", color: "#10b981", fontWeight: "bold", textTransform: "uppercase"}}>{ch.bookTitle}</p>
+                    <h3 style={{fontSize: "18px"}}>{ch.title}</h3>
+                  </div>
+                  <button onClick={() => {setCurBook(ch.parentBook); setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 20px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer"}}>Study Now</button>
+                </div>
+              )) : <p style={{color: "var(--muted)"}}>You've mastered everything! Check back later. 🚀</p>}
+            </div>
+          </div>
+        )}
+
+        {view === "leaderboard" && (
+          <div style={{maxWidth: "700px", margin: "0 auto"}}>
+            <h1 style={{textAlign: "center", marginBottom: "32px"}}>🏆 Top Learners</h1>
+            {leaderboard.map((p, i) => (
+              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", borderColor: p.id === user.uid ? "#10b981" : "var(--border)"}}>
+                <span style={{width: "40px", fontWeight: "900", fontSize: "18px"}}>#{i+1}</span>
+                <span style={{flex: 1, fontWeight: "600"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
+                <span className="xp-badge">{p.xp || 0} XP</span>
               </div>
             ))}
           </div>
         )}
 
-        {view === "dashboard" && !searchQuery && (
-          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
-            <div style={{ background: "linear-gradient(135deg, #10b981, #059669)", padding: "40px", borderRadius: "24px", color: "#fff", marginBottom: "30px" }}>
-              <h1 style={{ fontSize: "32px", fontWeight: "900", margin: 0 }}>Hi, {user.email?.split('@')[0]}! 👋</h1>
-              <p style={{ opacity: 0.9 }}>You have mastered {completedLessons.length} lessons. Ready for more?</p>
-            </div>
-            <div style={{ display: "flex", gap: "20px" }}>
-              <div className="card" style={{flex: 1}}><h3>{books.length} Books</h3></div>
-              <div className="card" style={{flex: 1}}><h3>{userXP} XP Earned</h3></div>
-            </div>
-          </div>
-        )}
-
         {view === "library" && (
           <div>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "30px"}}>
-              <h1 style={{fontWeight: "900"}}>Library</h1>
-              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) pushSave([...books, {id: Date.now().toString(), title: t, chapters: []}])}} style={{background: "#10b981", color: "#fff", padding: "10px 20px", borderRadius: "10px", border: "none"}}>+ New Book</button>}
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
+              <h1>Library</h1>
+              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}} style={{background: "#10b981", color: "white", padding: "12px 24px", borderRadius: "12px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ New Book</button>}
             </div>
-            <div style={{display: "flex", gap: "20px", flexWrap: "wrap"}}>
+            <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px"}}>
               {books.map(b => (
-                <div key={b.id} style={{position: "relative"}}>
-                  <div onClick={() => {setCurBook(b); setView("chapters");}} style={{width: "140px", height: "200px", background: "linear-gradient(135deg, #10b981, #059669)", borderRadius: "15px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", cursor: "pointer"}}>📖</div>
-                  <p style={{textAlign: "center", fontWeight: "bold", marginTop: "10px"}}>{b.title}</p>
-                  {isOwner && <button onClick={() => deleteItem('book', b.id)} style={{position: "absolute", top: "-5px", right: "-5px", background: "#ef4444", color: "#fff", borderRadius: "50%", border: "none", width: "25px", height: "25px"}}>×</button>}
+                <div key={b.id} className="card" style={{textAlign: "center"}}>
+                  <div style={{cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
+                    <div style={{height: "180px", background: theme === 'dark' ? "#0f172a" : "#f1f5f9", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", marginBottom: "16px"}}>📖</div>
+                    <h3 style={{fontWeight: "700"}}>{b.title}</h3>
+                  </div>
+                  {isOwner && <button className="del-btn" style={{width: "100%", marginTop: "12px"}} onClick={() => deleteItem('book', b.id)}>Delete</button>}
                 </div>
               ))}
             </div>
@@ -245,19 +354,23 @@ export default function Home() {
         )}
 
         {view === "chapters" && curBook && (
-          <div>
-            <button onClick={() => setView("library")} style={{color: "#10b981", background: "none", border: "none", marginBottom: "20px", cursor: "pointer"}}>← Back</button>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
+          <div style={{maxWidth: "900px"}}>
+            <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", marginBottom: "24px", cursor: "pointer"}}>← Back</button>
+            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px"}}>
               <h1>{curBook.title}</h1>
-              {isOwner && <button onClick={() => {const t = prompt("Lesson Name?"); if(t) { const nl = books.map(b => b.id === curBook.id ? {...b, chapters: [...(b.chapters || []), {id: Date.now().toString(), title: t}]} : b); setBooks(nl); pushSave(nl); }}} style={{background: "#10b981", color: "#fff", padding: "10px 20px", borderRadius: "10px", border: "none"}}>+ Add Lesson</button>}
+              {isOwner && <button onClick={addLesson} style={{background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ Add Lesson</button>}
             </div>
             {curBook.chapters?.map((ch: any) => (
-              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", marginBottom: "10px", padding: "15px", opacity: completedLessons.includes(ch.id) ? 0.7 : 1}}>
-                <span style={{fontWeight: "bold"}}>{ch.title} {completedLessons.includes(ch.id) && "✅"}</span>
-                <div style={{display: "flex", gap: "10px"}}>
-                  <button onClick={() => {setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 15px", borderRadius: "8px", background: "#10b981", border: "none", color: "#fff"}}>Study</button>
-                  {isOwner && <button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} style={{background: "#3b82f6", color: "#fff", border: "none", borderRadius: "8px", padding: "8px 15px"}}>Edit</button>}
-                  {isOwner && <button onClick={() => deleteItem('lesson', ch.id)} style={{background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "8px", padding: "8px 15px"}}>🗑️</button>}
+              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px"}}>
+                <span style={{fontSize: "18px", fontWeight: "700"}}>{ch.title} {completedLessons.includes(ch.id) && "✅"}</span>
+                <div style={{display: "flex", gap: "8px"}}>
+                  <button onClick={() => {setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "10px 24px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>Study</button>
+                  {isOwner && (
+                    <>
+                      <button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} style={{background: "#3b82f620", color: "#3b82f6", border: "1px solid #3b82f640", borderRadius: "10px", padding: "0 16px", fontWeight: "700"}}>Edit</button>
+                      <button onClick={() => deleteItem('lesson', ch.id)} className="del-btn">🗑️</button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -266,59 +379,52 @@ export default function Home() {
 
         {view === "study" && curChapter && (
           <div>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px"}}>
-              <button onClick={() => setView("chapters")} style={{color: "#10b981", background: "none", border: "none", cursor: "pointer"}}>← Back</button>
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
+              <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", cursor: "pointer"}}>← Back</button>
               {!completedLessons.includes(curChapter.id) ? (
-                <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fef3c7", color: "#d97706", border: "1px solid #fcd34d", padding: "8px 15px", borderRadius: "10px", fontWeight: "bold"}}>Mastered +100 XP</button>
+                <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fbbf24", color: "white", padding: "12px 32px", borderRadius: "12px", border: "none", fontWeight: "900", cursor: "pointer"}}>CLAIM 100 XP</button>
               ) : (
-                <span style={{color: "#10b981", fontWeight: "bold"}}>Lesson Mastered ✨</span>
+                <div style={{display: "flex", alignItems: "center"}}>
+                  <div className="xp-badge" style={{padding: "10px 24px"}}>✨ MASTERED ✨</div>
+                  <button className="unmaster-btn" onClick={() => unmasterLesson(curChapter.id)}>Reset Mastery</button>
+                </div>
               )}
             </div>
-            <h1 style={{marginBottom: "20px"}}>{curChapter.title}</h1>
-            <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "8px", marginBottom: "20px"}}>
+
+            <h1 style={{fontSize: "32px", marginBottom: "24px"}}>{curChapter.title}</h1>
+            <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "24px"}}>
                 {["Summary", "QnA", "Spellings", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
-                    <button key={t} onClick={() => setActiveTab(t)} className="tab-btn" style={{ background: activeTab === t ? "#10b981" : "var(--card)", color: activeTab === t ? "#fff" : "var(--subtext)" }}>{t}</button>
+                    <button key={t} onClick={() => setActiveTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
             <div className="card" style={{minHeight: "500px"}}>
-               {["Summary", "QnA", "Spellings"].includes(activeTab) && (
-                 <div style={{whiteSpace: "pre-wrap", fontSize: "18px", lineHeight: "1.8"}}>
-                   {activeTab === "Summary" ? (curChapter.summary || "No summary.") : activeTab === "QnA" ? (curChapter.qna || "No Q&A.") : (curChapter.spellings || "No spellings.")}
-                 </div>
-               )}
-               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="500px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "15px"}} /> : "No video.")}
-               {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (
-                 (() => {
-                   let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", "");
-                   let link = curChapter[k];
-                   if (!link) return "No content uploaded for this tab.";
-                   return <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="800px" style={{border: "none", borderRadius: "15px"}} />;
-                 })()
-               )}
+               {["Summary", "QnA", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "18px", lineHeight: "1.7"}}>{curChapter[activeTab.toLowerCase()] || "No content."}</div>}
+               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="500px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "16px"}} /> : "No video.")}
+               {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => { 
+                 let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", ""); 
+                 let link = curChapter[k]; 
+                 return link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="700px" style={{border: "none", borderRadius: "16px"}} /> : "Not linked."; 
+               })()}
             </div>
           </div>
         )}
 
         {view === "edit" && tempChapter && (
-             <div className="card">
-                <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px"}}>
-                    <h2>Editing: {tempChapter.title}</h2>
-                    <button onClick={() => { saveAllChanges(); setView("chapters"); }} style={{background: "#10b981", color: "#fff", padding: "12px 30px", border: "none", borderRadius: "12px", fontWeight: "bold"}}>✅ Save</button>
+          <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
+                <h2>Edit Module</h2>
+                <button onClick={() => { saveAllChanges(); setView("chapters"); }} style={{background: "#10b981", color: "white", padding: "12px 32px", borderRadius: "12px", border: "none", fontWeight: "700", cursor: "pointer"}}>SAVE</button>
+            </div>
+            <div style={{display: "flex", flexDirection: "column", gap: "24px"}}>
+                <div><label>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
+                <div><label>Q&A</label><textarea value={tempChapter.qna || ""} onChange={(e) => setTempChapter({...tempChapter, qna: e.target.value})} /></div>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
+                    {["video", "slides", "bookPdf", "infographic", "mindMap"].map(f => (
+                        <div key={f}><p style={{fontSize: "12px", color: "#10b981"}}>{f.toUpperCase()}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{width: "100%", padding: "12px", borderRadius: "10px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)"}} /></div>
+                    ))}
                 </div>
-                <div style={{display: "flex", flexDirection: "column", gap: "20px"}}>
-                    <div><p style={{fontWeight: "bold", fontSize: "14px"}}>Summary:</p><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
-                    <div><p style={{fontWeight: "bold", fontSize: "14px"}}>Q&A:</p><textarea value={tempChapter.qna || ""} onChange={(e) => setTempChapter({...tempChapter, qna: e.target.value})} /></div>
-                    <div><p style={{fontWeight: "bold", fontSize: "14px"}}>Spellings:</p><textarea value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
-                    <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "15px"}}>
-                        {["video", "slides", "bookPdf", "infographic", "mindMap"].map(f => (
-                            <div key={f} className="card" style={{background: "var(--bg)", padding: "15px"}}>
-                                <p style={{fontSize: "12px", fontWeight: "bold", color: "#10b981", marginBottom: "8px"}}>{f.toUpperCase()} LINK</p>
-                                <input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} placeholder="Paste link here..." style={{width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border)"}} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-             </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
