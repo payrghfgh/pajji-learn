@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { initializeApp, getApps } from "firebase/app";
 import { 
   getFirestore, doc, onSnapshot, setDoc, getDoc, 
@@ -30,9 +30,13 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  
+  // Data States
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  
+  // UI States
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
   const [curBook, setCurBook] = useState<any>(null);
@@ -44,49 +48,33 @@ export default function Home() {
   const [userXP, setUserXP] = useState(0);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  // Refs for tracking current IDs inside listeners to avoid stale closures
+  const curBookIdRef = useRef<string | null>(null);
+
+  // Update ref when state changes
   useEffect(() => {
-    // --- AUTO DARK MODE LOGIC ---
+    curBookIdRef.current = curBook?.id || null;
+  }, [curBook]);
+
+  // --- EFFECT 1: THEME & AUTH LISTENER ---
+  useEffect(() => {
+    // 1. Theme Logic
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setTheme(darkQuery.matches ? 'dark' : 'light');
-
-    const themeListener = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? 'dark' : 'light');
-    };
+    const themeListener = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
     darkQuery.addEventListener('change', themeListener);
 
-    const unsubAuth = onAuthStateChanged(auth, async (currentUser) => {
+    // 2. Auth Listener
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser?.email === "rushanbindra@gmail.com") setIsOwner(true);
+      setIsOwner(currentUser?.email === "rushanbindra@gmail.com");
       
-      if (currentUser) {
-        onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
-          if (ds.exists()) {
-            const data = ds.data().books || [];
-            setBooks(data);
-            if (curBook) {
-              const updated = data.find((b: any) => b.id === curBook.id);
-              if (updated) setCurBook(updated);
-            }
-          }
-          setLoading(false);
-        });
-
-        onSnapshot(doc(db, "users", currentUser.uid), (ds) => {
-          if (ds.exists()) {
-            const data = ds.data();
-            setCompletedLessons(data.completed || []);
-            setUserXP(data.xp || 0);
-          } else {
-            // Initialize user doc (handle null email for guests)
-            setDoc(doc(db, "users", currentUser.uid), { 
-                completed: [], 
-                email: currentUser.email || "guest", 
-                xp: 0 
-            }, { merge: true });
-          }
-        });
-        fetchLeaderboard();
-      } else {
+      if (!currentUser) {
+        // Cleanup state on logout
+        setBooks([]);
+        setCompletedLessons([]);
+        setUserXP(0);
+        setCurBook(null);
         setLoading(false);
       }
     });
@@ -95,7 +83,65 @@ export default function Home() {
       darkQuery.removeEventListener('change', themeListener);
       unsubAuth();
     };
-  }, [curBook?.id]);
+  }, []);
+
+  // --- EFFECT 2: DATA LISTENERS (Runs only when user changes) ---
+  useEffect(() => {
+    if (!user) return;
+
+    setLoading(true);
+    
+    // Listener 1: Global Database (Books)
+    const unsubBooks = onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
+      if (ds.exists()) {
+        const data = ds.data().books || [];
+        setBooks(data);
+
+        // STABILITY FIX: Keep curBook in sync with real-time updates
+        if (curBookIdRef.current) {
+          const updatedBook = data.find((b: any) => b.id === curBookIdRef.current);
+          if (updatedBook) {
+            setCurBook(updatedBook);
+          } else {
+            // Book was deleted by owner while user was viewing it
+            setCurBook(null);
+            setView("library");
+            alert("The book you were viewing has been removed.");
+          }
+        }
+      } else {
+        setBooks([]); // Database empty safety
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Book sync error:", error);
+      setLoading(false);
+    });
+
+    // Listener 2: User Data (XP & Completed)
+    const unsubUserData = onSnapshot(doc(db, "users", user.uid), (ds) => {
+      if (ds.exists()) {
+        const data = ds.data();
+        setCompletedLessons(data.completed || []);
+        setUserXP(data.xp || 0);
+      } else {
+        // Create profile if missing (Self-healing)
+        setDoc(doc(db, "users", user.uid), { 
+            completed: [], 
+            email: user.email || "guest", 
+            xp: 0 
+        }, { merge: true });
+      }
+    });
+
+    fetchLeaderboard();
+
+    // CLEANUP FUNCTION (Crucial for stability)
+    return () => {
+      unsubBooks();
+      unsubUserData();
+    };
+  }, [user]); // Only re-run if the logged-in user changes
 
   const fetchLeaderboard = async () => {
     try {
@@ -120,7 +166,7 @@ export default function Home() {
       setSaveStatus("Success! +100 XP");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
-    } catch (e) { setSaveStatus("Error"); }
+    } catch (e) { setSaveStatus("Error syncing"); }
   };
 
   const unmasterLesson = async (lessonId: string) => {
@@ -139,7 +185,7 @@ export default function Home() {
       setSaveStatus("Mastery Reset");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
-    } catch (e) { setSaveStatus("Error"); }
+    } catch (e) { setSaveStatus("Error syncing"); }
   };
 
   const handleAuth = async (e: any) => {
@@ -148,54 +194,84 @@ export default function Home() {
     try {
       if (isRegistering) await createUserWithEmailAndPassword(auth, authEmail, authPass);
       else await signInWithEmailAndPassword(auth, authEmail, authPass);
-    } catch (err: any) { alert(err.message); }
-    setLoading(false);
+    } catch (err: any) { 
+        alert(err.message); 
+        setLoading(false); // Ensure loading stops on error
+    }
   };
 
-  // --- GUEST LOGIN ---
   const handleGuestLogin = async () => {
     setLoading(true);
     try {
         await signInAnonymously(auth);
-    } catch (err: any) { alert(err.message); }
-    setLoading(false);
+    } catch (err: any) { 
+        alert(err.message);
+        setLoading(false);
+    }
   };
 
   const saveAllChanges = async () => {
-    if (!tempChapter || !isOwner) return;
+    if (!tempChapter || !isOwner || !curBook) return;
     setSaveStatus("Syncing...");
-    const newList = books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.map((c: any) => c.id === tempChapter.id ? tempChapter : c) } : b);
-    await setDoc(doc(db, "data", "pajji_database"), { books: newList });
-    setSaveStatus("Saved");
-    setTimeout(() => setSaveStatus(""), 2000);
+    try {
+        const newList = books.map(b => 
+            b.id === curBook.id 
+            ? { ...b, chapters: b.chapters.map((c: any) => c.id === tempChapter.id ? tempChapter : c) } 
+            : b
+        );
+        await setDoc(doc(db, "data", "pajji_database"), { books: newList });
+        setSaveStatus("Saved");
+        setTimeout(() => setSaveStatus(""), 2000);
+    } catch (e) {
+        setSaveStatus("Error Saving");
+        alert("Failed to save changes. Check console.");
+    }
   };
 
-  const deleteItem = (type: 'book' | 'lesson', id: string) => {
+  const deleteItem = async (type: 'book' | 'lesson', id: string) => {
     if (!isOwner || !confirm(`Delete this ${type}?`)) return;
-    let newList;
-    if (type === 'book') {
-      newList = books.filter(b => b.id !== id);
-      setView("library");
-    } else {
-      newList = books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.filter((c: any) => c.id !== id) } : b);
+    
+    try {
+        let newList;
+        if (type === 'book') {
+          newList = books.filter(b => b.id !== id);
+          setView("library");
+        } else {
+          // Safety check: ensure curBook exists
+          if (!curBook) return;
+          newList = books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.filter((c: any) => c.id !== id) } : b);
+        }
+        await setDoc(doc(db, "data", "pajji_database"), { books: newList });
+        setSaveStatus("Deleted");
+        setTimeout(() => setSaveStatus(""), 2000);
+    } catch (e) {
+        alert("Error deleting item.");
     }
-    setDoc(doc(db, "data", "pajji_database"), { books: newList });
-    setSaveStatus("Deleted");
-    setTimeout(() => setSaveStatus(""), 2000);
   };
 
   const formatYoutubeLink = (url: string) => {
     if (!url) return "";
-    let vid = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.includes("youtu.be/") ? url.split("youtu.be/")[1].split("?")[0] : url.includes("shorts/") ? url.split("shorts/")[1].split("?")[0] : "";
-    return vid ? `https://www.youtube.com/embed/${vid}` : url;
+    try {
+        let vid = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.includes("youtu.be/") ? url.split("youtu.be/")[1].split("?")[0] : url.includes("shorts/") ? url.split("shorts/")[1].split("?")[0] : "";
+        return vid ? `https://www.youtube.com/embed/${vid}` : url;
+    } catch (e) { return url; }
   };
 
-  // --- NEW LESSON FUNCTION ---
   const addLesson = async () => {
     const title = prompt("Lesson Title?");
     if (!title || !curBook) return;
-    const newLesson = { id: Date.now().toString(), title: title, summary: "", qna: "", spellings: "", video: "", slides: "", bookPdf: "", infographic: "", mindMap: "" };
-    const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...(b.chapters || []), newLesson] } : b );
+    
+    const newLesson = { 
+        id: Date.now().toString(), 
+        title: title, 
+        summary: "", qna: "", spellings: "", 
+        video: "", slides: "", bookPdf: "", infographic: "", mindMap: "" 
+    };
+    
+    // Safety check for undefined chapters
+    const currentChapters = curBook.chapters || [];
+    const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...currentChapters, newLesson] } : b );
+    
     setSaveStatus("Adding...");
     await setDoc(doc(db, "data", "pajji_database"), { books: updatedBooks });
     setSaveStatus("Lesson Added!");
@@ -204,6 +280,7 @@ export default function Home() {
 
   const getUnmastered = () => {
     let unmastered: any[] = [];
+    if (!books) return []; // Safety check
     books.forEach(book => {
       book.chapters?.forEach((ch: any) => {
         if (!completedLessons.includes(ch.id)) {
@@ -214,7 +291,6 @@ export default function Home() {
     return unmastered;
   };
 
-  // Helper to get display name
   const getUserName = (u: any) => {
       if (!u) return "";
       if (u.isAnonymous) return "Guest User";
@@ -360,7 +436,7 @@ export default function Home() {
               <h1>{curBook.title}</h1>
               {isOwner && <button onClick={addLesson} style={{background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ Add Lesson</button>}
             </div>
-            {curBook.chapters?.map((ch: any) => (
+            {(curBook.chapters || []).map((ch: any) => (
               <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px"}}>
                 <span style={{fontSize: "18px", fontWeight: "700"}}>{ch.title} {completedLessons.includes(ch.id) && "✅"}</span>
                 <div style={{display: "flex", gap: "8px"}}>
