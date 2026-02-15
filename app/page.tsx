@@ -36,7 +36,7 @@ export default function Home() {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(true); // New state to track XP loading
+  const [dataLoading, setDataLoading] = useState(true); 
   const [view, setView] = useState("dashboard");
   const [curBook, setCurBook] = useState<any>(null);
   const [curChapter, setCurChapter] = useState<any>(null);
@@ -53,7 +53,6 @@ export default function Home() {
     curBookIdRef.current = curBook?.id || null;
   }, [curBook]);
 
-  // Handle Theme & Auth State
   useEffect(() => {
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setTheme(darkQuery.matches ? 'dark' : 'light');
@@ -80,11 +79,9 @@ export default function Home() {
     };
   }, []);
 
-  // Handle Data Syncing (XP, Books, Lessons)
   useEffect(() => {
     if (!user) return;
     
-    // 1. Listen for Books
     const unsubBooks = onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
       if (ds.exists()) {
         const data = ds.data().books || [];
@@ -92,19 +89,18 @@ export default function Home() {
         if (curBookIdRef.current) {
           const updatedBook = data.find((b: any) => b.id === curBookIdRef.current);
           if (updatedBook) setCurBook(updatedBook);
+          else { setCurBook(null); setView("library"); }
         }
-      }
+      } else { setBooks([]); }
       setLoading(false);
     });
 
-    // 2. Listen for User XP & Progress
     const unsubUserData = onSnapshot(doc(db, "users", user.uid), (ds) => {
       if (ds.exists()) {
         const data = ds.data();
         setCompletedLessons(data.completed || []);
         setUserXP(data.xp || 0);
       } else {
-        // Initialize user doc if it doesn't exist
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
           email: user.email || "guest", 
@@ -134,11 +130,7 @@ export default function Home() {
     try {
       const snap = await getDoc(userRef);
       const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      await setDoc(userRef, { 
-        completed: arrayUnion(lessonId), 
-        xp: currentXP + 100, 
-        email: user.email || "guest" 
-      }, { merge: true });
+      await setDoc(userRef, { completed: arrayUnion(lessonId), xp: currentXP + 100, email: user.email || "guest" }, { merge: true });
       setSaveStatus("Success! +100 XP");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
@@ -153,10 +145,7 @@ export default function Home() {
     try {
       const snap = await getDoc(userRef);
       const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      await setDoc(userRef, { 
-        completed: arrayRemove(lessonId), 
-        xp: Math.max(0, currentXP - 100) 
-      }, { merge: true });
+      await setDoc(userRef, { completed: arrayRemove(lessonId), xp: Math.max(0, currentXP - 100) }, { merge: true });
       setSaveStatus("Mastery Reset");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
@@ -229,16 +218,15 @@ export default function Home() {
   const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
   const userLevel = Math.floor(userXP / 500) + 1;
 
-  // --- ICONS (SVG) ---
   const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
   const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
   const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
 
-  if (loading) return <div style={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
+  if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
 
   if (!user) {
     return (
-      <div style={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#020617" : "#f1f5f9", fontFamily: "sans-serif"}}>
+      <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#020617" : "#f1f5f9", fontFamily: "sans-serif"}}>
         <div style={{background: theme === 'dark' ? "#0f172a" : "#ffffff", padding: "40px", borderRadius: "32px", width: "90%", maxWidth: "420px", border: "1px solid #e2e8f0"}}>
           <h1 style={{color: "#10b981", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
           <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "16px"}}>
@@ -262,7 +250,7 @@ export default function Home() {
         .dark { --bg: #020617; --side: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --input-bg: #020617; }
         .light { --bg: #f8fafc; --side: #ffffff; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --input-bg: #f1f5f9; }
         
-        .app-container { display: flex; height: 100vh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
+        .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
         .sidebar { width: 300px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; }
         .main-content { flex: 1; padding: 48px; overflow-y: auto; }
         .card { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; }
@@ -292,7 +280,8 @@ export default function Home() {
             left: 0;
             width: 100%;
             height: auto;
-            padding: 8px 16px 24px 16px;
+            /* FIX: Reduced Padding for Smaller Bar */
+            padding: 6px 12px 16px 12px;
             flex-direction: row;
             justify-content: space-between;
             border-right: none;
@@ -300,6 +289,7 @@ export default function Home() {
             background: var(--side);
             z-index: 100;
             backdrop-filter: blur(12px);
+            background: rgba(var(--side), 0.9);
           }
           
           .sidebar-extras, .sidebar h1, .sidebar .theme-btn { display: none; }
@@ -307,18 +297,20 @@ export default function Home() {
           .nav-btn { 
             margin-bottom: 0; 
             flex-direction: column; 
-            gap: 4px; 
-            font-size: 10px; 
+            gap: 2px; /* Tighter gap */
+            font-size: 9px; /* Smaller font */
             justify-content: center; 
             text-align: center; 
-            padding: 8px; 
+            padding: 4px; /* Less padding */
             background: transparent !important;
             color: var(--muted);
             border-radius: 0;
           }
-          .nav-btn svg { width: 24px; height: 24px; }
+          /* Smaller Icons */
+          .nav-btn svg { width: 20px; height: 20px; }
           .nav-btn.active { color: var(--accent); }
           
+          /* Adjusted Content Padding to Avoid Overlap */
           .main-content { padding: 20px; padding-bottom: 100px; }
           .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
           .mobile-header h1 { font-size: 20px; margin: 0; }
