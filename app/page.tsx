@@ -31,13 +31,12 @@ export default function Home() {
   const [authPass, setAuthPass] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   
-  // Data States
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   
-  // UI States
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true); // New state to track XP loading
   const [view, setView] = useState("dashboard");
   const [curBook, setCurBook] = useState<any>(null);
   const [curChapter, setCurChapter] = useState<any>(null);
@@ -54,7 +53,7 @@ export default function Home() {
     curBookIdRef.current = curBook?.id || null;
   }, [curBook]);
 
-  // --- EFFECT 1: THEME & AUTH ---
+  // Handle Theme & Auth State
   useEffect(() => {
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setTheme(darkQuery.matches ? 'dark' : 'light');
@@ -71,6 +70,7 @@ export default function Home() {
         setUserXP(0);
         setCurBook(null);
         setLoading(false);
+        setDataLoading(false);
       }
     });
 
@@ -80,11 +80,11 @@ export default function Home() {
     };
   }, []);
 
-  // --- EFFECT 2: DATA LISTENERS ---
+  // Handle Data Syncing (XP, Books, Lessons)
   useEffect(() => {
     if (!user) return;
-    setLoading(true);
     
+    // 1. Listen for Books
     const unsubBooks = onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
       if (ds.exists()) {
         const data = ds.data().books || [];
@@ -92,20 +92,27 @@ export default function Home() {
         if (curBookIdRef.current) {
           const updatedBook = data.find((b: any) => b.id === curBookIdRef.current);
           if (updatedBook) setCurBook(updatedBook);
-          else { setCurBook(null); setView("library"); }
         }
-      } else { setBooks([]); }
+      }
       setLoading(false);
     });
 
+    // 2. Listen for User XP & Progress
     const unsubUserData = onSnapshot(doc(db, "users", user.uid), (ds) => {
       if (ds.exists()) {
         const data = ds.data();
         setCompletedLessons(data.completed || []);
         setUserXP(data.xp || 0);
       } else {
-        setDoc(doc(db, "users", user.uid), { completed: [], email: user.email || "guest", xp: 0 }, { merge: true });
+        // Initialize user doc if it doesn't exist
+        setDoc(doc(db, "users", user.uid), { 
+          completed: [], 
+          email: user.email || "guest", 
+          xp: 0 
+        }, { merge: true });
+        setUserXP(0);
       }
+      setDataLoading(false);
     });
 
     fetchLeaderboard();
@@ -127,7 +134,11 @@ export default function Home() {
     try {
       const snap = await getDoc(userRef);
       const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      await setDoc(userRef, { completed: arrayUnion(lessonId), xp: currentXP + 100, email: user.email || "guest" }, { merge: true });
+      await setDoc(userRef, { 
+        completed: arrayUnion(lessonId), 
+        xp: currentXP + 100, 
+        email: user.email || "guest" 
+      }, { merge: true });
       setSaveStatus("Success! +100 XP");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
@@ -142,7 +153,10 @@ export default function Home() {
     try {
       const snap = await getDoc(userRef);
       const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      await setDoc(userRef, { completed: arrayRemove(lessonId), xp: Math.max(0, currentXP - 100) }, { merge: true });
+      await setDoc(userRef, { 
+        completed: arrayRemove(lessonId), 
+        xp: Math.max(0, currentXP - 100) 
+      }, { merge: true });
       setSaveStatus("Mastery Reset");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
@@ -215,6 +229,11 @@ export default function Home() {
   const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
   const userLevel = Math.floor(userXP / 500) + 1;
 
+  // --- ICONS (SVG) ---
+  const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+  const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+  const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
+
   if (loading) return <div style={{height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
 
   if (!user) {
@@ -248,12 +267,11 @@ export default function Home() {
         .main-content { flex: 1; padding: 48px; overflow-y: auto; }
         .card { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; }
         
-        /* Navigation Buttons */
-        .nav-btn { width: 100%; padding: 14px 18px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 8px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 10px; font-size: 16px; }
+        .nav-btn { width: 100%; padding: 14px 18px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 8px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 16px; transition: 0.2s; }
+        .nav-btn svg { width: 20px; height: 20px; stroke-width: 2.5px; }
         .nav-btn:hover { background: rgba(16, 185, 129, 0.1); }
         .nav-btn.active { background: var(--accent); color: white; }
         
-        /* Interactive Elements */
         .tab-btn { padding: 10px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 1; text-align: center; }
         .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
         textarea, input[type="text"] { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; }
@@ -264,7 +282,6 @@ export default function Home() {
         .del-btn { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; padding: 8px 12px; borderRadius: 8px; cursor: pointer; font-weight: bold; }
         .unmaster-btn { background: none; border: 1px solid #ef444450; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; margin-left: 8px; }
 
-        /* --- MOBILE STYLES (Max Width 768px) --- */
         .mobile-header { display: none; }
         
         @media (max-width: 768px) {
@@ -274,40 +291,47 @@ export default function Home() {
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 70px;
-            padding: 8px;
+            height: auto;
+            padding: 8px 16px 24px 16px;
             flex-direction: row;
-            justify-content: space-around;
+            justify-content: space-between;
             border-right: none;
             border-top: 1px solid var(--border);
             background: var(--side);
             z-index: 100;
+            backdrop-filter: blur(12px);
           }
           
-          /* Hide non-nav items in bottom bar */
           .sidebar-extras, .sidebar h1, .sidebar .theme-btn { display: none; }
           
-          /* Navigation Buttons for Bottom Bar */
-          .nav-btn { margin-bottom: 0; flex-direction: column; gap: 4px; font-size: 10px; justify-content: center; text-align: center; border-radius: 8px; padding: 8px; }
-          .nav-btn span { display: block; } /* Show text below icon */
+          .nav-btn { 
+            margin-bottom: 0; 
+            flex-direction: column; 
+            gap: 4px; 
+            font-size: 10px; 
+            justify-content: center; 
+            text-align: center; 
+            padding: 8px; 
+            background: transparent !important;
+            color: var(--muted);
+            border-radius: 0;
+          }
+          .nav-btn svg { width: 24px; height: 24px; }
+          .nav-btn.active { color: var(--accent); }
           
-          /* Main Content Adjustments */
-          .main-content { padding: 20px; padding-bottom: 90px; }
-          
-          /* Mobile Header */
+          .main-content { padding: 20px; padding-bottom: 100px; }
           .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
           .mobile-header h1 { font-size: 20px; margin: 0; }
           
-          /* Grids */
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
           .library-grid { grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
           
-          /* Tabs */
-          .tab-container { overflow-x: auto; padding-bottom: 10px; }
+          .tab-container { overflow-x: auto; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
+          .tab-btn { flex: 0 0 auto; margin-right: 4px; }
         }
       `}</style>
 
-      {/* --- SIDEBAR (Desktop Left / Mobile Bottom) --- */}
+      {/* --- SIDEBAR --- */}
       <div className="sidebar">
         <div className="sidebar-extras">
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "40px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
@@ -315,14 +339,17 @@ export default function Home() {
             <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "20px", borderRadius: "20px", color: "white", marginBottom: "32px"}}>
             <p style={{fontSize: "11px", fontWeight: "800", opacity: 0.8}}>PROGRESS</p>
             <h3 style={{fontSize: "16px", marginBottom: "12px"}}>{getUserName(user)}</h3>
-            <div style={{display: "flex", justifyContent: "space-between", fontSize: "12px"}}><span>Lvl {userLevel}</span><span>{userXP} XP</span></div>
+            <div style={{display: "flex", justifyContent: "space-between", fontSize: "12px"}}>
+                <span>Lvl {userLevel}</span>
+                <span>{dataLoading ? "..." : userXP} XP</span>
+            </div>
             </div>
         </div>
 
         <nav style={{flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "4px"}}>
-          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><span>🏠</span> Dashboard</button>
-          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><span>📚</span> Library</button>
-          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><span>🏆</span> Rankings</button>
+          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> Dashboard</button>
+          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> Library</button>
+          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> Rankings</button>
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}}>
@@ -332,56 +359,62 @@ export default function Home() {
       </div>
 
       <div className="main-content">
-        {/* --- MOBILE ONLY HEADER --- */}
         <div className="mobile-header">
             <h1 style={{fontSize: "20px", fontWeight: "900"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
-            <div style={{display: "flex", gap: "10px"}}>
-                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{background: "none", border: "none", fontSize: "20px"}}>{theme === 'dark' ? "☀️" : "🌙"}</button>
-                <button onClick={() => signOut(auth)} style={{background: "none", border: "none", fontSize: "20px"}}>🚪</button>
+            <div style={{display: "flex", gap: "16px", alignItems: "center"}}>
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{background: "none", border: "none", fontSize: "20px", cursor: "pointer"}}>{theme === 'dark' ? "☀️" : "🌙"}</button>
+                <button onClick={() => signOut(auth)} style={{background: "none", border: "none", fontSize: "20px", cursor: "pointer"}}>🚪</button>
             </div>
         </div>
 
-        {/* --- DASHBOARD VIEW --- */}
+        {/* --- DASHBOARD --- */}
         {view === "dashboard" && (
           <div style={{maxWidth: "800px"}}>
-            <h1 style={{fontSize: "36px", fontWeight: "900", marginBottom: "24px"}}>Welcome Back</h1>
-            
-            {/* Mobile: Stacked, Desktop: Side-by-side */}
+            <h1 style={{fontSize: "32px", fontWeight: "900", marginBottom: "24px"}}>Welcome Back</h1>
             <div className="dashboard-grid" style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "40px"}}>
-              <div className="card"><h3>{userXP} Total XP</h3></div>
-              <div className="card"><h3>{completedLessons.length} Completed</h3></div>
+              <div className="card">
+                  <p style={{fontSize: "12px", fontWeight: "bold", opacity: 0.7, textTransform: "uppercase"}}>Total XP</p>
+                  <h3 style={{fontSize: "32px", color: "#10b981"}}>{dataLoading ? "---" : userXP}</h3>
+              </div>
+              <div className="card">
+                  <p style={{fontSize: "12px", fontWeight: "bold", opacity: 0.7, textTransform: "uppercase"}}>Completed</p>
+                  <h3 style={{fontSize: "32px", color: "#3b82f6"}}>{completedLessons.length}</h3>
+              </div>
             </div>
             
             <h2 style={{marginBottom: "16px"}}>Unmastered Lessons</h2>
             <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
               {getUnmastered().length > 0 ? getUnmastered().map(ch => (
-                <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px"}}>
+                <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px"}}>
                   <div style={{flex: 1, paddingRight: "10px"}}>
-                      <p style={{fontSize: "12px", color: "#10b981", fontWeight: "bold"}}>{ch.bookTitle}</p>
-                      <h3 style={{fontSize: "16px", marginTop: "4px"}}>{ch.title}</h3>
+                      <p style={{fontSize: "10px", color: "#10b981", fontWeight: "bold", textTransform: "uppercase"}}>{ch.bookTitle}</p>
+                      <h3 style={{fontSize: "16px", marginTop: "2px"}}>{ch.title}</h3>
                   </div>
-                  <button onClick={() => {setCurBook(ch.parentBook); setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 16px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "14px", whiteSpace: "nowrap"}}>Go</button>
+                  <button onClick={() => {setCurBook(ch.parentBook); setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 16px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px"}}>Start</button>
                 </div>
-              )) : <p>You've mastered everything! 🚀</p>}
+              )) : <div className="card" style={{textAlign: "center", padding: "32px", opacity: 0.7}}>You've mastered everything! 🚀</div>}
             </div>
           </div>
         )}
 
-        {/* --- LEADERBOARD VIEW --- */}
+        {/* --- LEADERBOARD --- */}
         {view === "leaderboard" && (
           <div style={{maxWidth: "700px", margin: "0 auto"}}>
-            <h1 style={{textAlign: "center", marginBottom: "32px"}}>🏆 Top Learners</h1>
+            <h1 style={{textAlign: "center", marginBottom: "32px"}}>Leaderboard</h1>
             {leaderboard.map((p, i) => (
-              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", borderColor: p.id === user.uid ? "#10b981" : "var(--border)"}}>
-                <span style={{width: "30px", fontWeight: "900", fontSize: "16px"}}>#{i+1}</span>
-                <span style={{flex: 1, fontSize: "14px", fontWeight: "600"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest"}</span>
+              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", borderColor: p.id === user.uid ? "#10b981" : "var(--border)", borderWidth: p.id === user.uid ? "2px" : "1px"}}>
+                <span style={{width: "40px", fontWeight: "900", fontSize: "18px", color: i < 3 ? "#fbbf24" : "inherit"}}>#{i+1}</span>
+                <div style={{flex: 1}}>
+                    <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
+                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "#10b98120", color: "#10b981", padding: "2px 6px", borderRadius: "4px"}}>YOU</span>}
+                </div>
                 <span className="xp-badge">{p.xp || 0} XP</span>
               </div>
             ))}
           </div>
         )}
 
-        {/* --- LIBRARY VIEW --- */}
+        {/* --- LIBRARY --- */}
         {view === "library" && (
           <div>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center"}}>
@@ -392,8 +425,9 @@ export default function Home() {
               {books.map(b => (
                 <div key={b.id} className="card" style={{textAlign: "center"}}>
                   <div style={{cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
-                      <div style={{height: "140px", background: "var(--input-bg)", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", marginBottom: "16px"}}>📖</div>
-                      <h3 style={{fontWeight: "700", fontSize: "16px"}}>{b.title}</h3>
+                      <div style={{height: "140px", background: "var(--input-bg)", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", marginBottom: "16px"}}>📖</div>
+                      <h3 style={{fontWeight: "700", fontSize: "18px"}}>{b.title}</h3>
+                      <p style={{fontSize: "12px", opacity: 0.6, marginTop: "4px"}}>{b.chapters?.length || 0} Lessons</p>
                   </div>
                   {isOwner && <button className="del-btn" style={{width: "100%", marginTop: "12px", fontSize: "12px"}} onClick={() => deleteItem('book', b.id)}>Delete</button>}
                 </div>
@@ -402,19 +436,22 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- CHAPTERS VIEW --- */}
+        {/* --- CHAPTERS --- */}
         {view === "chapters" && curBook && (
           <div style={{maxWidth: "900px"}}>
-            <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", marginBottom: "20px", cursor: "pointer"}}>← Back</button>
+            <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", marginBottom: "20px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px"}}>← Back to Library</button>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px"}}>
-                <h1 style={{fontSize: "24px"}}>{curBook.title}</h1>
+                <h1 style={{fontSize: "28px"}}>{curBook.title}</h1>
                 {isOwner && <button onClick={addLesson} style={{background: "#10b981", color: "white", padding: "8px 16px", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ Lesson</button>}
             </div>
             {(curBook.chapters || []).map((ch: any) => (
-              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "16px"}}>
-                <span style={{fontSize: "16px", fontWeight: "600", flex: 1}}>{ch.title} {completedLessons.includes(ch.id) && "✅"}</span>
+              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "20px"}}>
+                <div style={{flex: 1}}>
+                    <span style={{fontSize: "18px", fontWeight: "600"}}>{ch.title}</span>
+                    {completedLessons.includes(ch.id) && <span style={{marginLeft: "10px", fontSize: "12px", color: "#10b981"}}>✓ Completed</span>}
+                </div>
                 <div style={{display: "flex", gap: "8px"}}>
-                  <button onClick={() => {setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 16px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px"}}>Study</button>
+                  <button onClick={() => {setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 20px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px"}}>Study</button>
                   {isOwner && (<button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} style={{padding: "8px 12px", border: "1px solid #3b82f6", color: "#3b82f6", borderRadius: "10px", background: "none", cursor: "pointer"}}>✎</button>)}
                 </div>
               </div>
@@ -422,13 +459,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- STUDY VIEW --- */}
+        {/* --- STUDY --- */}
         {view === "study" && curChapter && (
           <div>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center"}}>
               <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", cursor: "pointer"}}>← Back</button>
               {!completedLessons.includes(curChapter.id) ? (
-                <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fbbf24", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "900", cursor: "pointer", fontSize: "14px"}}>CLAIM XP</button>
+                <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fbbf24", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "900", cursor: "pointer", fontSize: "14px"}}>CLAIM 100 XP</button>
               ) : (
                 <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                     <div className="xp-badge">MASTERED</div>
@@ -454,7 +491,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- EDIT VIEW --- */}
+        {/* --- EDIT --- */}
         {view === "edit" && tempChapter && (
           <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px"}}>
