@@ -227,12 +227,12 @@ export default function Home() {
   if (!user) {
     return (
       <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#020617" : "#f1f5f9", fontFamily: "sans-serif"}}>
-        <div style={{background: theme === 'dark' ? "#0f172a" : "#ffffff", padding: "40px", borderRadius: "32px", width: "90%", maxWidth: "420px", border: "1px solid #e2e8f0"}}>
+        <div style={{background: theme === 'dark' ? "rgba(30, 41, 59, 0.7)" : "rgba(255, 255, 255, 0.7)", backdropFilter: "blur(12px)", padding: "40px", borderRadius: "32px", width: "90%", maxWidth: "420px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"}}>
           <h1 style={{color: "#10b981", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
           <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "16px"}}>
-            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "#020617" : "#f1f5f9", border: "1px solid #cbd5e1", color: theme === 'dark' ? "white" : "#0f172a"}} />
-            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "#020617" : "#f1f5f9", border: "1px solid #cbd5e1", color: theme === 'dark' ? "white" : "#0f172a"}} />
-            <button type="submit" style={{padding: "14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>{isRegistering ? "Register" : "Sign In"}</button>
+            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "rgba(0,0,0,0.2)" : "#f1f5f9", border: "1px solid rgba(255,255,255,0.1)", color: theme === 'dark' ? "white" : "#0f172a"}} />
+            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "rgba(0,0,0,0.2)" : "#f1f5f9", border: "1px solid rgba(255,255,255,0.1)", color: theme === 'dark' ? "white" : "#0f172a"}} />
+            <button type="submit" style={{padding: "14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)"}}>{isRegistering ? "Register" : "Sign In"}</button>
           </form>
           <div style={{display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px"}}>
             <button onClick={handleGuestLogin} style={{background: "none", border: "1px solid #10b981", color: "#10b981", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>Continue as Guest 👤</button>
@@ -247,158 +247,197 @@ export default function Home() {
     <div className={`app-container ${theme}`}>
       <style>{`
         :root { --accent: #10b981; }
-        .dark { --bg: #020617; --side: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --border: #334155; --input-bg: #020617; }
-        .light { --bg: #f8fafc; --side: #ffffff; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --input-bg: #f1f5f9; }
+        .dark { 
+          --bg: #020617; 
+          --side: rgba(15, 23, 42, 0.8); 
+          --card: rgba(30, 41, 59, 0.5); 
+          --text: #f8fafc; 
+          --muted: #94a3b8; 
+          --border: rgba(255, 255, 255, 0.08); 
+          --input-bg: rgba(0, 0, 0, 0.2); 
+        }
+        .light { 
+          --bg: #f8fafc; 
+          --side: rgba(255, 255, 255, 0.8); 
+          --card: rgba(255, 255, 255, 0.6); 
+          --text: #0f172a; 
+          --muted: #64748b; 
+          --border: rgba(0, 0, 0, 0.05); 
+          --input-bg: #f1f5f9; 
+        }
         
         .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
-        .sidebar { width: 300px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; }
+        .sidebar { width: 280px; background: var(--side); backdrop-filter: blur(16px); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
         .main-content { flex: 1; padding: 48px; overflow-y: auto; }
-        .card { background: var(--card); border: 1px solid var(--border); padding: 24px; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); position: relative; }
+        .card { 
+          background: var(--card); 
+          backdrop-filter: blur(8px);
+          border: 1px solid var(--border); 
+          padding: 24px; 
+          border-radius: 24px; 
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          position: relative; 
+        }
         
-        .nav-btn { width: 100%; padding: 14px 18px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 8px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 16px; transition: 0.2s; }
-        .nav-btn svg { width: 20px; height: 20px; stroke-width: 2.5px; }
-        .nav-btn:hover { background: rgba(16, 185, 129, 0.1); }
-        .nav-btn.active { background: var(--accent); color: white; }
+        .nav-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 6px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 15px; transition: 0.2s; }
+        .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
+        .nav-btn:hover { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
+        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); }
+        .nav-btn.active svg { opacity: 1; }
         
-        .tab-btn { padding: 10px 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 1; text-align: center; }
-        .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-        textarea, input[type="text"] { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; }
-        textarea { min-height: 160px; }
+        .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px; background: var(--card); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 0 0 auto; text-align: center; transition: 0.2s; }
+        .tab-btn.active { background: var(--accent); color: white; border-color: transparent; }
         
-        .xp-badge { background: rgba(16, 185, 129, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
-        .theme-btn { margin-bottom: 20px; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 800; text-transform: uppercase; }
-        .del-btn { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; padding: 8px 12px; borderRadius: 8px; cursor: pointer; font-weight: bold; }
-        .unmaster-btn { background: none; border: 1px solid #ef444450; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: bold; margin-left: 8px; }
-
+        textarea, input[type="text"] { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; outline: none; }
+        textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
+        
+        .xp-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
         .mobile-header { display: none; }
         
         @media (max-width: 768px) {
           .app-container { flex-direction: column; }
           .sidebar {
             position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: auto;
-            /* FIX: Reduced Padding for Smaller Bar */
-            padding: 6px 12px 16px 12px;
+            bottom: 24px; /* Floating from bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            max-width: 400px;
+            height: 60px; /* Slim height */
+            padding: 0 20px;
             flex-direction: row;
             justify-content: space-between;
-            border-right: none;
-            border-top: 1px solid var(--border);
-            background: var(--side);
-            z-index: 100;
-            backdrop-filter: blur(12px);
-            background: rgba(var(--side), 0.9);
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px; /* Pill shape */
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
           }
           
-          .sidebar-extras, .sidebar h1, .sidebar .theme-btn { display: none; }
+          .sidebar-extras, .sidebar h1 { display: none; }
           
           .nav-btn { 
             margin-bottom: 0; 
             flex-direction: column; 
-            gap: 2px; /* Tighter gap */
-            font-size: 9px; /* Smaller font */
+            gap: 0; 
+            font-size: 9px; 
             justify-content: center; 
+            align-items: center;
             text-align: center; 
-            padding: 4px; /* Less padding */
+            padding: 0;
+            width: auto;
+            flex: 1;
             background: transparent !important;
-            color: var(--muted);
-            border-radius: 0;
+            box-shadow: none !important;
+            color: rgba(255, 255, 255, 0.5);
           }
-          /* Smaller Icons */
-          .nav-btn svg { width: 20px; height: 20px; }
+          .nav-btn svg { width: 22px; height: 22px; margin-bottom: 2px; }
           .nav-btn.active { color: var(--accent); }
+          .nav-btn.active svg { opacity: 1; stroke-width: 2.5px; }
           
-          /* Adjusted Content Padding to Avoid Overlap */
-          .main-content { padding: 20px; padding-bottom: 100px; }
-          .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-          .mobile-header h1 { font-size: 20px; margin: 0; }
+          .main-content { padding: 20px; padding-bottom: 120px; }
+          .mobile-header { 
+             display: flex; 
+             justify-content: space-between; 
+             align-items: center; 
+             margin-bottom: 24px; 
+             padding: 12px 16px;
+             background: var(--card);
+             border-radius: 20px;
+             border: 1px solid var(--border);
+          }
           
-          .dashboard-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
-          .library-grid { grid-template-columns: 1fr 1fr !important; gap: 16px !important; }
-          
-          .tab-container { overflow-x: auto; padding-bottom: 10px; -webkit-overflow-scrolling: touch; }
-          .tab-btn { flex: 0 0 auto; margin-right: 4px; }
+          .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .library-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+          .tab-container { overflow-x: auto; padding-bottom: 10px; gap: 8px; }
         }
       `}</style>
 
-      {/* --- SIDEBAR --- */}
+      {/* --- SIDEBAR (Floating Glass Pill on Mobile) --- */}
       <div className="sidebar">
         <div className="sidebar-extras">
-            <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "40px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
-            <button className="theme-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? "☀️ Light Mode" : "🌙 Dark Mode"}</button>
-            <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "20px", borderRadius: "20px", color: "white", marginBottom: "32px"}}>
-            <p style={{fontSize: "11px", fontWeight: "800", opacity: 0.8}}>PROGRESS</p>
-            <h3 style={{fontSize: "16px", marginBottom: "12px"}}>{getUserName(user)}</h3>
-            <div style={{display: "flex", justifyContent: "space-between", fontSize: "12px"}}>
-                <span>Lvl {userLevel}</span>
-                <span>{dataLoading ? "..." : userXP} XP</span>
-            </div>
+            <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
+            
+            <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "18px", borderRadius: "20px", color: "white", marginBottom: "24px", boxShadow: "0 10px 20px -5px rgba(16, 185, 129, 0.4)"}}>
+              <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.8, marginBottom: "4px"}}>LEVEL {userLevel}</p>
+              <h3 style={{fontSize: "15px", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>{getUserName(user)}</h3>
+              <div style={{height: "6px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", overflow: "hidden"}}>
+                <div style={{width: `${(userXP % 500) / 5}%`, height: "100%", background: "#fff"}}></div>
+              </div>
+              <p style={{fontSize: "11px", marginTop: "8px", fontWeight: "700"}}>{userXP} XP</p>
             </div>
         </div>
 
-        <nav style={{flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "4px"}}>
-          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> Dashboard</button>
-          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> Library</button>
-          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> Rankings</button>
+        <nav style={{flex: 1, display: "flex", flexDirection: "column", gap: "4px", width: "100%"}}>
+          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home</span></button>
+          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library</span></button>
+          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings</span></button>
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}}>
-          {saveStatus && <p style={{fontSize: "12px", color: "#10b981", fontWeight: "bold", textAlign: "center", marginBottom: "8px"}}>{saveStatus}</p>}
-          <button onClick={() => signOut(auth)} style={{width: "100%", padding: "14px", background: "#ef444415", color: "#ef4444", border: "1px solid #ef444430", borderRadius: "14px", fontWeight: "700", cursor: "pointer"}}>Sign Out</button>
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="nav-btn" style={{marginBottom: "12px"}}>
+            {theme === 'dark' ? "☀️ Light Mode" : "🌙 Dark Mode"}
+          </button>
+          <button onClick={() => signOut(auth)} style={{width: "100%", padding: "12px", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "14px", fontWeight: "700", cursor: "pointer"}}>Sign Out</button>
         </div>
       </div>
 
       <div className="main-content">
         <div className="mobile-header">
-            <h1 style={{fontSize: "20px", fontWeight: "900"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
-            <div style={{display: "flex", gap: "16px", alignItems: "center"}}>
-                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{background: "none", border: "none", fontSize: "20px", cursor: "pointer"}}>{theme === 'dark' ? "☀️" : "🌙"}</button>
-                <button onClick={() => signOut(auth)} style={{background: "none", border: "none", fontSize: "20px", cursor: "pointer"}}>🚪</button>
+            <h1 style={{fontSize: "18px", fontWeight: "900", marginLeft: "4px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
+            <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
+                <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent)", color: "white", padding: "4px 10px", borderRadius: "20px"}}>{userXP} XP</div>
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{background: "none", border: "none", fontSize: "18px"}}>{theme === 'dark' ? "☀️" : "🌙"}</button>
             </div>
         </div>
 
         {/* --- DASHBOARD --- */}
         {view === "dashboard" && (
-          <div style={{maxWidth: "800px"}}>
-            <h1 style={{fontSize: "32px", fontWeight: "900", marginBottom: "24px"}}>Welcome Back</h1>
+          <div style={{maxWidth: "900px"}}>
+            <header style={{marginBottom: "32px"}}>
+                <h1 style={{fontSize: "32px", fontWeight: "900"}}>Hello, {getUserName(user)}!</h1>
+                <p style={{color: "var(--muted)", marginTop: "4px"}}>You're doing great. Keep learning!</p>
+            </header>
+
             <div className="dashboard-grid" style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "40px"}}>
-              <div className="card">
-                  <p style={{fontSize: "12px", fontWeight: "bold", opacity: 0.7, textTransform: "uppercase"}}>Total XP</p>
-                  <h3 style={{fontSize: "32px", color: "#10b981"}}>{dataLoading ? "---" : userXP}</h3>
+              <div className="card" style={{borderLeft: "4px solid #10b981"}}>
+                  <p style={{fontSize: "11px", fontWeight: "bold", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px"}}>Energy Points</p>
+                  <h3 style={{fontSize: "32px", color: "#10b981", marginTop: "8px"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
               </div>
-              <div className="card">
-                  <p style={{fontSize: "12px", fontWeight: "bold", opacity: 0.7, textTransform: "uppercase"}}>Completed</p>
-                  <h3 style={{fontSize: "32px", color: "#3b82f6"}}>{completedLessons.length}</h3>
+              <div className="card" style={{borderLeft: "4px solid #3b82f6"}}>
+                  <p style={{fontSize: "11px", fontWeight: "bold", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px"}}>Mastered</p>
+                  <h3 style={{fontSize: "32px", color: "#3b82f6", marginTop: "8px"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
               </div>
             </div>
             
-            <h2 style={{marginBottom: "16px"}}>Unmastered Lessons</h2>
+            <h2 style={{fontSize: "20px", marginBottom: "16px", fontWeight: "800"}}>Continue Learning</h2>
             <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
-              {getUnmastered().length > 0 ? getUnmastered().map(ch => (
-                <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px"}}>
-                  <div style={{flex: 1, paddingRight: "10px"}}>
-                      <p style={{fontSize: "10px", color: "#10b981", fontWeight: "bold", textTransform: "uppercase"}}>{ch.bookTitle}</p>
-                      <h3 style={{fontSize: "16px", marginTop: "2px"}}>{ch.title}</h3>
+              {getUnmastered().slice(0, 5).map(ch => (
+                <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px"}}>
+                  <div>
+                      <p style={{fontSize: "10px", color: "#10b981", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
+                      <h3 style={{fontSize: "16px", marginTop: "4px", fontWeight: "700"}}>{ch.title}</h3>
                   </div>
-                  <button onClick={() => {setCurBook(ch.parentBook); setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 16px", background: "#10b981", color: "white", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px"}}>Start</button>
+                  <button onClick={() => {setCurBook(ch.parentBook); setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "10px 20px", background: "#10b981", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 4px 10px rgba(16, 185, 129, 0.2)"}}>Start</button>
                 </div>
-              )) : <div className="card" style={{textAlign: "center", padding: "32px", opacity: 0.7}}>You've mastered everything! 🚀</div>}
+              ))}
+              {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", padding: "40px", opacity: 0.6}}>You've mastered everything! 🚀</div>}
             </div>
           </div>
         )}
 
         {/* --- LEADERBOARD --- */}
         {view === "leaderboard" && (
-          <div style={{maxWidth: "700px", margin: "0 auto"}}>
-            <h1 style={{textAlign: "center", marginBottom: "32px"}}>Leaderboard</h1>
+          <div style={{maxWidth: "600px", margin: "0 auto"}}>
+            <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners</h1>
             {leaderboard.map((p, i) => (
-              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", borderColor: p.id === user.uid ? "#10b981" : "var(--border)", borderWidth: p.id === user.uid ? "2px" : "1px"}}>
-                <span style={{width: "40px", fontWeight: "900", fontSize: "18px", color: i < 3 ? "#fbbf24" : "inherit"}}>#{i+1}</span>
+              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", padding: "16px 20px", borderColor: p.id === user.uid ? "var(--accent)" : "var(--border)", background: p.id === user.uid ? "rgba(16, 185, 129, 0.05)" : "var(--card)"}}>
+                <span style={{width: "40px", fontWeight: "900", fontSize: "18px", color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "var(--muted)"}}>#{i+1}</span>
                 <div style={{flex: 1}}>
                     <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
-                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "#10b98120", color: "#10b981", padding: "2px 6px", borderRadius: "4px"}}>YOU</span>}
+                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "#10b981", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
                 </div>
                 <span className="xp-badge">{p.xp || 0} XP</span>
               </div>
@@ -409,19 +448,17 @@ export default function Home() {
         {/* --- LIBRARY --- */}
         {view === "library" && (
           <div>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center"}}>
-              <h1>Library</h1>
-              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}} style={{background: "#10b981", color: "white", padding: "8px 16px", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ Book</button>}
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px", alignItems: "center"}}>
+              <h1 style={{fontSize: "28px", fontWeight: "900"}}>Library</h1>
+              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}} style={{background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ New Book</button>}
             </div>
-            <div className="library-grid" style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "24px"}}>
+            <div className="library-grid" style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px"}}>
               {books.map(b => (
-                <div key={b.id} className="card" style={{textAlign: "center"}}>
-                  <div style={{cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
-                      <div style={{height: "140px", background: "var(--input-bg)", borderRadius: "16px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "48px", marginBottom: "16px"}}>📖</div>
-                      <h3 style={{fontWeight: "700", fontSize: "18px"}}>{b.title}</h3>
-                      <p style={{fontSize: "12px", opacity: 0.6, marginTop: "4px"}}>{b.chapters?.length || 0} Lessons</p>
-                  </div>
-                  {isOwner && <button className="del-btn" style={{width: "100%", marginTop: "12px", fontSize: "12px"}} onClick={() => deleteItem('book', b.id)}>Delete</button>}
+                <div key={b.id} className="card" style={{textAlign: "center", transition: "0.2s", cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
+                  <div style={{height: "120px", background: "var(--input-bg)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", marginBottom: "16px"}}>📖</div>
+                  <h3 style={{fontWeight: "800", fontSize: "18px", marginBottom: "4px"}}>{b.title}</h3>
+                  <p style={{fontSize: "12px", opacity: 0.5, fontWeight: "600"}}>{b.chapters?.length || 0} Lessons</p>
+                  {isOwner && <button className="del-btn" style={{marginTop: "16px", width: "100%", background: "rgba(239, 68, 68, 0.1)", border: "none", color: "#ef4444", padding: "8px", borderRadius: "10px", fontWeight: "bold", fontSize: "11px"}} onClick={(e) => {e.stopPropagation(); deleteItem('book', b.id)}}>Delete</button>}
                 </div>
               ))}
             </div>
@@ -430,21 +467,21 @@ export default function Home() {
 
         {/* --- CHAPTERS --- */}
         {view === "chapters" && curBook && (
-          <div style={{maxWidth: "900px"}}>
-            <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", marginBottom: "20px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px"}}>← Back to Library</button>
+          <div style={{maxWidth: "800px"}}>
+            <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "800", marginBottom: "24px", cursor: "pointer"}}>← Library</button>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px"}}>
-                <h1 style={{fontSize: "28px"}}>{curBook.title}</h1>
-                {isOwner && <button onClick={addLesson} style={{background: "#10b981", color: "white", padding: "8px 16px", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ Lesson</button>}
+                <h1 style={{fontSize: "28px", fontWeight: "900"}}>{curBook.title}</h1>
+                {isOwner && <button onClick={addLesson} style={{background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "700"}}>+ Add Lesson</button>}
             </div>
             {(curBook.chapters || []).map((ch: any) => (
-              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "20px"}}>
+              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px"}}>
                 <div style={{flex: 1}}>
-                    <span style={{fontSize: "18px", fontWeight: "600"}}>{ch.title}</span>
-                    {completedLessons.includes(ch.id) && <span style={{marginLeft: "10px", fontSize: "12px", color: "#10b981"}}>✓ Completed</span>}
+                    <span style={{fontSize: "17px", fontWeight: "700"}}>{ch.title}</span>
+                    {completedLessons.includes(ch.id) && <span style={{marginLeft: "12px", fontSize: "11px", color: "#10b981", fontWeight: "900", background: "rgba(16, 185, 129, 0.1)", padding: "2px 8px", borderRadius: "10px"}}>✓ MASTERED</span>}
                 </div>
-                <div style={{display: "flex", gap: "8px"}}>
-                  <button onClick={() => {setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 20px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer", fontSize: "14px"}}>Study</button>
-                  {isOwner && (<button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} style={{padding: "8px 12px", border: "1px solid #3b82f6", color: "#3b82f6", borderRadius: "10px", background: "none", cursor: "pointer"}}>✎</button>)}
+                <div style={{display: "flex", gap: "10px"}}>
+                  <button onClick={() => {setCurChapter(ch); setView("study"); setActiveTab("Summary");}} style={{padding: "8px 20px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>Study</button>
+                  {isOwner && (<button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} style={{padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "10px", background: "var(--input-bg)", cursor: "pointer"}}>✎</button>)}
                 </div>
               </div>
             ))}
@@ -453,31 +490,34 @@ export default function Home() {
 
         {/* --- STUDY --- */}
         {view === "study" && curChapter && (
-          <div>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center"}}>
-              <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "700", cursor: "pointer"}}>← Back</button>
+          <div style={{maxWidth: "1000px"}}>
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center"}}>
+              <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "800", cursor: "pointer"}}>← Lessons</button>
               {!completedLessons.includes(curChapter.id) ? (
-                <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fbbf24", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "900", cursor: "pointer", fontSize: "14px"}}>CLAIM 100 XP</button>
+                <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fbbf24", color: "#000", padding: "12px 24px", borderRadius: "14px", border: "none", fontWeight: "900", cursor: "pointer", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)"}}>CLAIM 100 XP</button>
               ) : (
                 <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                     <div className="xp-badge">MASTERED</div>
-                    <button className="unmaster-btn" onClick={() => unmasterLesson(curChapter.id)}>↺</button>
+                    <button onClick={() => unmasterLesson(curChapter.id)} style={{background: "none", border: "none", opacity: 0.5, cursor: "pointer"}}>↺</button>
                 </div>
               )}
             </div>
-            <h1 style={{fontSize: "24px", marginBottom: "20px"}}>{curChapter.title}</h1>
-            <div className="tab-container" style={{display: "flex", gap: "8px", flexWrap: "nowrap", marginBottom: "24px"}}>
+            
+            <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
+            
+            <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
                 {["Summary", "QnA", "Spellings", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => setActiveTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
-            <div className="card" style={{minHeight: "500px"}}>
-               {["Summary", "QnA", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "16px", lineHeight: "1.7"}}>{curChapter[activeTab.toLowerCase()] || "No content."}</div>}
-               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="300px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "16px"}} /> : "No video.")}
+
+            <div className="card" style={{minHeight: "500px", padding: "32px"}}>
+               {["Summary", "QnA", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
+               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)"}} /> : "No video available.")}
                {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => { 
                  let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", ""); 
                  let link = curChapter[k]; 
-                 return link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="500px" style={{border: "none", borderRadius: "16px"}} /> : "Not linked."; 
+                 return link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{border: "none", borderRadius: "20px"}} /> : <div style={{textAlign: "center", padding: "100px", opacity: 0.5}}>This resource hasn't been linked yet.</div>; 
                })()}
             </div>
           </div>
@@ -486,17 +526,17 @@ export default function Home() {
         {/* --- EDIT --- */}
         {view === "edit" && tempChapter && (
           <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px"}}>
-                <h2>Edit</h2>
-                <button onClick={() => { saveAllChanges(); setView("chapters"); }} style={{background: "#10b981", color: "white", padding: "10px 24px", borderRadius: "12px", border: "none", fontWeight: "700", cursor: "pointer"}}>SAVE</button>
+            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
+                <h2 style={{fontWeight: "900"}}>Editor</h2>
+                <button onClick={() => { saveAllChanges(); setView("chapters"); }} style={{background: "#10b981", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer"}}>SAVE CHANGES</button>
             </div>
-            <div style={{display: "flex", flexDirection: "column", gap: "20px"}}>
-                <div><label style={{color: "#10b981", fontWeight: "bold", fontSize: "14px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
-                <div><label style={{color: "#10b981", fontWeight: "bold", fontSize: "14px"}}>Q&A</label><textarea value={tempChapter.qna || ""} onChange={(e) => setTempChapter({...tempChapter, qna: e.target.value})} /></div>
-                <div><label style={{color: "#10b981", fontWeight: "bold", fontSize: "14px"}}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
-                <div style={{display: "grid", gridTemplateColumns: "1fr", gap: "16px"}}>
+            <div style={{display: "flex", flexDirection: "column", gap: "24px"}}>
+                <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
+                <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Q&A</label><textarea value={tempChapter.qna || ""} onChange={(e) => setTempChapter({...tempChapter, qna: e.target.value})} /></div>
+                <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
                     {["video", "slides", "bookPdf", "infographic", "mindMap"].map(f => (
-                        <div key={f}><p style={{fontSize: "12px", color: "#10b981", fontWeight: "bold"}}>{f.toUpperCase()}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} /></div>
+                        <div key={f}><p style={{fontSize: "11px", color: "#10b981", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
                     ))}
                 </div>
             </div>
