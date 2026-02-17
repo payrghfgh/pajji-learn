@@ -289,10 +289,6 @@ export default function Home() {
         .xp-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
         .mobile-header { display: none; }
         
-        /* Utility to hide scrollbar for horizontal nav */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         @media (max-width: 768px) {
           .app-container { flex-direction: column; }
           .sidebar {
@@ -305,19 +301,19 @@ export default function Home() {
             height: 70px;
             padding: 0 10px;
             flex-direction: row;
-            justify-content: flex-start; /* Changed for horizontal scroll */
+            justify-content: space-around; /* PLACES ICONS SIDE BY SIDE EVENLY */
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50px;
             background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(25px);
             z-index: 1000;
-            overflow-x: auto; /* Enable scroll */
           }
           
           .sidebar-extras, .sidebar h1 { display: none; }
           
           .nav-btn { 
+            width: auto;
             margin-bottom: 0;
             flex-direction: column; 
             gap: 2px; 
@@ -325,9 +321,8 @@ export default function Home() {
             justify-content: center; 
             align-items: center;
             text-align: center; 
-            padding: 0 20px; /* Space out items for scrolling */
-            min-width: 90px; /* Ensure they don't squash */
-            flex-shrink: 0;
+            padding: 0; 
+            flex: 1; /* ENSURES THEY SHARE WIDTH EQUALLY */
             background: transparent !important;
             box-shadow: none !important;
             color: rgba(255, 255, 255, 0.5);
@@ -344,7 +339,7 @@ export default function Home() {
         }
       `}</style>
 
-      <div className="sidebar no-scrollbar">
+      <div className="sidebar">
         <div className="sidebar-extras">
             <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
             <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "18px", borderRadius: "20px", color: "white", marginBottom: "24px", boxShadow: "0 10px 20px -5px rgba(16, 185, 129, 0.4)"}}>
@@ -361,8 +356,6 @@ export default function Home() {
           <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home</span></button>
           <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library</span></button>
           <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings</span></button>
-          {/* Added placeholder to show off the scrolling */}
-          <button className="nav-btn" onClick={() => signOut(auth)}><div style={{fontSize: '20px'}}>🚪</div><span>Logout</span></button>
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}}>
