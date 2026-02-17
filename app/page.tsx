@@ -163,7 +163,8 @@ export default function Home() {
 
   const handleGuestLogin = async () => {
     setLoading(true);
-    try { await signInAnonymously(auth); } catch (err: any) { alert(err.message); setLoading(false); }
+    try { await signInAnonymously(auth);
+    } catch (err: any) { alert(err.message); setLoading(false); }
   };
 
   const saveAllChanges = async () => {
@@ -184,7 +185,8 @@ export default function Home() {
   const deleteItem = async (type: 'book' | 'lesson', id: string) => {
     if (!isOwner || !confirm(`Delete ${type}?`)) return;
     try {
-        let newList = type === 'book' ? books.filter(b => b.id !== id) : books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.filter((c: any) => c.id !== id) } : b);
+        let newList = type === 'book' ?
+        books.filter(b => b.id !== id) : books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.filter((c: any) => c.id !== id) } : b);
         if(type === 'book') setView("library");
         await setDoc(doc(db, "data", "pajji_database"), { books: newList });
         setSaveStatus("Deleted");
@@ -194,7 +196,8 @@ export default function Home() {
   const formatYoutubeLink = (url: string) => {
     if (!url) return "";
     try {
-        let vid = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.includes("youtu.be/") ? url.split("youtu.be/")[1].split("?")[0] : url.includes("shorts/") ? url.split("shorts/")[1].split("?")[0] : "";
+        let vid = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.includes("youtu.be/") ?
+        url.split("youtu.be/")[1].split("?")[0] : url.includes("shorts/") ? url.split("shorts/")[1].split("?")[0] : "";
         return vid ? `https://www.youtube.com/embed/${vid}` : url;
     } catch (e) { return url; }
   };
@@ -269,15 +272,7 @@ export default function Home() {
         .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
         .sidebar { width: 280px; background: var(--side); backdrop-filter: blur(16px); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
         .main-content { flex: 1; padding: 48px; overflow-y: auto; }
-        .card { 
-          background: var(--card); 
-          backdrop-filter: blur(8px);
-          border: 1px solid var(--border); 
-          padding: 24px; 
-          border-radius: 24px; 
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-          position: relative; 
-        }
+        .card { background: var(--card); backdrop-filter: blur(8px); border: 1px solid var(--border); padding: 24px; border-radius: 24px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); position: relative; }
         
         .nav-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 6px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 15px; transition: 0.2s; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
@@ -294,41 +289,45 @@ export default function Home() {
         .xp-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
         .mobile-header { display: none; }
         
+        /* Utility to hide scrollbar for horizontal nav */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         @media (max-width: 768px) {
           .app-container { flex-direction: column; }
           .sidebar {
             position: fixed;
-            bottom: 24px; /* Floating from bottom */
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            width: 85%;
-            max-width: 400px;
-            height: 60px; /* Slim height */
-            padding: 0 20px;
+            width: 90%;
+            max-width: 450px;
+            height: 70px;
+            padding: 0 10px;
             flex-direction: row;
-            justify-content: space-between;
+            justify-content: flex-start; /* Changed for horizontal scroll */
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50px; /* Pill shape */
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(20px);
+            border-radius: 50px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(25px);
             z-index: 1000;
+            overflow-x: auto; /* Enable scroll */
           }
           
           .sidebar-extras, .sidebar h1 { display: none; }
           
           .nav-btn { 
-            margin-bottom: 0; 
+            margin-bottom: 0;
             flex-direction: column; 
-            gap: 0; 
-            font-size: 9px; 
+            gap: 2px; 
+            font-size: 10px; 
             justify-content: center; 
             align-items: center;
             text-align: center; 
-            padding: 0;
-            width: auto;
-            flex: 1;
+            padding: 0 20px; /* Space out items for scrolling */
+            min-width: 90px; /* Ensure they don't squash */
+            flex-shrink: 0;
             background: transparent !important;
             box-shadow: none !important;
             color: rgba(255, 255, 255, 0.5);
@@ -338,28 +337,16 @@ export default function Home() {
           .nav-btn.active svg { opacity: 1; stroke-width: 2.5px; }
           
           .main-content { padding: 20px; padding-bottom: 120px; }
-          .mobile-header { 
-             display: flex; 
-             justify-content: space-between; 
-             align-items: center; 
-             margin-bottom: 24px; 
-             padding: 12px 16px;
-             background: var(--card);
-             border-radius: 20px;
-             border: 1px solid var(--border);
-          }
-          
+          .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); }
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
           .library-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
           .tab-container { overflow-x: auto; padding-bottom: 10px; gap: 8px; }
         }
       `}</style>
 
-      {/* --- SIDEBAR (Floating Glass Pill on Mobile) --- */}
-      <div className="sidebar">
+      <div className="sidebar no-scrollbar">
         <div className="sidebar-extras">
             <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
-            
             <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "18px", borderRadius: "20px", color: "white", marginBottom: "24px", boxShadow: "0 10px 20px -5px rgba(16, 185, 129, 0.4)"}}>
               <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.8, marginBottom: "4px"}}>LEVEL {userLevel}</p>
               <h3 style={{fontSize: "15px", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>{getUserName(user)}</h3>
@@ -370,10 +357,12 @@ export default function Home() {
             </div>
         </div>
 
-        <nav style={{flex: 1, display: "flex", flexDirection: "column", gap: "4px", width: "100%"}}>
+        <nav style={{flex: 1, display: "flex", flexDirection: "inherit", gap: "4px"}}>
           <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home</span></button>
           <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library</span></button>
           <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings</span></button>
+          {/* Added placeholder to show off the scrolling */}
+          <button className="nav-btn" onClick={() => signOut(auth)}><div style={{fontSize: '20px'}}>🚪</div><span>Logout</span></button>
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}}>
@@ -393,14 +382,12 @@ export default function Home() {
             </div>
         </div>
 
-        {/* --- DASHBOARD --- */}
         {view === "dashboard" && (
           <div style={{maxWidth: "900px"}}>
             <header style={{marginBottom: "32px"}}>
                 <h1 style={{fontSize: "32px", fontWeight: "900"}}>Hello, {getUserName(user)}!</h1>
                 <p style={{color: "var(--muted)", marginTop: "4px"}}>You're doing great. Keep learning!</p>
             </header>
-
             <div className="dashboard-grid" style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "40px"}}>
               <div className="card" style={{borderLeft: "4px solid #10b981"}}>
                   <p style={{fontSize: "11px", fontWeight: "bold", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px"}}>Energy Points</p>
@@ -411,7 +398,6 @@ export default function Home() {
                   <h3 style={{fontSize: "32px", color: "#3b82f6", marginTop: "8px"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
               </div>
             </div>
-            
             <h2 style={{fontSize: "20px", marginBottom: "16px", fontWeight: "800"}}>Continue Learning</h2>
             <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
               {getUnmastered().slice(0, 5).map(ch => (
@@ -428,7 +414,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- LEADERBOARD --- */}
         {view === "leaderboard" && (
           <div style={{maxWidth: "600px", margin: "0 auto"}}>
             <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners</h1>
@@ -445,7 +430,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- LIBRARY --- */}
         {view === "library" && (
           <div>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px", alignItems: "center"}}>
@@ -465,7 +449,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- CHAPTERS --- */}
         {view === "chapters" && curBook && (
           <div style={{maxWidth: "800px"}}>
             <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "800", marginBottom: "24px", cursor: "pointer"}}>← Library</button>
@@ -488,7 +471,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- STUDY --- */}
         {view === "study" && curChapter && (
           <div style={{maxWidth: "1000px"}}>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center"}}>
@@ -502,15 +484,12 @@ export default function Home() {
                 </div>
               )}
             </div>
-            
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
-            
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
                 {["Summary", "QnA", "Spellings", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => setActiveTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
-
             <div className="card" style={{minHeight: "500px", padding: "32px"}}>
                {["Summary", "QnA", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
                {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)"}} /> : "No video available.")}
@@ -523,7 +502,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* --- EDIT --- */}
         {view === "edit" && tempChapter && (
           <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
