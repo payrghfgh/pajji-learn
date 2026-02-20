@@ -63,6 +63,11 @@ export default function Home() {
   const [quizImageErrors, setQuizImageErrors] = useState<Record<number, boolean>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizReview, setQuizReview] = useState<Record<number, { isCorrect: boolean; submitted: string; expected: string }>>({});
+  const [aiParsingQuiz, setAiParsingQuiz] = useState(false);
+  const [quizShuffleEnabled, setQuizShuffleEnabled] = useState(true);
+  const [quizActiveIndices, setQuizActiveIndices] = useState<number[] | null>(null);
+  const [quizQuestionOrder, setQuizQuestionOrder] = useState<number[]>([]);
+  const [quizOptionOrder, setQuizOptionOrder] = useState<Record<number, number[]>>({});
 
   const curBookIdRef = useRef<string | null>(null);
 
@@ -458,6 +463,9 @@ export default function Home() {
     setQuizImageErrors({});
     setQuizSubmitted(false);
     setQuizReview({});
+    setQuizActiveIndices(null);
+    setQuizQuestionOrder([]);
+    setQuizOptionOrder({});
     if (!user) return;
     const latestLesson = { bookId: book.id, chapterId: chapter.id };
     setLastLesson(latestLesson);
@@ -480,7 +488,8 @@ export default function Home() {
           correctIndex: typeof q?.correctIndex === "number" ? q.correctIndex : 0,
           answer: q?.answer || "",
           caseText: q?.caseText || "",
-          imageUrl: q?.imageUrl || ""
+          imageUrl: q?.imageUrl || "",
+          explanation: q?.explanation || ""
         };
       })
       .filter((q: any) => {
@@ -490,10 +499,48 @@ export default function Home() {
       });
   };
 
+  const shuffleArray = (arr: number[]) => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  };
+
+  const startQuizAttempt = (chapter: any, targetIndices?: number[]) => {
+    const quiz = normalizeQuiz(chapter);
+    const allIndices = quiz.map((_: any, idx: number) => idx);
+    const chosen = targetIndices && targetIndices.length > 0 ? targetIndices : allIndices;
+    const orderedQuestions = quizShuffleEnabled ? shuffleArray(chosen) : [...chosen];
+    const nextOptionOrder: Record<number, number[]> = {};
+
+    chosen.forEach((qIdx: number) => {
+      const q = quiz[qIdx];
+      if (q?.type !== "mcq") return;
+      const validOptionIndices = (q.options || [])
+        .map((opt: string, oIdx: number) => ({ opt, oIdx }))
+        .filter((item: any) => item.opt?.trim())
+        .map((item: any) => item.oIdx);
+      nextOptionOrder[qIdx] = quizShuffleEnabled ? shuffleArray(validOptionIndices) : validOptionIndices;
+    });
+
+    setQuizAnswers({});
+    setQuizResult("");
+    setQuizSubmitted(false);
+    setQuizReview({});
+    setQuizImageErrors({});
+    setQuizActiveIndices(chosen);
+    setQuizQuestionOrder(orderedQuestions);
+    setQuizOptionOrder(nextOptionOrder);
+  };
+
   const submitQuiz = () => {
     const quiz = normalizeQuiz(curChapter);
     if (quiz.length === 0) return;
-    const answeredAll = quiz.every((q: any, idx: number) => {
+    const indices = quizActiveIndices && quizActiveIndices.length > 0 ? quizActiveIndices : quiz.map((_: any, idx: number) => idx);
+    const answeredAll = indices.every((idx: number) => {
+      const q = quiz[idx];
       if (q.type === "mcq") return typeof quizAnswers[idx] === "number";
       return `${quizAnswers[idx] ?? ""}`.trim().length > 0;
     });
@@ -505,7 +552,8 @@ export default function Home() {
     }
     let score = 0;
     const review: Record<number, { isCorrect: boolean; submitted: string; expected: string }> = {};
-    quiz.forEach((q: any, idx: number) => {
+    indices.forEach((idx: number) => {
+      const q = quiz[idx];
       if (q.type === "mcq") {
         const submittedIndex = typeof quizAnswers[idx] === "number" ? Number(quizAnswers[idx]) : -1;
         const isCorrect = submittedIndex === q.correctIndex;
@@ -529,17 +577,17 @@ export default function Home() {
     });
     setQuizSubmitted(true);
     setQuizReview(review);
-    setQuizResult(`Score: ${score}/${quiz.length}`);
+    setQuizResult(`Score: ${score}/${indices.length}`);
   };
 
   const addQuizQuestion = () => {
     if (!tempChapter) return;
     const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
-    const newQuestion = { type: "mcq", question: "", options: ["", "", "", ""], correctIndex: 0, answer: "", caseText: "", imageUrl: "" };
+    const newQuestion = { type: "mcq", question: "", options: ["", "", "", ""], correctIndex: 0, answer: "", caseText: "", imageUrl: "", explanation: "" };
     setTempChapter({ ...tempChapter, quiz: [...existing, newQuestion] });
   };
 
-  const updateQuizQuestion = (index: number, key: "type" | "question" | "correctIndex" | "answer" | "caseText" | "imageUrl", value: string | number) => {
+  const updateQuizQuestion = (index: number, key: "type" | "question" | "correctIndex" | "answer" | "caseText" | "imageUrl" | "explanation", value: string | number) => {
     if (!tempChapter) return;
     const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
     const nextQuiz = existing.map((q: any, i: number) => i === index ? { ...q, [key]: value } : q);
@@ -566,21 +614,69 @@ export default function Home() {
 
   const bulkAddQuizQuestions = () => {
     if (!tempChapter || !quizBuilderText.trim()) return;
-    const blocks = quizBuilderText.split("\n---\n").map(b => b.trim()).filter(Boolean);
+    const raw = quizBuilderText.replace(/\r/g, "");
+    const lines = raw.split("\n");
+    const isQuestionStartLine = (line: string) =>
+      /^(\d+\s*[\).\:-]|q\s*\d+\s*[:\).\-]|question\s*\d+\s*[:\).\-])/i.test(line.trim());
+    const isOptionLine = (line: string) =>
+      /^([A-Da-d])\s*[\)\].:\-]\s+/.test(line.trim());
+    const isAnswerLine = (line: string) =>
+      /^(answer|correct answer|ans)\s*[:\-]/i.test(line.trim());
+    const cleanText = (line: string) =>
+      line
+        .replace(/^[-*]\s+/, "")
+        .replace(/^\d+\s*[\).\:-]\s*/, "")
+        .replace(/^q\s*\d+\s*[:\).\-]\s*/i, "")
+        .replace(/^question\s*\d+\s*[:\).\-]\s*/i, "")
+        .replace(/\*\*/g, "")
+        .trim();
+
+    const blocks: string[] = [];
+    let currentBlock: string[] = [];
+
+    lines.forEach((lineRaw) => {
+      const line = lineRaw.trim();
+      if (!line) return;
+      if (line === "---") {
+        if (currentBlock.length > 0) {
+          blocks.push(currentBlock.join("\n"));
+          currentBlock = [];
+        }
+        return;
+      }
+      if (isQuestionStartLine(line) && currentBlock.length > 0) {
+        blocks.push(currentBlock.join("\n"));
+        currentBlock = [line];
+        return;
+      }
+      currentBlock.push(line);
+    });
+    if (currentBlock.length > 0) blocks.push(currentBlock.join("\n"));
+
     const parsedQuestions: any[] = [];
 
     blocks.forEach(block => {
-      const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
-      if (lines.length < 4) return;
-      const question = lines[0];
-      const optionLines = lines.filter(l => /^[A-Da-d][\).\:\-]/.test(l));
-      const answerLine = lines.find(l => /^Answer\s*:/i.test(l));
+      const blockLines = block.split("\n").map(l => l.trim()).filter(Boolean);
+      if (blockLines.length < 2) return;
+      const questionLine = blockLines.find((line) => !isOptionLine(line) && !isAnswerLine(line));
+      const question = questionLine ? cleanText(questionLine) : "";
+      if (!question) return;
+
+      const optionLines = blockLines.filter(isOptionLine);
+      const answerLine = blockLines.find(isAnswerLine);
       if (optionLines.length < 2 || !answerLine) return;
 
-      const options = optionLines.slice(0, 4).map(l => l.replace(/^[A-Da-d][\).\:\-]\s*/, "").trim());
-      const answerToken = answerLine.split(":")[1]?.trim()?.charAt(0)?.toUpperCase() || "A";
-      const correctIndex = Math.max(0, ["A", "B", "C", "D"].indexOf(answerToken));
-      parsedQuestions.push({ question, options, correctIndex });
+      const options = optionLines.slice(0, 4).map(l => cleanText(l.replace(/^([A-Da-d])\s*[\)\].:\-]\s*/, "")));
+      const answerValue = answerLine.split(/[:\-]/).slice(1).join(":").trim();
+      const firstToken = answerValue.charAt(0).toUpperCase();
+      let correctIndex = ["A", "B", "C", "D"].indexOf(firstToken);
+      if (correctIndex < 0) {
+        const answerLower = cleanText(answerValue).toLowerCase();
+        correctIndex = options.findIndex((opt: string) => opt.toLowerCase() === answerLower || opt.toLowerCase().includes(answerLower));
+      }
+      if (correctIndex < 0 || correctIndex > 3) return;
+
+      parsedQuestions.push({ type: "mcq", question, options, correctIndex, answer: "", caseText: "", imageUrl: "", explanation: "" });
     });
 
     if (parsedQuestions.length === 0) {
@@ -594,6 +690,284 @@ export default function Home() {
     setQuizBuilderText("");
     setSaveStatus(`Added ${parsedQuestions.length} quiz questions`);
     setTimeout(() => setSaveStatus(""), 2500);
+  };
+
+  const parseNotebookLMMixedQuestions = (rawText: string) => {
+    const text = rawText.replace(/\r/g, "");
+    const lines = text.split("\n");
+    const parsedQuestions: any[] = [];
+
+    const isSectionHeader = (line: string) => /^[IVX]+\.\s+/i.test(line.trim());
+    const isMCQHeader = (line: string) => /(multiple[- ]choice|mcq)/i.test(line);
+    const isOneWordHeader = (line: string) => /(one[- ]word)/i.test(line);
+    const isCaseHeader = (line: string) => /(case study)/i.test(line);
+    const isAnswerLine = (line: string) => /^(answer|correct answer|ans)\s*[:\-]/i.test(line.trim());
+    const isQuestionLine = (line: string) => /^question\s*[a-z0-9]+\s*[:\-]/i.test(line.trim());
+    const isLikelyNewQuestionPrompt = (line: string) => /^(\d+\s*[\).\:-]|q\s*\d+\s*[:\).\-]|question\s*\d+\s*[:\).\-])/i.test(line.trim());
+    const isMCQOptionLine = (line: string) => /^\(?([A-Da-d])\)?\s*[\)\].:\-]?\s+/.test(line.trim());
+    const cleanText = (line: string) =>
+      line
+        .replace(/^[-*]\s+/, "")
+        .replace(/^\d+\s*[\).\:-]\s*/, "")
+        .replace(/^question\s*[a-z0-9]+\s*[:\-]\s*/i, "")
+        .replace(/\*\*/g, "")
+        .trim();
+
+    const parseAnswerValue = (answerRaw: string) => answerRaw.split(/[:\-]/).slice(1).join(":").trim();
+
+    let mode: "mcq" | "oneWord" | "caseStudy" | "unknown" = "unknown";
+    let currentCaseText = "";
+    let i = 0;
+
+    while (i < lines.length) {
+      const raw = lines[i] || "";
+      const line = raw.trim();
+      if (!line) {
+        i += 1;
+        continue;
+      }
+
+      if (isSectionHeader(line)) {
+        if (isMCQHeader(line)) mode = "mcq";
+        else if (isOneWordHeader(line)) mode = "oneWord";
+        else if (isCaseHeader(line)) mode = "caseStudy";
+        i += 1;
+        continue;
+      }
+
+      if (/^case study\s*\d*\s*[:\-]/i.test(line)) {
+        mode = "caseStudy";
+        currentCaseText = cleanText(line.replace(/^case study\s*\d*\s*[:\-]/i, "")).replace(/^["']|["']$/g, "");
+        i += 1;
+        continue;
+      }
+
+      if (mode === "mcq") {
+        if (isMCQOptionLine(line) || isAnswerLine(line)) {
+          i += 1;
+          continue;
+        }
+
+        const question = cleanText(line);
+        const options: string[] = [];
+        let answerRaw = "";
+        i += 1;
+
+        while (i < lines.length) {
+          const next = (lines[i] || "").trim();
+          if (!next) {
+            i += 1;
+            // NotebookLM often inserts blank lines between question and options.
+            // Keep scanning if we have not started collecting options yet.
+            if (options.length === 0) continue;
+            // If options already started, allow one+ blanks and keep scanning until
+            // we hit the next question/section/answer.
+            continue;
+          }
+          if (isSectionHeader(next) || /^case study\s*\d*\s*[:\-]/i.test(next)) break;
+          if (isLikelyNewQuestionPrompt(next) && options.length > 0) break;
+          if (isAnswerLine(next)) {
+            answerRaw = parseAnswerValue(next);
+            i += 1;
+            break;
+          }
+          if (isMCQOptionLine(next)) {
+            options.push(next.replace(/^\(?([A-Da-d])\)?\s*[\)\].:\-]?\s+/, "").trim());
+            i += 1;
+            continue;
+          }
+          if (options.length > 0) break;
+          i += 1;
+        }
+
+        if (question && options.length >= 2) {
+          let correctIndex = 0;
+          if (answerRaw) {
+            const letter = answerRaw.charAt(0).toUpperCase();
+            const byLetter = ["A", "B", "C", "D"].indexOf(letter);
+            if (byLetter >= 0) correctIndex = byLetter;
+            else {
+              const byText = options.findIndex((opt) => opt.toLowerCase() === answerRaw.toLowerCase());
+              if (byText >= 0) correctIndex = byText;
+            }
+          }
+          const safeOptions = [...options, "", "", "", ""].slice(0, 4);
+          parsedQuestions.push({
+            type: "mcq",
+            question,
+            options: safeOptions,
+            correctIndex,
+            answer: "",
+            caseText: "",
+            imageUrl: "",
+            explanation: "",
+          });
+        }
+        continue;
+      }
+
+      if (mode === "oneWord") {
+        if (isAnswerLine(line)) {
+          i += 1;
+          continue;
+        }
+        const question = cleanText(line);
+        let answer = "";
+        i += 1;
+        while (i < lines.length) {
+          const next = (lines[i] || "").trim();
+          if (!next) {
+            i += 1;
+            if (answer) break;
+            continue;
+          }
+          if (isSectionHeader(next) || /^case study\s*\d*\s*[:\-]/i.test(next)) break;
+          if (isAnswerLine(next)) {
+            answer = parseAnswerValue(next);
+            i += 1;
+            break;
+          }
+          if (!answer && /^answer\s+/i.test(next)) {
+            answer = next.replace(/^answer\s+/i, "").trim();
+            i += 1;
+            break;
+          }
+          break;
+        }
+        if (question && answer) {
+          parsedQuestions.push({
+            type: "oneWord",
+            question,
+            options: ["", "", "", ""],
+            correctIndex: 0,
+            answer,
+            caseText: "",
+            imageUrl: "",
+            explanation: "",
+          });
+        }
+        continue;
+      }
+
+      if (mode === "caseStudy") {
+        if (!isQuestionLine(line)) {
+          currentCaseText = `${currentCaseText}${currentCaseText ? "\n" : ""}${cleanText(line).replace(/^["']|["']$/g, "")}`;
+          i += 1;
+          continue;
+        }
+
+        const question = cleanText(line);
+        let answer = "";
+        i += 1;
+
+        while (i < lines.length) {
+          const next = (lines[i] || "").trim();
+          if (!next) {
+            i += 1;
+            if (answer) break;
+            continue;
+          }
+          if (isQuestionLine(next) || /^case study\s*\d*\s*[:\-]/i.test(next) || isSectionHeader(next)) break;
+          if (isAnswerLine(next)) {
+            answer = parseAnswerValue(next);
+            i += 1;
+            while (i < lines.length) {
+              const cont = (lines[i] || "").trim();
+              if (!cont) {
+                i += 1;
+                break;
+              }
+              if (isQuestionLine(cont) || /^case study\s*\d*\s*[:\-]/i.test(cont) || isSectionHeader(cont)) break;
+              if (isAnswerLine(cont)) break;
+              answer = `${answer} ${cleanText(cont)}`.trim();
+              i += 1;
+            }
+            break;
+          }
+          i += 1;
+        }
+
+        if (question && answer) {
+          parsedQuestions.push({
+            type: "caseStudy",
+            question,
+            options: ["", "", "", ""],
+            correctIndex: 0,
+            answer,
+            caseText: currentCaseText,
+            imageUrl: "",
+            explanation: "",
+          });
+        }
+        continue;
+      }
+
+      i += 1;
+    }
+
+    return parsedQuestions;
+  };
+
+  const aiParseQuizQuestions = async () => {
+    if (!tempChapter || !quizBuilderText.trim() || aiParsingQuiz) return;
+    setAiParsingQuiz(true);
+    setSaveStatus("AI parsing questions...");
+    try {
+      const res = await fetch("/api/parse-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: quizBuilderText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "AI parse failed");
+
+      const incoming = Array.isArray(data?.questions) ? data.questions : [];
+      const parsedQuestions = incoming
+        .map((q: any) => {
+          const type = ["mcq", "oneWord", "caseStudy", "pictureStudy"].includes(q?.type) ? q.type : "mcq";
+          const options = Array.isArray(q?.options) ? q.options.map((o: any) => `${o ?? ""}`.trim()).slice(0, 4) : ["", "", "", ""];
+          const safeOptions = [...options, "", "", "", ""].slice(0, 4);
+          const correctIndex = Number.isInteger(q?.correctIndex) ? Math.max(0, Math.min(3, Number(q.correctIndex))) : 0;
+          const item = {
+            type,
+            question: `${q?.question ?? ""}`.trim(),
+            options: safeOptions,
+            correctIndex,
+            answer: `${q?.answer ?? ""}`.trim(),
+            caseText: `${q?.caseText ?? ""}`.trim(),
+            imageUrl: `${q?.imageUrl ?? ""}`.trim(),
+            explanation: `${q?.explanation ?? ""}`.trim(),
+          };
+          return item;
+        })
+        .filter((q: any) => {
+          if (!q.question) return false;
+          if (q.type === "mcq") return q.options.filter((o: string) => o).length >= 2;
+          return !!q.answer;
+        });
+
+      if (parsedQuestions.length === 0) {
+        throw new Error("AI returned no valid questions");
+      }
+
+      const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
+      setTempChapter({ ...tempChapter, quiz: [...existing, ...parsedQuestions] });
+      setSaveStatus(`AI added ${parsedQuestions.length} questions`);
+      setTimeout(() => setSaveStatus(""), 3000);
+    } catch (e: any) {
+      const fallbackQuestions = parseNotebookLMMixedQuestions(quizBuilderText);
+      if (fallbackQuestions.length > 0) {
+        const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
+        setTempChapter({ ...tempChapter, quiz: [...existing, ...fallbackQuestions] });
+        setSaveStatus(`AI unavailable. Added ${fallbackQuestions.length} via local parser.`);
+        setTimeout(() => setSaveStatus(""), 3500);
+      } else {
+        setSaveStatus(e?.message || "AI parse failed");
+        setTimeout(() => setSaveStatus(""), 3000);
+      }
+    } finally {
+      setAiParsingQuiz(false);
+    }
   };
 
   const resumeLesson = (() => {
@@ -1007,16 +1381,37 @@ export default function Home() {
                  if (quiz.length === 0) {
                    return <div style={{textAlign: "center", opacity: 0.7, padding: "80px 20px"}}>No quiz questions added yet.</div>;
                  }
+                 const questionIndicesSource = quizActiveIndices && quizActiveIndices.length > 0
+                   ? quizActiveIndices
+                   : quiz.map((_: any, idx: number) => idx);
+                 const sourceSet = new Set(questionIndicesSource);
+                 const orderedFromState = quizQuestionOrder.filter((idx: number) => sourceSet.has(idx));
+                 const missingIndices = questionIndicesSource.filter((idx: number) => !orderedFromState.includes(idx));
+                 const orderedQuestionIndices = [...orderedFromState, ...missingIndices];
+                 const wrongIndices = orderedQuestionIndices.filter((idx: number) => quizReview[idx] && !quizReview[idx].isCorrect);
                  return (
                   <div style={{display: "flex", flexDirection: "column", gap: "16px"}}>
-                    {quiz.map((q: any, qIndex: number) => (
+                    <div style={{display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap"}}>
+                      <button onClick={() => startQuizAttempt(curChapter)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+                        Start / Restart
+                      </button>
+                      <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
+                        Retry Wrong Only
+                      </button>
+                      <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "rgba(16,185,129,0.12)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+                        Shuffle: {quizShuffleEnabled ? "On" : "Off"}
+                      </button>
+                    </div>
+                    {orderedQuestionIndices.map((qIndex: number, visualIndex: number) => {
+                      const q = quiz[qIndex];
+                      return (
                       <div key={`${q.question}-${qIndex}`} style={{padding: "16px", borderRadius: "16px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
                         {(() => {
                           const review = quizReview[qIndex];
                           return (
                             <>
                         <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px"}}>
-                          <p style={{fontWeight: "800"}}>{qIndex + 1}. {q.question}</p>
+                          <p style={{fontWeight: "800"}}>{visualIndex + 1}. {q.question}</p>
                           <span style={{fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.35)"}}>
                             {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
                           </span>
@@ -1066,16 +1461,20 @@ export default function Home() {
 
                         {q.type === "mcq" ? (
                           <div style={{display: "grid", gap: "8px"}}>
-                            {(q.options || []).map((op: string, opIndex: number) => {
-                              const selected = quizAnswers[qIndex] === opIndex;
-                              const isCorrectOption = opIndex === q.correctIndex;
+                            {((quizOptionOrder[qIndex] && quizOptionOrder[qIndex].length > 0)
+                              ? quizOptionOrder[qIndex]
+                              : (q.options || []).map((_: string, opIndex: number) => opIndex).filter((opIndex: number) => `${(q.options || [])[opIndex] || ""}`.trim())
+                            ).map((originalIndex: number) => {
+                              const op = (q.options || [])[originalIndex] || "";
+                              const selected = quizAnswers[qIndex] === originalIndex;
+                              const isCorrectOption = originalIndex === q.correctIndex;
                               const showCorrectOption = quizSubmitted && isCorrectOption;
                               const showWrongSelected = quizSubmitted && selected && !isCorrectOption;
                               return (
                                 <button
-                                  key={`${qIndex}-${opIndex}`}
+                                  key={`${qIndex}-${originalIndex}`}
                                   onClick={() => {
-                                    setQuizAnswers(prev => ({ ...prev, [qIndex]: opIndex }));
+                                    setQuizAnswers(prev => ({ ...prev, [qIndex]: originalIndex }));
                                     setQuizSubmitted(false);
                                     setQuizReview({});
                                     setQuizResult("");
@@ -1091,7 +1490,7 @@ export default function Home() {
                                     fontWeight: selected ? "700" : "500"
                                   }}
                                 >
-                                  {String.fromCharCode(65 + opIndex)}. {op}
+                                  {String.fromCharCode(65 + originalIndex)}. {op}
                                 </button>
                               );
                             })}
@@ -1121,11 +1520,16 @@ export default function Home() {
                             )}
                           </div>
                         )}
+                        {quizSubmitted && q.explanation && (
+                          <div style={{marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(59,130,246,0.08)", fontSize: "13px"}}>
+                            <span style={{fontWeight: "800", color: "#3b82f6"}}>Explanation:</span> {q.explanation}
+                          </div>
+                        )}
                             </>
                           );
                         })()}
                       </div>
-                    ))}
+                    )})}
                     <div style={{display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap"}}>
                       <button onClick={submitQuiz} style={{padding: "10px 18px", borderRadius: "12px", border: "none", background: "#10b981", color: "white", fontWeight: "800", cursor: "pointer"}}>Submit Quiz</button>
                       {quizResult && <span style={{fontWeight: "800", color: quizResult.startsWith("Score") ? "#10b981" : "#f59e0b"}}>{quizResult}</span>}
@@ -1203,18 +1607,29 @@ export default function Home() {
                               <input type="text" placeholder="Correct answer (exact text)" value={q.answer || ""} onChange={(e) => updateQuizQuestion(qIndex, "answer", e.target.value)} style={{padding: "10px"}} />
                             </>
                           )}
+                          <textarea
+                            placeholder="Explanation shown after submit (optional)"
+                            value={q.explanation || ""}
+                            onChange={(e) => updateQuizQuestion(qIndex, "explanation", e.target.value)}
+                            style={{minHeight: "80px", marginTop: "8px"}}
+                          />
                         </div>
                       ))}
                     </div>
                     <div style={{marginTop: "14px", borderTop: "1px dashed var(--border)", paddingTop: "12px"}}>
-                      <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase"}}>Quick Bulk Add (MCQ)</p>
+                      <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase"}}>Quick Bulk Add (NotebookLM Friendly)</p>
                       <textarea
-                        placeholder={`Question text\nA) Option one\nB) Option two\nC) Option three\nD) Option four\nAnswer: B\n---`}
+                        placeholder={`Paste from NotebookLM directly.\nSupported examples:\n1) What is ...?\nA) ...\nB) ...\nC) ...\nD) ...\nCorrect Answer: B\n\nQ2: Another question...\nA. ...\nB. ...\nAnswer: Option text`}
                         value={quizBuilderText}
                         onChange={(e) => setQuizBuilderText(e.target.value)}
                         style={{minHeight: "130px"}}
                       />
-                      <button onClick={bulkAddQuizQuestions} style={{marginTop: "8px", padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Parse & Add Questions</button>
+                      <div style={{display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap"}}>
+                        <button onClick={bulkAddQuizQuestions} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Parse & Add Questions</button>
+                        <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1}}>
+                          {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
+                        </button>
+                      </div>
                     </div>
                 </div>
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
