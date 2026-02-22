@@ -433,7 +433,7 @@ export default function Home() {
   const addLesson = async () => {
     const title = prompt("Lesson Title?");
     if (!title || !curBook) return;
-    const newLesson = { id: Date.now().toString(), title, summary: "", qna: "", spellings: "", video: "", slides: "", bookPdf: "", infographic: "", mindMap: "", quiz: [] };
+    const newLesson = { id: Date.now().toString(), title, summary: "", spellings: "", video: "", slides: "", bookPdf: "", infographic: "", mindMap: "", quiz: [] };
     const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...(b.chapters || []), newLesson] } : b );
     await setDoc(doc(db, "data", "pajji_database"), { books: updatedBooks });
   };
@@ -1370,12 +1370,12 @@ export default function Home() {
             </div>
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
-                {["Summary", "QnA", "Spellings", "Quiz", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
+                {["Summary", "Spellings", "Quiz", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => setActiveTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
             <div className="card" style={{minHeight: "500px", padding: "32px"}}>
-               {["Summary", "QnA", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
+               {["Summary", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
                {activeTab === "Quiz" && (() => {
                  const quiz = normalizeQuiz(curChapter);
                  if (quiz.length === 0) {
@@ -1555,7 +1555,6 @@ export default function Home() {
             </div>
             <div style={{display: "flex", flexDirection: "column", gap: "24px"}}>
                 <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
-                <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Q&A</label><textarea value={tempChapter.qna || ""} onChange={(e) => setTempChapter({...tempChapter, qna: e.target.value})} /></div>
                 <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
                 <div style={{padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)"}}>
                     <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap"}}>
