@@ -55,6 +55,7 @@ export default function Home() {
   const [dailyGoal, setDailyGoal] = useState(2);
   const [dailyCompleted, setDailyCompleted] = useState(0);
   const [dailyProgressDate, setDailyProgressDate] = useState<string | null>(null);
+  const [dailyGoalHits, setDailyGoalHits] = useState(0);
   const [quickReviewMode, setQuickReviewMode] = useState(false);
   const [achievementToast, setAchievementToast] = useState("");
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string | number>>({});
@@ -68,6 +69,7 @@ export default function Home() {
   const [quizActiveIndices, setQuizActiveIndices] = useState<number[] | null>(null);
   const [quizQuestionOrder, setQuizQuestionOrder] = useState<number[]>([]);
   const [quizOptionOrder, setQuizOptionOrder] = useState<Record<number, number[]>>({});
+  const [currentQuizPos, setCurrentQuizPos] = useState(0);
 
   const curBookIdRef = useRef<string | null>(null);
 
@@ -97,6 +99,7 @@ export default function Home() {
         setDailyGoal(2);
         setDailyCompleted(0);
         setDailyProgressDate(null);
+        setDailyGoalHits(0);
         setQuickReviewMode(false);
         setAchievementToast("");
         setLoading(false);
@@ -138,6 +141,7 @@ export default function Home() {
         setDailyGoal(data.dailyGoal || 2);
         setDailyCompleted(data.dailyCompleted || 0);
         setDailyProgressDate(data.dailyProgressDate || null);
+        setDailyGoalHits(data.dailyGoalHits || 0);
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -149,7 +153,8 @@ export default function Home() {
           achievements: [],
           dailyGoal: 2,
           dailyCompleted: 0,
-          dailyProgressDate: null
+          dailyProgressDate: null,
+          dailyGoalHits: 0
         }, { merge: true });
         setUserXP(0);
         setLastLesson(null);
@@ -159,6 +164,7 @@ export default function Home() {
         setDailyGoal(2);
         setDailyCompleted(0);
         setDailyProgressDate(null);
+        setDailyGoalHits(0);
       }
       setDataLoading(false);
     });
@@ -193,23 +199,38 @@ export default function Home() {
   };
 
   const achievementCatalog = [
-    { id: "first_mastery", title: "First Mastery", description: "Master your first lesson." },
-    { id: "five_masteries", title: "Knowledge Builder", description: "Master 5 lessons." },
-    { id: "twenty_masteries", title: "Learning Machine", description: "Master 20 lessons." },
-    { id: "streak_3", title: "On Fire", description: "Keep a 3-day learning streak." },
-    { id: "streak_7", title: "Unstoppable", description: "Keep a 7-day learning streak." },
-    { id: "xp_1000", title: "XP Grinder", description: "Reach 1,000 XP." },
+    { id: "first_mastery", title: "First Mastery", description: "Master your first lesson.", metric: "completed", target: 1 },
+    { id: "five_masteries", title: "Knowledge Builder", description: "Master 5 lessons.", metric: "completed", target: 5 },
+    { id: "twenty_masteries", title: "Learning Machine", description: "Master 20 lessons.", metric: "completed", target: 20 },
+    { id: "fifty_masteries", title: "Grand Scholar", description: "Master 50 lessons.", metric: "completed", target: 50 },
+    { id: "streak_3", title: "On Fire", description: "Keep a 3-day learning streak.", metric: "streak", target: 3 },
+    { id: "streak_7", title: "Unstoppable", description: "Keep a 7-day learning streak.", metric: "streak", target: 7 },
+    { id: "streak_14", title: "Legendary Streak", description: "Keep a 14-day learning streak.", metric: "streak", target: 14 },
+    { id: "xp_1000", title: "XP Grinder", description: "Reach 1,000 XP.", metric: "xp", target: 1000 },
+    { id: "xp_5000", title: "XP Titan", description: "Reach 5,000 XP.", metric: "xp", target: 5000 },
+    { id: "daily_goal_3", title: "Consistency", description: "Hit your daily goal on 3 days.", metric: "dailyGoalHits", target: 3 },
+    { id: "daily_goal_10", title: "Relentless", description: "Hit your daily goal on 10 days.", metric: "dailyGoalHits", target: 10 },
   ];
 
-  const getAchievementIds = ({ completedCount, xp, streak }: { completedCount: number; xp: number; streak: number }) => {
-    const ids: string[] = [];
-    if (completedCount >= 1) ids.push("first_mastery");
-    if (completedCount >= 5) ids.push("five_masteries");
-    if (completedCount >= 20) ids.push("twenty_masteries");
-    if (streak >= 3) ids.push("streak_3");
-    if (streak >= 7) ids.push("streak_7");
-    if (xp >= 1000) ids.push("xp_1000");
-    return ids;
+  const getAchievementProgress = (
+    achievementId: string,
+    stats: { completedCount: number; xp: number; streak: number; dailyGoalHits: number }
+  ) => {
+    const def = achievementCatalog.find((a) => a.id === achievementId);
+    if (!def) return { progress: 0, target: 1 };
+    if (def.metric === "completed") return { progress: stats.completedCount, target: def.target };
+    if (def.metric === "streak") return { progress: stats.streak, target: def.target };
+    if (def.metric === "xp") return { progress: stats.xp, target: def.target };
+    return { progress: stats.dailyGoalHits, target: def.target };
+  };
+
+  const getAchievementIds = (stats: { completedCount: number; xp: number; streak: number; dailyGoalHits: number }) => {
+    return achievementCatalog
+      .filter((a) => {
+        const { progress, target } = getAchievementProgress(a.id, stats);
+        return progress >= target;
+      })
+      .map((a) => a.id);
   };
 
   const getNextUnmasteredLesson = (completedSet: Set<string>) => {
@@ -246,6 +267,7 @@ export default function Home() {
       const currentDailyGoal = snap.exists() ? (snap.data().dailyGoal || 2) : 2;
       const currentDailyCompleted = snap.exists() ? (snap.data().dailyCompleted || 0) : 0;
       const currentDailyDate = snap.exists() ? (snap.data().dailyProgressDate || null) : null;
+      const currentDailyGoalHits = snap.exists() ? (snap.data().dailyGoalHits || 0) : 0;
 
       const today = getLocalDateKey();
       let nextStreak = 1;
@@ -255,10 +277,11 @@ export default function Home() {
       let nextDailyCompleted = 1;
       if (currentDailyDate === today) nextDailyCompleted = currentDailyCompleted + 1;
       const goalReachedNow = nextDailyCompleted >= currentDailyGoal && (currentDailyDate !== today || currentDailyCompleted < currentDailyGoal);
+      const nextDailyGoalHits = currentDailyGoalHits + (goalReachedNow ? 1 : 0);
 
       const nextCompletedCount = currentCompleted.includes(lessonId) ? currentCompleted.length : currentCompleted.length + 1;
       const nextXP = currentXP + 100;
-      const earnedNow = getAchievementIds({ completedCount: nextCompletedCount, xp: nextXP, streak: nextStreak });
+      const earnedNow = getAchievementIds({ completedCount: nextCompletedCount, xp: nextXP, streak: nextStreak, dailyGoalHits: nextDailyGoalHits });
       const mergedAchievements = Array.from(new Set([...currentAchievements, ...earnedNow]));
       const newUnlocks = mergedAchievements.length - currentAchievements.length;
       const newAchievementIds = mergedAchievements.filter((id: string) => !currentAchievements.includes(id));
@@ -272,7 +295,8 @@ export default function Home() {
         streakCount: nextStreak,
         achievements: mergedAchievements,
         dailyProgressDate: today,
-        dailyCompleted: nextDailyCompleted
+        dailyCompleted: nextDailyCompleted,
+        dailyGoalHits: nextDailyGoalHits
       }, { merge: true });
       setSaveStatus(
         goalReachedNow
@@ -394,6 +418,29 @@ export default function Home() {
       .replace(/[^\w\s]/g, "")
       .replace(/\s+/g, " ");
 
+  const STOP_WORDS = new Set([
+    "a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "by", "from", "at",
+    "is", "are", "was", "were", "be", "been", "being", "that", "this", "these", "those", "as",
+    "it", "its", "their", "his", "her", "he", "she", "they", "them", "which", "who", "whom",
+    "what", "when", "where", "why", "how", "into", "than", "then", "also", "very", "can", "could",
+    "should", "would", "will", "may", "might", "do", "does", "did", "have", "has", "had"
+  ]);
+
+  const stemToken = (token: string) => {
+    let t = token;
+    if (t.length > 5 && t.endsWith("ing")) t = t.slice(0, -3);
+    else if (t.length > 4 && t.endsWith("ed")) t = t.slice(0, -2);
+    else if (t.length > 4 && t.endsWith("es")) t = t.slice(0, -2);
+    else if (t.length > 3 && t.endsWith("s")) t = t.slice(0, -1);
+    return t;
+  };
+
+  const getContentTokens = (value: string) =>
+    normalizeAnswerText(value)
+      .split(" ")
+      .map(stemToken)
+      .filter((tok) => tok.length > 2 && !STOP_WORDS.has(tok));
+
   const levenshteinDistance = (a: string, b: string) => {
     const m = a.length;
     const n = b.length;
@@ -422,11 +469,31 @@ export default function Home() {
 
     return expectedOptions.some(expected => {
       if (submitted === expected) return true;
+      if (submitted.includes(expected) || expected.includes(submitted)) return true;
+
       const distance = levenshteinDistance(submitted, expected);
       const maxLen = Math.max(submitted.length, expected.length);
       const similarity = maxLen === 0 ? 1 : 1 - distance / maxLen;
-      const threshold = maxLen <= 4 ? 0.75 : 0.82;
-      return similarity >= threshold;
+      const threshold = maxLen <= 4 ? 0.75 : maxLen <= 20 ? 0.82 : 0.72;
+      if (similarity >= threshold) return true;
+
+      // Logic-based grading for descriptive answers:
+      // compare key content tokens instead of strict wording.
+      const expectedTokens = getContentTokens(expected);
+      const submittedTokens = getContentTokens(submitted);
+      if (expectedTokens.length === 0 || submittedTokens.length === 0) return false;
+
+      const expectedSet = new Set(expectedTokens);
+      const submittedSet = new Set(submittedTokens);
+      let overlap = 0;
+      expectedSet.forEach((tok) => { if (submittedSet.has(tok)) overlap += 1; });
+
+      const expectedCoverage = overlap / expectedSet.size;
+      const submittedCoverage = overlap / submittedSet.size;
+
+      if (expectedSet.size <= 3) return expectedCoverage >= 0.67;
+      if (expectedSet.size <= 7) return expectedCoverage >= 0.5 && overlap >= 2;
+      return expectedCoverage >= 0.4 && submittedCoverage >= 0.25 && overlap >= 3;
     });
   };
 
@@ -466,6 +533,7 @@ export default function Home() {
     setQuizActiveIndices(null);
     setQuizQuestionOrder([]);
     setQuizOptionOrder({});
+    setCurrentQuizPos(0);
     if (!user) return;
     const latestLesson = { bookId: book.id, chapterId: chapter.id };
     setLastLesson(latestLesson);
@@ -533,6 +601,7 @@ export default function Home() {
     setQuizActiveIndices(chosen);
     setQuizQuestionOrder(orderedQuestions);
     setQuizOptionOrder(nextOptionOrder);
+    setCurrentQuizPos(0);
   };
 
   const submitQuiz = () => {
@@ -1012,14 +1081,62 @@ export default function Home() {
   const liveAchievementIds = getAchievementIds({
     completedCount: completedLessons.length,
     xp: userXP,
-    streak: streakCount
+    streak: streakCount,
+    dailyGoalHits
   });
   const allUnlockedAchievementIds = Array.from(new Set([...unlockedAchievements, ...liveAchievementIds]));
-  const unlockedAchievementList = achievementCatalog.filter(a => allUnlockedAchievementIds.includes(a.id));
-  const nextAchievement = achievementCatalog.find(a => !allUnlockedAchievementIds.includes(a.id));
+  const achievementProgressList = achievementCatalog.map((a) => {
+    const { progress, target } = getAchievementProgress(a.id, {
+      completedCount: completedLessons.length,
+      xp: userXP,
+      streak: streakCount,
+      dailyGoalHits,
+    });
+    return { ...a, progress, target, unlocked: allUnlockedAchievementIds.includes(a.id) };
+  });
+  const nextAchievement = achievementProgressList.find(a => !a.unlocked);
   const todayKey = getLocalDateKey();
   const todayCompletedCount = dailyProgressDate === todayKey ? dailyCompleted : 0;
   const goalProgressPct = Math.min(100, Math.round((todayCompletedCount / Math.max(1, dailyGoal)) * 100));
+
+  useEffect(() => {
+    if (view !== "study" || activeTab !== "Quiz" || !curChapter) return;
+    const quiz = normalizeQuiz(curChapter);
+    if (quiz.length === 0) return;
+    const sourceIndices = quizActiveIndices && quizActiveIndices.length > 0
+      ? quizActiveIndices
+      : quiz.map((_: any, idx: number) => idx);
+    const sourceSet = new Set(sourceIndices);
+    const orderedFromState = quizQuestionOrder.filter((idx: number) => sourceSet.has(idx));
+    const missingIndices = sourceIndices.filter((idx: number) => !orderedFromState.includes(idx));
+    const orderedQuestionIndices = [...orderedFromState, ...missingIndices];
+    const maxPos = orderedQuestionIndices.length - 1;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase() || "";
+      const isTypingField = tag === "input" || tag === "textarea" || tag === "select";
+      if (isTypingField) return;
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setCurrentQuizPos((prev) => Math.max(0, prev - 1));
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setCurrentQuizPos((prev) => Math.min(maxPos, prev + 1));
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        submitQuiz();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [view, activeTab, curChapter, quizActiveIndices, quizQuestionOrder, submitQuiz]);
 
   const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
   const userLevel = Math.floor(userXP / 500) + 1;
@@ -1083,6 +1200,21 @@ export default function Home() {
           box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
           position: relative;
         }
+        .page-shell { max-width: 980px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+        .page-title { font-size: 30px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.1; margin: 0; }
+        .page-subtitle { color: var(--muted); margin: 6px 0 0 0; font-size: 14px; }
+        .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
+        .stack-12 { display: flex; flex-direction: column; gap: 12px; }
+        .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px -8px rgba(16, 185, 129, 0.45); }
+        .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
+        .btn-warning { background: #fbbf24; color: #111827; }
+        .btn-link { background: none; border: none; color: var(--accent); font-weight: 800; cursor: pointer; padding: 0; }
+        .stat-card { border-left-width: 4px; border-left-style: solid; }
+        .stat-label { font-size: 11px; font-weight: 800; opacity: 0.65; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
+        .stat-value { font-size: 32px; margin-top: 8px; margin-bottom: 0; font-weight: 900; }
         
         .nav-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 6px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 15px; transition: 0.2s; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
@@ -1098,6 +1230,11 @@ export default function Home() {
         
         .xp-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
         .mobile-header { display: none; }
+        .quiz-question-card { animation: fadeSlideIn 0.2s ease; }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         
         @media (max-width: 768px) {
           .app-container { flex-direction: column; }
@@ -1146,6 +1283,7 @@ export default function Home() {
           .library-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
           .library-tools { grid-template-columns: 1fr !important; }
           .tab-container { overflow-x: auto; padding-bottom: 10px; gap: 8px; }
+          .page-title { font-size: 24px; }
         }
       `}</style>
 
@@ -1169,10 +1307,10 @@ export default function Home() {
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}}>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="nav-btn" style={{marginBottom: "12px"}}>
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="btn btn-secondary" style={{width: "100%", marginBottom: "12px", textAlign: "left"}}>
             {theme === 'dark' ? "☀️ Light Mode" : "🌙 Dark Mode"}
           </button>
-          <button onClick={() => signOut(auth)} style={{width: "100%", padding: "12px", background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", borderRadius: "14px", fontWeight: "700", cursor: "pointer"}}>Sign Out</button>
+          <button onClick={() => signOut(auth)} className="btn btn-danger" style={{width: "100%", padding: "12px"}}>Sign Out</button>
         </div>
       </div>
 
@@ -1186,29 +1324,31 @@ export default function Home() {
         </div>
 
         {view === "dashboard" && (
-          <div style={{maxWidth: "900px"}}>
-            <header style={{marginBottom: "32px"}}>
-                <h1 style={{fontSize: "32px", fontWeight: "900"}}>Hello, {getUserName(user)}!</h1>
-                <p style={{color: "var(--muted)", marginTop: "4px"}}>You're doing great. Keep learning!</p>
+          <div className="page-shell">
+            <header className="page-header" style={{marginBottom: "28px"}}>
+              <div>
+                <h1 className="page-title">Hello, {getUserName(user)}!</h1>
+                <p className="page-subtitle">You&apos;re doing great. Keep learning!</p>
+              </div>
             </header>
             <div className="dashboard-grid" style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginBottom: "40px"}}>
-              <div className="card" style={{borderLeft: "4px solid #10b981"}}>
-                  <p style={{fontSize: "11px", fontWeight: "bold", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px"}}>Learning Points</p>
-                  <h3 style={{fontSize: "32px", color: "#10b981", marginTop: "8px"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
+              <div className="card stat-card" style={{borderLeftColor: "#10b981"}}>
+                  <p className="stat-label">Learning Points</p>
+                  <h3 className="stat-value" style={{color: "#10b981"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
               </div>
-              <div className="card" style={{borderLeft: "4px solid #3b82f6"}}>
-                  <p style={{fontSize: "11px", fontWeight: "bold", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px"}}>Mastered</p>
-                  <h3 style={{fontSize: "32px", color: "#3b82f6", marginTop: "8px"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
+              <div className="card stat-card" style={{borderLeftColor: "#3b82f6"}}>
+                  <p className="stat-label">Mastered</p>
+                  <h3 className="stat-value" style={{color: "#3b82f6"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
               </div>
-              <div className="card" style={{borderLeft: "4px solid #f59e0b"}}>
-                  <p style={{fontSize: "11px", fontWeight: "bold", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px"}}>Streak</p>
-                  <h3 style={{fontSize: "32px", color: "#f59e0b", marginTop: "8px"}}>{streakCount} <span style={{fontSize: "16px", opacity: 0.5}}>Days</span></h3>
+              <div className="card stat-card" style={{borderLeftColor: "#f59e0b"}}>
+                  <p className="stat-label">Streak</p>
+                  <h3 className="stat-value" style={{color: "#f59e0b"}}>{streakCount} <span style={{fontSize: "16px", opacity: 0.5}}>Days</span></h3>
                   <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{lastStudyDate ? `Last study: ${lastStudyDate}` : "Start your streak today"}</p>
               </div>
             </div>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap"}}>
-              <h2 style={{fontSize: "20px", fontWeight: "800"}}>Continue Learning</h2>
-              <button onClick={startQuickReview} style={{padding: "10px 16px", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.16)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>
+              <h2 className="section-title">Continue Learning</h2>
+              <button onClick={startQuickReview} className="btn btn-secondary">
                 {quickReviewMode ? "Quick Review Active" : "Start Quick Review"}
               </button>
             </div>
@@ -1233,7 +1373,7 @@ export default function Home() {
                 <p style={{fontSize: "11px", fontWeight: "900", color: "#f59e0b", textTransform: "uppercase", marginBottom: "6px"}}>Resume Last Lesson</p>
                 <h3 style={{fontSize: "18px", fontWeight: "800", marginBottom: "4px"}}>{resumeLesson.chapter.title}</h3>
                 <p style={{fontSize: "13px", color: "var(--muted)", marginBottom: "14px"}}>{resumeLesson.book.title}</p>
-                <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} style={{padding: "10px 18px", background: "#fbbf24", color: "#111827", borderRadius: "12px", border: "none", fontWeight: "800", cursor: "pointer"}}>Resume</button>
+                <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} className="btn btn-warning">Resume</button>
               </div>
             )}
             <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
@@ -1252,21 +1392,30 @@ export default function Home() {
             <div className="card" style={{padding: "20px"}}>
               <p style={{fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px"}}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
               <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px"}}>
-                {unlockedAchievementList.map(a => (
-                  <div key={a.id} style={{padding: "12px", borderRadius: "14px", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)"}}>
-                    <p style={{fontWeight: "800", fontSize: "13px"}}>{a.title}</p>
+                {achievementProgressList.map(a => (
+                  <div key={a.id} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "rgba(16, 185, 129, 0.1)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
+                    <p style={{fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px"}}>
+                      <span>{a.title}</span>
+                      <span style={{fontSize: "10px", color: a.unlocked ? "#10b981" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
+                    </p>
                     <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{a.description}</p>
+                    <div style={{marginTop: "8px"}}>
+                      <div style={{height: "6px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
+                        <div style={{height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "#10b981" : "#64748b"}} />
+                      </div>
+                      <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{Math.min(a.progress, a.target)}/{a.target}</p>
+                    </div>
                   </div>
                 ))}
               </div>
-              {unlockedAchievementList.length === 0 && (
-                <p style={{fontSize: "13px", color: "var(--muted)"}}>No badges unlocked yet. Complete a lesson to get your first one.</p>
+              {allUnlockedAchievementIds.length === 0 && (
+                <p style={{fontSize: "13px", color: "var(--muted)", marginTop: "10px"}}>No badges unlocked yet. Complete a lesson to get your first one.</p>
               )}
               {nextAchievement && (
                 <div style={{marginTop: "16px", padding: "12px", border: "1px dashed var(--border)", borderRadius: "12px"}}>
                   <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", textTransform: "uppercase"}}>Next Target</p>
                   <p style={{fontWeight: "800", marginTop: "4px"}}>{nextAchievement.title}</p>
-                  <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "2px"}}>{nextAchievement.description}</p>
+                  <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "2px"}}>{nextAchievement.description} ({Math.min(nextAchievement.progress, nextAchievement.target)}/{nextAchievement.target})</p>
                 </div>
               )}
             </div>
@@ -1290,10 +1439,10 @@ export default function Home() {
         )}
 
         {view === "library" && (
-          <div>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px", alignItems: "center"}}>
-              <h1 style={{fontSize: "28px", fontWeight: "900"}}>Library</h1>
-              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}} style={{background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "700", cursor: "pointer"}}>+ New Book</button>}
+          <div className="page-shell">
+            <div className="page-header">
+              <h1 className="page-title">Library</h1>
+              {isOwner && <button className="btn btn-primary" onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}}>+ New Book</button>}
             </div>
             <div className="card library-tools" style={{display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", padding: "14px", marginBottom: "20px"}}>
               <input type="text" placeholder="Search books or lessons..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{padding: "12px"}} />
@@ -1329,11 +1478,11 @@ export default function Home() {
         )}
 
         {view === "chapters" && curBook && (
-          <div style={{maxWidth: "800px"}}>
-            <button onClick={() => setView("library")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "800", marginBottom: "24px", cursor: "pointer"}}>← Library</button>
-            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px"}}>
-                <h1 style={{fontSize: "28px", fontWeight: "900"}}>{curBook.title}</h1>
-                {isOwner && <button onClick={addLesson} style={{background: "#10b981", color: "white", padding: "10px 20px", borderRadius: "12px", border: "none", fontWeight: "700"}}>+ Add Lesson</button>}
+          <div className="page-shell" style={{maxWidth: "880px"}}>
+            <button onClick={() => setView("library")} className="btn-link" style={{marginBottom: "16px"}}>← Library</button>
+            <div className="page-header">
+                <h1 className="page-title">{curBook.title}</h1>
+                {isOwner && <button onClick={addLesson} className="btn btn-primary">+ Add Lesson</button>}
             </div>
             {(curBook.chapters || []).map((ch: any) => (
               <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px"}}>
@@ -1342,8 +1491,8 @@ export default function Home() {
                     {completedLessons.includes(ch.id) && <span style={{marginLeft: "12px", fontSize: "11px", color: "#10b981", fontWeight: "900", background: "rgba(16, 185, 129, 0.1)", padding: "2px 8px", borderRadius: "10px"}}>✓ MASTERED</span>}
                 </div>
                 <div style={{display: "flex", gap: "10px"}}>
-                  <button onClick={() => openLesson(curBook, ch)} style={{padding: "8px 20px", background: "#10b981", color: "white", borderRadius: "10px", border: "none", fontWeight: "700", cursor: "pointer"}}>Study</button>
-                  {isOwner && (<button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} style={{padding: "8px 12px", border: "1px solid var(--border)", borderRadius: "10px", background: "var(--input-bg)", cursor: "pointer"}}>✎</button>)}
+                  <button onClick={() => openLesson(curBook, ch)} className="btn btn-primary" style={{padding: "8px 20px"}}>Study</button>
+                  {isOwner && (<button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} className="btn btn-secondary" style={{padding: "8px 12px"}}>✎</button>)}
                 </div>
               </div>
             ))}
@@ -1351,15 +1500,15 @@ export default function Home() {
         )}
 
         {view === "study" && curChapter && (
-          <div style={{maxWidth: "1000px"}}>
+          <div className="page-shell" style={{maxWidth: "1000px"}}>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center"}}>
-              <button onClick={() => setView("chapters")} style={{background: "none", border: "none", color: "#10b981", fontWeight: "800", cursor: "pointer"}}>← Lessons</button>
+              <button onClick={() => setView("chapters")} className="btn-link">← Lessons</button>
               <div style={{display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end"}}>
                 {quickReviewMode && (
-                  <button onClick={() => setQuickReviewMode(false)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid rgba(16,185,129,0.35)", background: "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>End Quick Review</button>
+                  <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{padding: "8px 12px"}}>End Quick Review</button>
                 )}
                 {!completedLessons.includes(curChapter.id) ? (
-                  <button onClick={() => markCompleted(curChapter.id)} style={{background: "#fbbf24", color: "#000", padding: "12px 24px", borderRadius: "14px", border: "none", fontWeight: "900", cursor: "pointer", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)"}}>CLAIM 100 XP</button>
+                  <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)"}}>CLAIM 100 XP</button>
                 ) : (
                   <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                       <div className="xp-badge">MASTERED</div>
@@ -1389,8 +1538,11 @@ export default function Home() {
                  const missingIndices = questionIndicesSource.filter((idx: number) => !orderedFromState.includes(idx));
                  const orderedQuestionIndices = [...orderedFromState, ...missingIndices];
                  const wrongIndices = orderedQuestionIndices.filter((idx: number) => quizReview[idx] && !quizReview[idx].isCorrect);
+                 const safePos = Math.max(0, Math.min(currentQuizPos, orderedQuestionIndices.length - 1));
+                 const activeQuestionIndex = orderedQuestionIndices[safePos];
+                 const q = quiz[activeQuestionIndex];
                  return (
-                  <div style={{display: "flex", flexDirection: "column", gap: "16px"}}>
+                  <div style={{display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "84px"}}>
                     <div style={{display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap"}}>
                       <button onClick={() => startQuizAttempt(curChapter)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
                         Start / Restart
@@ -1402,16 +1554,40 @@ export default function Home() {
                         Shuffle: {quizShuffleEnabled ? "On" : "Off"}
                       </button>
                     </div>
-                    {orderedQuestionIndices.map((qIndex: number, visualIndex: number) => {
-                      const q = quiz[qIndex];
-                      return (
-                      <div key={`${q.question}-${qIndex}`} style={{padding: "16px", borderRadius: "16px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
+                    <div className="card" style={{padding: "12px 14px"}}>
+                      <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px"}}>
+                        <span style={{fontSize: "12px", fontWeight: "800", color: "var(--muted)"}}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
+                        <span style={{fontSize: "12px", fontWeight: "800", color: "#10b981"}}>{Math.round(((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100)}%</span>
+                      </div>
+                      <div style={{height: "7px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
+                        <div style={{height: "100%", width: `${((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100}%`, background: "linear-gradient(90deg, #10b981, #34d399)"}} />
+                      </div>
+                    </div>
+                    <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(34px, 1fr))", gap: "6px"}}>
+                      {orderedQuestionIndices.map((qIndex: number, navIndex: number) => {
+                        const isCurrent = navIndex === safePos;
+                        const isAnswered = quizAnswers[qIndex] !== undefined && `${quizAnswers[qIndex]}`.trim() !== "";
+                        const reviewed = quizReview[qIndex];
+                        const bg = reviewed ? (reviewed.isCorrect ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)") : (isAnswered ? "rgba(59,130,246,0.16)" : "var(--input-bg)");
+                        const border = isCurrent ? "2px solid #10b981" : "1px solid var(--border)";
+                        return (
+                          <button
+                            key={`nav-${qIndex}`}
+                            onClick={() => setCurrentQuizPos(navIndex)}
+                            style={{height: "34px", borderRadius: "10px", border, background: bg, color: "var(--text)", fontWeight: "800", cursor: "pointer", fontSize: "12px"}}
+                          >
+                            {navIndex + 1}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div key={`${q.question}-${activeQuestionIndex}`} className="quiz-question-card" style={{padding: "16px", borderRadius: "16px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
                         {(() => {
-                          const review = quizReview[qIndex];
+                          const review = quizReview[activeQuestionIndex];
                           return (
                             <>
                         <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px"}}>
-                          <p style={{fontWeight: "800"}}>{visualIndex + 1}. {q.question}</p>
+                          <p style={{fontWeight: "800"}}>{safePos + 1}. {q.question}</p>
                           <span style={{fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.35)"}}>
                             {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
                           </span>
@@ -1435,18 +1611,18 @@ export default function Home() {
                                 {formatDrivePreviewLink(q.imageUrl) ? (
                                   <iframe
                                     src={formatDrivePreviewLink(q.imageUrl)}
-                                    title={`question-img-${qIndex + 1}`}
+                                    title={`question-img-${activeQuestionIndex + 1}`}
                                     style={{width: "100%", height: "260px", borderRadius: "14px", border: "1px solid var(--border)", background: "#fff"}}
                                   />
                                 ) : (
                                   <img
                                     src={formatImageLink(q.imageUrl)}
-                                    alt={`question-${qIndex + 1}`}
-                                    onError={() => setQuizImageErrors(prev => ({ ...prev, [qIndex]: true }))}
+                                    alt={`question-${activeQuestionIndex + 1}`}
+                                    onError={() => setQuizImageErrors(prev => ({ ...prev, [activeQuestionIndex]: true }))}
                                     style={{maxWidth: "100%", maxHeight: "260px", width: "100%", borderRadius: "14px", border: "1px solid var(--border)", objectFit: "contain", background: "#fff"}}
                                   />
                                 )}
-                                {quizImageErrors[qIndex] && (
+                                {quizImageErrors[activeQuestionIndex] && (
                                   <div style={{marginTop: "6px", fontSize: "12px", color: "#f59e0b", fontWeight: "700"}}>
                                     Image preview failed. Use the link below.
                                   </div>
@@ -1461,20 +1637,20 @@ export default function Home() {
 
                         {q.type === "mcq" ? (
                           <div style={{display: "grid", gap: "8px"}}>
-                            {((quizOptionOrder[qIndex] && quizOptionOrder[qIndex].length > 0)
-                              ? quizOptionOrder[qIndex]
+                            {((quizOptionOrder[activeQuestionIndex] && quizOptionOrder[activeQuestionIndex].length > 0)
+                              ? quizOptionOrder[activeQuestionIndex]
                               : (q.options || []).map((_: string, opIndex: number) => opIndex).filter((opIndex: number) => `${(q.options || [])[opIndex] || ""}`.trim())
                             ).map((originalIndex: number) => {
                               const op = (q.options || [])[originalIndex] || "";
-                              const selected = quizAnswers[qIndex] === originalIndex;
+                              const selected = quizAnswers[activeQuestionIndex] === originalIndex;
                               const isCorrectOption = originalIndex === q.correctIndex;
                               const showCorrectOption = quizSubmitted && isCorrectOption;
                               const showWrongSelected = quizSubmitted && selected && !isCorrectOption;
                               return (
                                 <button
-                                  key={`${qIndex}-${originalIndex}`}
+                                  key={`${activeQuestionIndex}-${originalIndex}`}
                                   onClick={() => {
-                                    setQuizAnswers(prev => ({ ...prev, [qIndex]: originalIndex }));
+                                    setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: originalIndex }));
                                     setQuizSubmitted(false);
                                     setQuizReview({});
                                     setQuizResult("");
@@ -1499,9 +1675,9 @@ export default function Home() {
                           <input
                             type="text"
                             placeholder="Type your answer..."
-                            value={`${quizAnswers[qIndex] ?? ""}`}
+                            value={`${quizAnswers[activeQuestionIndex] ?? ""}`}
                             onChange={(e) => {
-                              setQuizAnswers(prev => ({ ...prev, [qIndex]: e.target.value }));
+                              setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: e.target.value }));
                               setQuizSubmitted(false);
                               setQuizReview({});
                               setQuizResult("");
@@ -1529,10 +1705,18 @@ export default function Home() {
                           );
                         })()}
                       </div>
-                    )})}
-                    <div style={{display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap"}}>
-                      <button onClick={submitQuiz} style={{padding: "10px 18px", borderRadius: "12px", border: "none", background: "#10b981", color: "white", fontWeight: "800", cursor: "pointer"}}>Submit Quiz</button>
-                      {quizResult && <span style={{fontWeight: "800", color: quizResult.startsWith("Score") ? "#10b981" : "#f59e0b"}}>{quizResult}</span>}
+                    <div style={{position: "sticky", bottom: "10px", zIndex: 20, border: "1px solid var(--border)", background: "var(--card)", borderRadius: "14px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap"}}>
+                      <div style={{display: "flex", gap: "8px"}}>
+                        <button onClick={() => setCurrentQuizPos(prev => Math.max(0, prev - 1))} disabled={safePos === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer"}}>Prev</button>
+                        <button onClick={() => setCurrentQuizPos(prev => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer"}}>Next</button>
+                      </div>
+                      <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap"}}>
+                        <button onClick={submitQuiz} style={{padding: "9px 14px", borderRadius: "10px", border: "none", background: "#10b981", color: "white", fontWeight: "800", cursor: "pointer"}}>Submit Quiz</button>
+                        <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
+                          Retry Wrong
+                        </button>
+                        {quizResult && <span style={{fontWeight: "800", color: quizResult.startsWith("Score") ? "#10b981" : "#f59e0b"}}>{quizResult}</span>}
+                      </div>
                     </div>
                   </div>
                  );
