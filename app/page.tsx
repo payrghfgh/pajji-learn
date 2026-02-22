@@ -34,6 +34,8 @@ export default function Home() {
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
+  const [leaderboardMode, setLeaderboardMode] = useState<"all" | "weekly">("all");
   
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true); 
@@ -70,8 +72,13 @@ export default function Home() {
   const [quizQuestionOrder, setQuizQuestionOrder] = useState<number[]>([]);
   const [quizOptionOrder, setQuizOptionOrder] = useState<Record<number, number[]>>({});
   const [currentQuizPos, setCurrentQuizPos] = useState(0);
+  const [quizAttempts, setQuizAttempts] = useState<any[]>([]);
+  const [weakLessonIds, setWeakLessonIds] = useState<string[]>([]);
+  const [quizPackText, setQuizPackText] = useState("");
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const curBookIdRef = useRef<string | null>(null);
+  const lastAutosavePayloadRef = useRef("");
 
   useEffect(() => {
     curBookIdRef.current = curBook?.id || null;
@@ -102,6 +109,8 @@ export default function Home() {
         setDailyGoalHits(0);
         setQuickReviewMode(false);
         setAchievementToast("");
+        setQuizAttempts([]);
+        setWeakLessonIds([]);
         setLoading(false);
         setDataLoading(false);
       }
@@ -142,6 +151,8 @@ export default function Home() {
         setDailyCompleted(data.dailyCompleted || 0);
         setDailyProgressDate(data.dailyProgressDate || null);
         setDailyGoalHits(data.dailyGoalHits || 0);
+        setQuizAttempts(data.quizAttempts || []);
+        setWeakLessonIds(data.weakLessonIds || []);
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -154,7 +165,11 @@ export default function Home() {
           dailyGoal: 2,
           dailyCompleted: 0,
           dailyProgressDate: null,
-          dailyGoalHits: 0
+          dailyGoalHits: 0,
+          weeklyXP: 0,
+          weeklyKey: "",
+          quizAttempts: [],
+          weakLessonIds: []
         }, { merge: true });
         setUserXP(0);
         setLastLesson(null);
@@ -165,6 +180,8 @@ export default function Home() {
         setDailyCompleted(0);
         setDailyProgressDate(null);
         setDailyGoalHits(0);
+        setQuizAttempts([]);
+        setWeakLessonIds([]);
       }
       setDataLoading(false);
     });
@@ -175,9 +192,13 @@ export default function Home() {
 
   const fetchLeaderboard = async () => {
     try {
-      const q = query(collection(db, "users"), orderBy("xp", "desc"), limit(10));
-      const snap = await getDocs(q);
-      setLeaderboard(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const allTimeQuery = query(collection(db, "users"), orderBy("xp", "desc"), limit(10));
+      const allTimeSnap = await getDocs(allTimeQuery);
+      setLeaderboard(allTimeSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+      const weeklyQuery = query(collection(db, "users"), orderBy("weeklyXP", "desc"), limit(10));
+      const weeklySnap = await getDocs(weeklyQuery);
+      setWeeklyLeaderboard(weeklySnap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch (e) { console.error(e); }
   };
 
@@ -187,6 +208,16 @@ export default function Home() {
     const m = `${d.getMonth() + 1}`.padStart(2, "0");
     const day = `${d.getDate()}`.padStart(2, "0");
     return `${y}-${m}-${day}`;
+  };
+
+  const getWeekKey = () => {
+    const now = new Date();
+    const utc = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const dayNum = utc.getUTCDay() || 7;
+    utc.setUTCDate(utc.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((utc.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `${utc.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
   };
 
   const getDayDiff = (from: string, to: string) => {
@@ -242,6 +273,14 @@ export default function Home() {
     return null;
   };
 
+  const getLessonById = (chapterId: string) => {
+    for (const book of books) {
+      const chapter = (book.chapters || []).find((ch: any) => ch.id === chapterId);
+      if (chapter) return { book, chapter };
+    }
+    return null;
+  };
+
   const updateDailyGoal = async (nextGoal: number) => {
     if (!user) return;
     const clampedGoal = Math.min(10, Math.max(1, nextGoal));
@@ -260,6 +299,8 @@ export default function Home() {
     try {
       const snap = await getDoc(userRef);
       const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
+      const currentWeeklyXP = snap.exists() ? (snap.data().weeklyXP || 0) : 0;
+      const currentWeeklyKey = snap.exists() ? (snap.data().weeklyKey || "") : "";
       const currentCompleted = snap.exists() ? (snap.data().completed || []) : [];
       const currentAchievements = snap.exists() ? (snap.data().achievements || []) : [];
       const previousStudyDate = snap.exists() ? (snap.data().lastStudyDate || null) : null;
@@ -281,6 +322,9 @@ export default function Home() {
 
       const nextCompletedCount = currentCompleted.includes(lessonId) ? currentCompleted.length : currentCompleted.length + 1;
       const nextXP = currentXP + 100;
+      const activeWeekKey = getWeekKey();
+      const baseWeekly = currentWeeklyKey === activeWeekKey ? currentWeeklyXP : 0;
+      const nextWeeklyXP = baseWeekly + 100;
       const earnedNow = getAchievementIds({ completedCount: nextCompletedCount, xp: nextXP, streak: nextStreak, dailyGoalHits: nextDailyGoalHits });
       const mergedAchievements = Array.from(new Set([...currentAchievements, ...earnedNow]));
       const newUnlocks = mergedAchievements.length - currentAchievements.length;
@@ -290,6 +334,8 @@ export default function Home() {
       await setDoc(userRef, {
         completed: arrayUnion(lessonId),
         xp: nextXP,
+        weeklyXP: nextWeeklyXP,
+        weeklyKey: activeWeekKey,
         email: user.email || "guest",
         lastStudyDate: today,
         streakCount: nextStreak,
@@ -330,7 +376,16 @@ export default function Home() {
     try {
       const snap = await getDoc(userRef);
       const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      await setDoc(userRef, { completed: arrayRemove(lessonId), xp: Math.max(0, currentXP - 100) }, { merge: true });
+      const currentWeeklyXP = snap.exists() ? (snap.data().weeklyXP || 0) : 0;
+      const currentWeeklyKey = snap.exists() ? (snap.data().weeklyKey || "") : "";
+      const activeWeekKey = getWeekKey();
+      const nextWeeklyXP = currentWeeklyKey === activeWeekKey ? Math.max(0, currentWeeklyXP - 100) : 0;
+      await setDoc(userRef, {
+        completed: arrayRemove(lessonId),
+        xp: Math.max(0, currentXP - 100),
+        weeklyXP: nextWeeklyXP,
+        weeklyKey: activeWeekKey
+      }, { merge: true });
       setSaveStatus("Mastery Reset");
       fetchLeaderboard();
       setTimeout(() => setSaveStatus(""), 3000);
@@ -352,9 +407,9 @@ export default function Home() {
     } catch (err: any) { alert(err.message); setLoading(false); }
   };
 
-  const saveAllChanges = async () => {
+  const saveAllChanges = async (silent = false) => {
     if (!tempChapter || !isOwner || !curBook) return;
-    setSaveStatus("Syncing...");
+    if (!silent) setSaveStatus("Syncing...");
     try {
         const newList = books.map(b => 
             b.id === curBook.id 
@@ -362,9 +417,13 @@ export default function Home() {
             : b
         );
         await setDoc(doc(db, "data", "pajji_database"), { books: newList });
-        setSaveStatus("Saved");
-        setTimeout(() => setSaveStatus(""), 2000);
-    } catch (e) { setSaveStatus("Error"); }
+        if (!silent) {
+          setSaveStatus("Saved");
+          setTimeout(() => setSaveStatus(""), 2000);
+        }
+    } catch (e) {
+      if (!silent) setSaveStatus("Error");
+    }
   };
 
   const deleteItem = async (type: 'book' | 'lesson', id: string) => {
@@ -534,6 +593,7 @@ export default function Home() {
     setQuizQuestionOrder([]);
     setQuizOptionOrder({});
     setCurrentQuizPos(0);
+    setShowShortcuts(false);
     if (!user) return;
     const latestLesson = { bookId: book.id, chapterId: chapter.id };
     setLastLesson(latestLesson);
@@ -604,7 +664,7 @@ export default function Home() {
     setCurrentQuizPos(0);
   };
 
-  const submitQuiz = () => {
+  const submitQuiz = async () => {
     const quiz = normalizeQuiz(curChapter);
     if (quiz.length === 0) return;
     const indices = quizActiveIndices && quizActiveIndices.length > 0 ? quizActiveIndices : quiz.map((_: any, idx: number) => idx);
@@ -647,6 +707,32 @@ export default function Home() {
     setQuizSubmitted(true);
     setQuizReview(review);
     setQuizResult(`Score: ${score}/${indices.length}`);
+
+    if (user && curChapter?.id && indices.length > 0) {
+      const accuracyPct = Math.round((score / indices.length) * 100);
+      const attempt = {
+        lessonId: curChapter.id,
+        lessonTitle: curChapter.title || "",
+        score,
+        total: indices.length,
+        accuracy: accuracyPct,
+        createdAt: new Date().toISOString()
+      };
+      const nextAttempts = [...quizAttempts, attempt].slice(-40);
+      let nextWeakIds = [...weakLessonIds];
+      if (accuracyPct < 70 && !nextWeakIds.includes(curChapter.id)) nextWeakIds.push(curChapter.id);
+      if (accuracyPct >= 85) nextWeakIds = nextWeakIds.filter((id) => id !== curChapter.id);
+      setQuizAttempts(nextAttempts);
+      setWeakLessonIds(nextWeakIds);
+      try {
+        await setDoc(doc(db, "users", user.uid), {
+          quizAttempts: nextAttempts,
+          weakLessonIds: nextWeakIds
+        }, { merge: true });
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
   const addQuizQuestion = () => {
@@ -1039,6 +1125,51 @@ export default function Home() {
     }
   };
 
+  const exportQuizPack = async () => {
+    if (!tempChapter) return;
+    const payload = {
+      lessonTitle: tempChapter.title || "Untitled",
+      quiz: Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []
+    };
+    const text = JSON.stringify(payload, null, 2);
+    setQuizPackText(text);
+    try {
+      await navigator.clipboard.writeText(text);
+      setSaveStatus("Quiz pack copied");
+      setTimeout(() => setSaveStatus(""), 1800);
+    } catch {
+      setSaveStatus("Quiz pack ready in textbox");
+      setTimeout(() => setSaveStatus(""), 1800);
+    }
+  };
+
+  const importQuizPack = () => {
+    if (!tempChapter || !quizPackText.trim()) return;
+    try {
+      const parsed = JSON.parse(quizPackText);
+      const incoming = Array.isArray(parsed) ? parsed : parsed.quiz;
+      if (!Array.isArray(incoming)) throw new Error("Invalid quiz pack format");
+      const normalized = incoming.map((q: any) => ({
+        type: q?.type || (Array.isArray(q?.options) ? "mcq" : "oneWord"),
+        question: `${q?.question ?? ""}`.trim(),
+        options: Array.isArray(q?.options) ? [...q.options, "", "", "", ""].slice(0, 4) : ["", "", "", ""],
+        correctIndex: Number.isInteger(q?.correctIndex) ? Math.max(0, Math.min(3, Number(q.correctIndex))) : 0,
+        answer: `${q?.answer ?? ""}`.trim(),
+        caseText: `${q?.caseText ?? ""}`.trim(),
+        imageUrl: `${q?.imageUrl ?? ""}`.trim(),
+        explanation: `${q?.explanation ?? ""}`.trim()
+      })).filter((q: any) => q.question);
+      if (normalized.length === 0) throw new Error("No questions found");
+      const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
+      setTempChapter({ ...tempChapter, quiz: [...existing, ...normalized] });
+      setSaveStatus(`Imported ${normalized.length} questions`);
+      setTimeout(() => setSaveStatus(""), 1800);
+    } catch (e: any) {
+      setSaveStatus(e?.message || "Import failed");
+      setTimeout(() => setSaveStatus(""), 2200);
+    }
+  };
+
   const resumeLesson = (() => {
     if (!lastLesson) return null;
     const book = books.find((b: any) => b.id === lastLesson.bookId);
@@ -1062,7 +1193,11 @@ export default function Home() {
   });
 
   const startQuickReview = () => {
-    const nextLesson = getNextUnmasteredLesson(new Set(completedLessons));
+    const completedSet = new Set(completedLessons);
+    const weakTarget = weakLessonIds
+      .map((id) => getLessonById(id))
+      .find((entry: any) => entry && !completedSet.has(entry.chapter.id));
+    const nextLesson = weakTarget || getNextUnmasteredLesson(completedSet);
     if (!nextLesson) {
       setSaveStatus("Everything is already mastered.");
       setTimeout(() => setSaveStatus(""), 2500);
@@ -1077,6 +1212,19 @@ export default function Home() {
     const timer = setTimeout(() => setAchievementToast(""), 3500);
     return () => clearTimeout(timer);
   }, [achievementToast]);
+
+  useEffect(() => {
+    if (view !== "edit" || !tempChapter || !isOwner || !curBook) return;
+    const payload = JSON.stringify(tempChapter);
+    if (!payload || payload === lastAutosavePayloadRef.current) return;
+    const timer = setTimeout(async () => {
+      await saveAllChanges(true);
+      lastAutosavePayloadRef.current = payload;
+      setSaveStatus("Auto-saved");
+      setTimeout(() => setSaveStatus(""), 1200);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, [view, tempChapter, isOwner, curBook]);
 
   const liveAchievementIds = getAchievementIds({
     completedCount: completedLessons.length,
@@ -1098,6 +1246,10 @@ export default function Home() {
   const todayKey = getLocalDateKey();
   const todayCompletedCount = dailyProgressDate === todayKey ? dailyCompleted : 0;
   const goalProgressPct = Math.min(100, Math.round((todayCompletedCount / Math.max(1, dailyGoal)) * 100));
+  const recentQuizAttempts = quizAttempts.slice(-5).reverse();
+  const bestQuizScore = quizAttempts.length > 0
+    ? Math.max(...quizAttempts.map((a: any) => Math.round(((a.score || 0) / Math.max(1, a.total || 1)) * 100)))
+    : 0;
 
   useEffect(() => {
     if (view !== "study" || activeTab !== "Quiz" || !curChapter) return;
@@ -1131,6 +1283,16 @@ export default function Home() {
       if (event.key === "Enter") {
         event.preventDefault();
         submitQuiz();
+        return;
+      }
+      if (event.key.toLowerCase() === "r") {
+        event.preventDefault();
+        startQuizAttempt(curChapter, sourceIndices);
+        return;
+      }
+      if (event.key === "?") {
+        event.preventDefault();
+        setShowShortcuts((prev) => !prev);
       }
     };
 
@@ -1419,20 +1581,46 @@ export default function Home() {
                 </div>
               )}
             </div>
+            <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>Quiz Attempts</h2>
+            <div className="card" style={{padding: "18px"}}>
+              <div style={{display: "flex", gap: "14px", flexWrap: "wrap", marginBottom: "12px"}}>
+                <div style={{fontSize: "13px", color: "var(--muted)"}}>Best: <strong style={{color: "var(--text)"}}>{bestQuizScore}%</strong></div>
+                <div style={{fontSize: "13px", color: "var(--muted)"}}>Weak lessons: <strong style={{color: "var(--text)"}}>{weakLessonIds.length}</strong></div>
+              </div>
+              {recentQuizAttempts.length === 0 ? (
+                <p style={{fontSize: "13px", color: "var(--muted)"}}>No attempts yet. Submit a quiz to start tracking.</p>
+              ) : (
+                <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                  {recentQuizAttempts.map((a: any, idx: number) => (
+                    <div key={`${a.lessonId}-${a.createdAt}-${idx}`} style={{display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px"}}>
+                      <div style={{fontSize: "13px"}}>
+                        <div style={{fontWeight: "700"}}>{a.lessonTitle || "Lesson"}</div>
+                        <div style={{fontSize: "11px", color: "var(--muted)"}}>{new Date(a.createdAt).toLocaleString()}</div>
+                      </div>
+                      <div style={{fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "#10b981" : "#ef4444"}}>{a.score}/{a.total} ({a.accuracy}%)</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {view === "leaderboard" && (
           <div style={{maxWidth: "600px", margin: "0 auto"}}>
             <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners</h1>
-            {leaderboard.map((p, i) => (
+            <div style={{display: "flex", justifyContent: "center", gap: "8px", marginBottom: "14px"}}>
+              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "rgba(16, 185, 129, 0.15)" : "var(--input-bg)"}}>All Time</button>
+              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "rgba(16, 185, 129, 0.15)" : "var(--input-bg)"}}>Weekly</button>
+            </div>
+            {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
               <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", padding: "16px 20px", borderColor: p.id === user.uid ? "var(--accent)" : "var(--border)", background: p.id === user.uid ? "rgba(16, 185, 129, 0.05)" : "var(--card)"}}>
                 <span style={{width: "40px", fontWeight: "900", fontSize: "18px", color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "var(--muted)"}}>#{i+1}</span>
                 <div style={{flex: 1}}>
                     <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
                     {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "#10b981", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
                 </div>
-                <span className="xp-badge">{p.xp || 0} XP</span>
+                <span className="xp-badge">{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
               </div>
             ))}
           </div>
@@ -1553,7 +1741,15 @@ export default function Home() {
                       <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "rgba(16,185,129,0.12)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
                         Shuffle: {quizShuffleEnabled ? "On" : "Off"}
                       </button>
+                      <button onClick={() => setShowShortcuts((prev) => !prev)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+                        Shortcuts
+                      </button>
                     </div>
+                    {showShortcuts && (
+                      <div style={{border: "1px dashed var(--border)", borderRadius: "12px", padding: "10px 12px", background: "var(--card)", fontSize: "12px", color: "var(--muted)"}}>
+                        <strong style={{color: "var(--text)"}}>Keyboard:</strong> Left/Right = navigate, Enter = submit, R = restart, ? = toggle this panel
+                      </div>
+                    )}
                     <div className="card" style={{padding: "12px 14px"}}>
                       <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px"}}>
                         <span style={{fontSize: "12px", fontWeight: "800", color: "var(--muted)"}}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
@@ -1735,7 +1931,7 @@ export default function Home() {
           <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
                 <h2 style={{fontWeight: "900"}}>Editor</h2>
-                <button onClick={() => { saveAllChanges(); setView("chapters"); }} style={{background: "#10b981", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer"}}>SAVE CHANGES</button>
+                <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{background: "#10b981", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer"}}>SAVE CHANGES</button>
             </div>
             <div style={{display: "flex", flexDirection: "column", gap: "24px"}}>
                 <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
@@ -1812,7 +2008,17 @@ export default function Home() {
                         <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1}}>
                           {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
                         </button>
+                        <button onClick={exportQuizPack} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Export Pack</button>
+                        <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer"}}>
+                          Import Pack
+                        </button>
                       </div>
+                      <textarea
+                        placeholder="Quiz pack JSON (exported or pasted)"
+                        value={quizPackText}
+                        onChange={(e) => setQuizPackText(e.target.value)}
+                        style={{minHeight: "110px", marginTop: "8px"}}
+                      />
                     </div>
                 </div>
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
