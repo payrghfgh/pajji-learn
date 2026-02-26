@@ -76,6 +76,9 @@ export default function Home() {
   const [weakLessonIds, setWeakLessonIds] = useState<string[]>([]);
   const [quizPackText, setQuizPackText] = useState("");
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [parserMode, setParserMode] = useState<"strict" | "balanced" | "aggressive">("balanced");
+  const [parsedPreview, setParsedPreview] = useState<any[]>([]);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
 
   const curBookIdRef = useRef<string | null>(null);
   const lastAutosavePayloadRef = useRef("");
@@ -627,6 +630,40 @@ export default function Home() {
       });
   };
 
+  const normalizeQuestionItem = (q: any) => {
+    const type = q?.type || (Array.isArray(q?.options) ? "mcq" : "oneWord");
+    const options = Array.isArray(q?.options) ? [...q.options, "", "", "", ""].slice(0, 4).map((o: any) => `${o ?? ""}`.trim()) : ["", "", "", ""];
+    return {
+      type,
+      question: `${q?.question ?? ""}`.trim(),
+      options,
+      correctIndex: Number.isInteger(q?.correctIndex) ? Math.max(0, Math.min(3, Number(q.correctIndex))) : 0,
+      answer: `${q?.answer ?? ""}`.trim(),
+      caseText: `${q?.caseText ?? ""}`.trim(),
+      imageUrl: `${q?.imageUrl ?? ""}`.trim(),
+      explanation: `${q?.explanation ?? ""}`.trim(),
+    };
+  };
+
+  const questionFingerprint = (q: any) => {
+    const normalized = normalizeQuestionItem(q);
+    return `${normalizeAnswerText(normalized.type)}::${normalizeAnswerText(normalized.question)}`;
+  };
+
+  const mergeUniqueQuestions = (existing: any[], incoming: any[]) => {
+    const seen = new Set(existing.map((q: any) => questionFingerprint(q)));
+    const uniqueIncoming: any[] = [];
+    incoming.forEach((raw: any) => {
+      const q = normalizeQuestionItem(raw);
+      if (!q.question) return;
+      const fp = questionFingerprint(q);
+      if (seen.has(fp)) return;
+      seen.add(fp);
+      uniqueIncoming.push(q);
+    });
+    return [...existing, ...uniqueIncoming];
+  };
+
   const shuffleArray = (arr: number[]) => {
     const copy = [...arr];
     for (let i = copy.length - 1; i > 0; i -= 1) {
@@ -769,70 +806,7 @@ export default function Home() {
 
   const bulkAddQuizQuestions = () => {
     if (!tempChapter || !quizBuilderText.trim()) return;
-    const raw = quizBuilderText.replace(/\r/g, "");
-    const lines = raw.split("\n");
-    const isQuestionStartLine = (line: string) =>
-      /^(\d+\s*[\).\:-]|q\s*\d+\s*[:\).\-]|question\s*\d+\s*[:\).\-])/i.test(line.trim());
-    const isOptionLine = (line: string) =>
-      /^([A-Da-d])\s*[\)\].:\-]\s+/.test(line.trim());
-    const isAnswerLine = (line: string) =>
-      /^(answer|correct answer|ans)\s*[:\-]/i.test(line.trim());
-    const cleanText = (line: string) =>
-      line
-        .replace(/^[-*]\s+/, "")
-        .replace(/^\d+\s*[\).\:-]\s*/, "")
-        .replace(/^q\s*\d+\s*[:\).\-]\s*/i, "")
-        .replace(/^question\s*\d+\s*[:\).\-]\s*/i, "")
-        .replace(/\*\*/g, "")
-        .trim();
-
-    const blocks: string[] = [];
-    let currentBlock: string[] = [];
-
-    lines.forEach((lineRaw) => {
-      const line = lineRaw.trim();
-      if (!line) return;
-      if (line === "---") {
-        if (currentBlock.length > 0) {
-          blocks.push(currentBlock.join("\n"));
-          currentBlock = [];
-        }
-        return;
-      }
-      if (isQuestionStartLine(line) && currentBlock.length > 0) {
-        blocks.push(currentBlock.join("\n"));
-        currentBlock = [line];
-        return;
-      }
-      currentBlock.push(line);
-    });
-    if (currentBlock.length > 0) blocks.push(currentBlock.join("\n"));
-
-    const parsedQuestions: any[] = [];
-
-    blocks.forEach(block => {
-      const blockLines = block.split("\n").map(l => l.trim()).filter(Boolean);
-      if (blockLines.length < 2) return;
-      const questionLine = blockLines.find((line) => !isOptionLine(line) && !isAnswerLine(line));
-      const question = questionLine ? cleanText(questionLine) : "";
-      if (!question) return;
-
-      const optionLines = blockLines.filter(isOptionLine);
-      const answerLine = blockLines.find(isAnswerLine);
-      if (optionLines.length < 2 || !answerLine) return;
-
-      const options = optionLines.slice(0, 4).map(l => cleanText(l.replace(/^([A-Da-d])\s*[\)\].:\-]\s*/, "")));
-      const answerValue = answerLine.split(/[:\-]/).slice(1).join(":").trim();
-      const firstToken = answerValue.charAt(0).toUpperCase();
-      let correctIndex = ["A", "B", "C", "D"].indexOf(firstToken);
-      if (correctIndex < 0) {
-        const answerLower = cleanText(answerValue).toLowerCase();
-        correctIndex = options.findIndex((opt: string) => opt.toLowerCase() === answerLower || opt.toLowerCase().includes(answerLower));
-      }
-      if (correctIndex < 0 || correctIndex > 3) return;
-
-      parsedQuestions.push({ type: "mcq", question, options, correctIndex, answer: "", caseText: "", imageUrl: "", explanation: "" });
-    });
+    const parsedQuestions = parseWithMode(quizBuilderText);
 
     if (parsedQuestions.length === 0) {
       setSaveStatus("No valid quiz blocks found.");
@@ -841,9 +815,11 @@ export default function Home() {
     }
 
     const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
-    setTempChapter({ ...tempChapter, quiz: [...existing, ...parsedQuestions] });
+    const merged = mergeUniqueQuestions(existing, parsedQuestions);
+    const added = merged.length - existing.length;
+    setTempChapter({ ...tempChapter, quiz: merged });
     setQuizBuilderText("");
-    setSaveStatus(`Added ${parsedQuestions.length} quiz questions`);
+    setSaveStatus(added > 0 ? `Added ${added} quiz questions` : "No new questions (duplicates skipped)");
     setTimeout(() => setSaveStatus(""), 2500);
   };
 
@@ -1063,6 +1039,58 @@ export default function Home() {
     return parsedQuestions;
   };
 
+  const parseWithMode = (rawText: string) => {
+    const localParsed = parseNotebookLMMixedQuestions(rawText);
+    if (parserMode === "balanced") return localParsed;
+    if (parserMode === "strict") {
+      return localParsed.filter((q: any) => {
+        if (!q?.question) return false;
+        if (q.type === "mcq") return Array.isArray(q.options) && q.options.filter((o: string) => o?.trim()).length >= 3;
+        return !!`${q.answer || ""}`.trim();
+      });
+    }
+    // aggressive: include local parser output + looser MCQ fallback blocks
+    const fallbackBlocks: any[] = [];
+    const lines = rawText.replace(/\r/g, "").split("\n");
+    let currentQuestion = "";
+    let options: string[] = [];
+    lines.forEach((lineRaw) => {
+      const line = lineRaw.trim();
+      if (!line) return;
+      if (/^(\d+[\).\s]|q\d+[:\s])/i.test(line) && currentQuestion) {
+        if (options.length >= 2) fallbackBlocks.push({ type: "mcq", question: currentQuestion, options: [...options, "", "", "", ""].slice(0, 4), correctIndex: 0, answer: "", caseText: "", imageUrl: "", explanation: "" });
+        currentQuestion = line.replace(/^(\d+[\).\s]|q\d+[:\s])/i, "").trim();
+        options = [];
+        return;
+      }
+      if (!currentQuestion && line.endsWith("?")) {
+        currentQuestion = line;
+        return;
+      }
+      if (/^\(?[A-Da-d]\)?[\)\].:\-]?\s+/.test(line)) options.push(line.replace(/^\(?[A-Da-d]\)?[\)\].:\-]?\s+/, "").trim());
+    });
+    if (currentQuestion && options.length >= 2) fallbackBlocks.push({ type: "mcq", question: currentQuestion, options: [...options, "", "", "", ""].slice(0, 4), correctIndex: 0, answer: "", caseText: "", imageUrl: "", explanation: "" });
+    return mergeUniqueQuestions(localParsed, fallbackBlocks);
+  };
+
+  const previewParsedQuestions = () => {
+    if (!quizBuilderText.trim()) return;
+    const parsed = parseWithMode(quizBuilderText);
+    setParsedPreview(parsed.slice(0, 60));
+    setSaveStatus(parsed.length > 0 ? `Preview ready: ${parsed.length} questions` : "No questions detected");
+    setTimeout(() => setSaveStatus(""), 1800);
+  };
+
+  const addPreviewToQuiz = () => {
+    if (!tempChapter || parsedPreview.length === 0) return;
+    const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
+    const merged = mergeUniqueQuestions(existing, parsedPreview);
+    const added = merged.length - existing.length;
+    setTempChapter({ ...tempChapter, quiz: merged });
+    setSaveStatus(added > 0 ? `Added ${added} questions from preview` : "No new questions (duplicates skipped)");
+    setTimeout(() => setSaveStatus(""), 2200);
+  };
+
   const aiParseQuizQuestions = async () => {
     if (!tempChapter || !quizBuilderText.trim() || aiParsingQuiz) return;
     setAiParsingQuiz(true);
@@ -1106,15 +1134,19 @@ export default function Home() {
       }
 
       const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
-      setTempChapter({ ...tempChapter, quiz: [...existing, ...parsedQuestions] });
-      setSaveStatus(`AI added ${parsedQuestions.length} questions`);
+      const merged = mergeUniqueQuestions(existing, parsedQuestions);
+      const added = merged.length - existing.length;
+      setTempChapter({ ...tempChapter, quiz: merged });
+      setSaveStatus(added > 0 ? `AI added ${added} questions` : "No new questions (duplicates skipped)");
       setTimeout(() => setSaveStatus(""), 3000);
     } catch (e: any) {
-      const fallbackQuestions = parseNotebookLMMixedQuestions(quizBuilderText);
+      const fallbackQuestions = parseWithMode(quizBuilderText);
       if (fallbackQuestions.length > 0) {
         const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
-        setTempChapter({ ...tempChapter, quiz: [...existing, ...fallbackQuestions] });
-        setSaveStatus(`AI unavailable. Added ${fallbackQuestions.length} via local parser.`);
+        const merged = mergeUniqueQuestions(existing, fallbackQuestions);
+        const added = merged.length - existing.length;
+        setTempChapter({ ...tempChapter, quiz: merged });
+        setSaveStatus(added > 0 ? `AI unavailable. Added ${added} via local parser.` : "No new questions (duplicates skipped)");
         setTimeout(() => setSaveStatus(""), 3500);
       } else {
         setSaveStatus(e?.message || "AI parse failed");
@@ -1161,8 +1193,10 @@ export default function Home() {
       })).filter((q: any) => q.question);
       if (normalized.length === 0) throw new Error("No questions found");
       const existing = Array.isArray(tempChapter.quiz) ? tempChapter.quiz : [];
-      setTempChapter({ ...tempChapter, quiz: [...existing, ...normalized] });
-      setSaveStatus(`Imported ${normalized.length} questions`);
+      const merged = mergeUniqueQuestions(existing, normalized);
+      const added = merged.length - existing.length;
+      setTempChapter({ ...tempChapter, quiz: merged });
+      setSaveStatus(added > 0 ? `Imported ${added} questions` : "No new questions (duplicates skipped)");
       setTimeout(() => setSaveStatus(""), 1800);
     } catch (e: any) {
       setSaveStatus(e?.message || "Import failed");
@@ -1214,6 +1248,39 @@ export default function Home() {
   }, [achievementToast]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("studyReminderEnabled");
+    setReminderEnabled(stored === "1");
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("studyReminderEnabled", reminderEnabled ? "1" : "0");
+  }, [reminderEnabled]);
+
+  useEffect(() => {
+    if (!user || !reminderEnabled) return;
+    const tick = () => {
+      if (typeof Notification === "undefined") return;
+      if (Notification.permission !== "granted") return;
+      const today = getLocalDateKey();
+      const done = dailyProgressDate === today ? dailyCompleted : 0;
+      if (done >= dailyGoal) return;
+      const hour = new Date().getHours();
+      if (hour < 17 || hour > 22) return;
+      const reminderKey = `studyReminderSent:${today}`;
+      if (window.localStorage.getItem(reminderKey) === "1") return;
+      new Notification("Pajji Learn Reminder", {
+        body: `You are at ${done}/${dailyGoal} lessons today. Keep your streak alive.`
+      });
+      window.localStorage.setItem(reminderKey, "1");
+    };
+    const interval = window.setInterval(tick, 60000);
+    tick();
+    return () => window.clearInterval(interval);
+  }, [user, reminderEnabled, dailyCompleted, dailyGoal, dailyProgressDate]);
+
+  useEffect(() => {
     if (view !== "edit" || !tempChapter || !isOwner || !curBook) return;
     const payload = JSON.stringify(tempChapter);
     if (!payload || payload === lastAutosavePayloadRef.current) return;
@@ -1250,6 +1317,21 @@ export default function Home() {
   const bestQuizScore = quizAttempts.length > 0
     ? Math.max(...quizAttempts.map((a: any) => Math.round(((a.score || 0) / Math.max(1, a.total || 1)) * 100)))
     : 0;
+  const getLessonAttemptSeries = (lessonId: string) =>
+    quizAttempts
+      .filter((a: any) => a.lessonId === lessonId)
+      .slice(-5)
+      .map((a: any) => Number(a.accuracy || 0));
+  const getBookAttemptInsights = (book: any) => {
+    const chapterIds = new Set((book.chapters || []).map((ch: any) => ch.id));
+    const attempts = quizAttempts.filter((a: any) => chapterIds.has(a.lessonId));
+    const weakCount = (book.chapters || []).filter((ch: any) => weakLessonIds.includes(ch.id)).length;
+    const avgAccuracy = attempts.length > 0
+      ? Math.round(attempts.reduce((sum: number, a: any) => sum + Number(a.accuracy || 0), 0) / attempts.length)
+      : null;
+    const trend = attempts.slice(-5).map((a: any) => Number(a.accuracy || 0));
+    return { attemptsCount: attempts.length, weakCount, avgAccuracy, trend };
+  };
 
   useEffect(() => {
     if (view !== "study" || activeTab !== "Quiz" || !curChapter) return;
@@ -1530,6 +1612,28 @@ export default function Home() {
                 <button onClick={() => updateDailyGoal(dailyGoal + 1)} style={{width: "32px", height: "32px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "900", cursor: "pointer"}}>+</button>
               </div>
             </div>
+            <div className="card" style={{marginBottom: "16px", display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap"}}>
+              <div>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800"}}>Study Reminder</p>
+                <p style={{fontSize: "13px", color: "var(--muted)", marginTop: "4px"}}>Get one browser reminder in the evening if your daily goal is incomplete.</p>
+              </div>
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  if (!reminderEnabled && typeof Notification !== "undefined" && Notification.permission !== "granted") {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== "granted") {
+                      setSaveStatus("Notification permission blocked");
+                      setTimeout(() => setSaveStatus(""), 1800);
+                      return;
+                    }
+                  }
+                  setReminderEnabled((prev) => !prev);
+                }}
+              >
+                Reminder: {reminderEnabled ? "On" : "Off"}
+              </button>
+            </div>
             {resumeLesson && (
               <div className="card" style={{marginBottom: "16px", borderLeft: "4px solid #fbbf24"}}>
                 <p style={{fontSize: "11px", fontWeight: "900", color: "#f59e0b", textTransform: "uppercase", marginBottom: "6px"}}>Resume Last Lesson</p>
@@ -1644,6 +1748,7 @@ export default function Home() {
             <div className="library-grid" style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px"}}>
               {filteredBooks.map(b => {
                 const progress = getBookProgress(b);
+                const insights = getBookAttemptInsights(b);
                 return (
                 <div key={b.id} className="card" style={{textAlign: "center", transition: "0.2s", cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
                   <div style={{height: "120px", background: "var(--input-bg)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", marginBottom: "16px"}}>📖</div>
@@ -1652,6 +1757,23 @@ export default function Home() {
                   <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginTop: "10px", marginBottom: "6px"}}>{progress.masteredLessons}/{progress.totalLessons} mastered</p>
                   <div style={{height: "7px", background: "var(--input-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)"}}>
                     <div style={{height: "100%", width: `${progress.progressPercent}%`, background: "linear-gradient(90deg, #10b981, #34d399)"}} />
+                  </div>
+                  <div style={{marginTop: "10px", borderTop: "1px dashed var(--border)", paddingTop: "10px"}}>
+                    <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                      Attempts: {insights.attemptsCount} • Avg: {insights.avgAccuracy === null ? "--" : `${insights.avgAccuracy}%`}
+                    </p>
+                    {insights.trend.length > 0 && (
+                      <div style={{display: "flex", gap: "4px", marginTop: "6px", alignItems: "flex-end", justifyContent: "center", height: "28px"}}>
+                        {insights.trend.map((v: number, idx: number) => (
+                          <div key={`trend-${b.id}-${idx}`} title={`${v}%`} style={{width: "8px", height: `${Math.max(4, Math.round((v / 100) * 28))}px`, borderRadius: "4px", background: v >= 70 ? "#10b981" : "#ef4444"}} />
+                        ))}
+                      </div>
+                    )}
+                    {insights.weakCount > 0 && (
+                      <p style={{fontSize: "10px", color: "#ef4444", fontWeight: "800", marginTop: "6px"}}>
+                        Weak tags: {insights.weakCount}
+                      </p>
+                    )}
                   </div>
                   {isOwner && <button className="del-btn" style={{marginTop: "16px", width: "100%", background: "rgba(239, 68, 68, 0.1)", border: "none", color: "#ef4444", padding: "8px", borderRadius: "10px", fontWeight: "bold", fontSize: "11px"}} onClick={(e) => {e.stopPropagation(); deleteItem('book', b.id)}}>Delete</button>}
                 </div>
@@ -1997,6 +2119,12 @@ export default function Home() {
                     </div>
                     <div style={{marginTop: "14px", borderTop: "1px dashed var(--border)", paddingTop: "12px"}}>
                       <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase"}}>Quick Bulk Add (NotebookLM Friendly)</p>
+                      <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px"}}>
+                        <span style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>Parser mode:</span>
+                        <button onClick={() => setParserMode("strict")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "strict" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>Strict</button>
+                        <button onClick={() => setParserMode("balanced")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "balanced" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>Balanced</button>
+                        <button onClick={() => setParserMode("aggressive")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "aggressive" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>Aggressive</button>
+                      </div>
                       <textarea
                         placeholder={`Paste from NotebookLM directly.\nSupported examples:\n1) What is ...?\nA) ...\nB) ...\nC) ...\nD) ...\nCorrect Answer: B\n\nQ2: Another question...\nA. ...\nB. ...\nAnswer: Option text`}
                         value={quizBuilderText}
@@ -2004,6 +2132,12 @@ export default function Home() {
                         style={{minHeight: "130px"}}
                       />
                       <div style={{display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap"}}>
+                        <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer"}}>
+                          Preview Paste
+                        </button>
+                        <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer"}}>
+                          Add Preview
+                        </button>
                         <button onClick={bulkAddQuizQuestions} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Parse & Add Questions</button>
                         <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1}}>
                           {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
@@ -2019,6 +2153,18 @@ export default function Home() {
                         onChange={(e) => setQuizPackText(e.target.value)}
                         style={{minHeight: "110px", marginTop: "8px"}}
                       />
+                      {parsedPreview.length > 0 && (
+                        <div style={{marginTop: "8px", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--card)"}}>
+                          <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px"}}>Preview ({parsedPreview.length})</p>
+                          <div style={{display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto"}}>
+                            {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
+                              <div key={`preview-${idx}`} style={{fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px"}}>
+                                <strong style={{fontSize: "10px", color: "#10b981", marginRight: "6px"}}>{q.type}</strong>{q.question}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                 </div>
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>

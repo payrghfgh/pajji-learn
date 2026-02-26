@@ -1,0 +1,285 @@
+:root {
+  --bg: #f4eadf;
+  --ink: #384f50;
+  --card-dark: #415b5d;
+  --card-light: #f9f3ec;
+  --line: #d4c7b7;
+  --accent: #9d5f49;
+  --quote: #f2e9dc;
+  --quote-line: #d4c0c4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 15% 10%, #e4d5c8 0, transparent 35%),
+    radial-gradient(circle at 85% 80%, #e7d8ca 0, transparent 30%), var(--bg);
+  min-height: 100vh;
+}
+
+.bg-blur {
+  position: fixed;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.bg-blur.one {
+  top: -6rem;
+  left: -4rem;
+  width: 18rem;
+  height: 18rem;
+  background: #c6a28f;
+}
+
+.bg-blur.two {
+  right: -5rem;
+  bottom: -7rem;
+  width: 20rem;
+  height: 20rem;
+  background: #9eb0ab;
+}
+
+.topbar {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 1rem auto;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(249, 243, 236, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 1rem;
+  z-index: 20;
+}
+
+.brand {
+  font-family: "Playfair Display", serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.cta {
+  text-decoration: none;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+}
+
+.container {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.cta-inline {
+  display: inline-flex;
+}
+
+.cta-banner {
+  padding-top: 2.5rem;
+  padding-bottom: 2rem;
+}
+
+.cta-banner-link {
+  color: #435d5d;
+  border: 2px solid #4f6a6a;
+  padding: 1.55rem 2rem;
+  font-family: "Playfair Display", serif;
+  font-weight: 800;
+  font-size: clamp(1.8rem, 3.6vw, 3.25rem);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  border-radius: 0;
+  background: transparent;
+}
+
+.cta-banner-link:hover {
+  background: #435d5d;
+  color: #f2e9dc;
+  transform: translateY(-2px);
+}
+
+.hero {
+  text-align: center;
+  padding: 4.5rem 0 2rem;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+}
+
+h1 {
+  font-size: clamp(2.25rem, 6vw, 5rem);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hero p {
+  max-width: 780px;
+  margin: 1rem auto 0;
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.section {
+  padding: 2.25rem 0;
+}
+
+.section h2 {
+  text-align: center;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  margin-bottom: 1.2rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.services {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.split {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.testimonials,
+.branches {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.testimonials {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.card {
+  padding: 1.2rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  box-shadow: 0 16px 30px rgba(64, 49, 35, 0.08);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 32px rgba(64, 49, 35, 0.14);
+}
+
+.dark {
+  background: var(--card-dark);
+  color: #f5f0e8;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.light {
+  background: var(--card-light);
+}
+
+.card p,
+blockquote {
+  margin: 0.55rem 0 0;
+  line-height: 1.7;
+}
+
+.quote-card {
+  background: #486768;
+  color: var(--quote);
+  border-color: var(--quote-line);
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  line-height: 1.45;
+  padding: clamp(1.25rem, 2.3vw, 2.6rem);
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+cite {
+  display: block;
+  margin-top: 1.6rem;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 2.85rem;
+  color: var(--quote-line);
+}
+
+.contact {
+  text-align: center;
+}
+
+footer {
+  border-top: 1px solid var(--line);
+  text-align: center;
+  padding: 1.4rem 1rem 2rem;
+  margin-top: 2rem;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: 600ms ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (max-width: 900px) {
+  .services,
+  .split,
+  .testimonials,
+  .branches {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    border-radius: 18px;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .cta-inline {
+    display: inline-flex;
+  }
+
+  .cta-banner-link {
+    font-size: clamp(1.2rem, 5vw, 1.9rem);
+    padding: 1rem;
+  }
+
+  .hero {
+    padding-top: 0.5rem;
+  }
+
+  .quote-card {
+    min-height: auto;
+  }
+
+  cite {
+    font-size: 2.2rem;
+  }
+}
