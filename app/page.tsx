@@ -531,10 +531,17 @@ export default function Home() {
 
     return expectedOptions.some(expected => {
       if (submitted === expected) return true;
-      if (submitted.includes(expected) || expected.includes(submitted)) return true;
+      // Single-character submissions should never pass unless exact.
+      if (submitted.length <= 1 || expected.length <= 1) return submitted === expected;
+      // Allow containment only for meaningful overlap; prevents "h" matching long answers.
+      const minLen = Math.min(submitted.length, expected.length);
+      const maxLen = Math.max(submitted.length, expected.length);
+      if (minLen >= 4) {
+        const overlapRatio = minLen / maxLen;
+        if ((submitted.includes(expected) || expected.includes(submitted)) && overlapRatio >= 0.6) return true;
+      }
 
       const distance = levenshteinDistance(submitted, expected);
-      const maxLen = Math.max(submitted.length, expected.length);
       const similarity = maxLen === 0 ? 1 : 1 - distance / maxLen;
       const threshold = maxLen <= 4 ? 0.75 : maxLen <= 20 ? 0.82 : 0.72;
       if (similarity >= threshold) return true;
