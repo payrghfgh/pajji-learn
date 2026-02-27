@@ -50,6 +50,7 @@ export default function Home() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "notStarted" | "inProgress" | "mastered">("all");
+  const [librarySort, setLibrarySort] = useState<"default" | "lastEdited">("default");
   const [lastLesson, setLastLesson] = useState<{ bookId: string; chapterId: string } | null>(null);
   const [streakCount, setStreakCount] = useState(0);
   const [lastStudyDate, setLastStudyDate] = useState<string | null>(null);
@@ -80,9 +81,19 @@ export default function Home() {
   const [parsedPreview, setParsedPreview] = useState<any[]>([]);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [lessonNotes, setLessonNotes] = useState<Record<string, string>>({});
+  const [notesMeta, setNotesMeta] = useState<Record<string, string>>({});
   const [noteDraft, setNoteDraft] = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSavedAt, setNoteSavedAt] = useState("");
+  const [notesSearch, setNotesSearch] = useState("");
+  const [newPinnedPointText, setNewPinnedPointText] = useState("");
+  const [pinnedKeyPoints, setPinnedKeyPoints] = useState<Array<{ id: string; lessonId: string; text: string; createdAt: string }>>([]);
+  const [noteTags, setNoteTags] = useState<Record<string, string[]>>({});
+  const [newTagInput, setNewTagInput] = useState("");
+  const [notesTagFilter, setNotesTagFilter] = useState("all");
+  const [flashcardsByLesson, setFlashcardsByLesson] = useState<Record<string, Array<{ q: string; a: string }>>>({});
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [flashcardReveal, setFlashcardReveal] = useState(false);
 
   const curBookIdRef = useRef<string | null>(null);
   const lastAutosavePayloadRef = useRef("");
@@ -121,9 +132,19 @@ export default function Home() {
         setQuizAttempts([]);
         setWeakLessonIds([]);
         setLessonNotes({});
+        setNotesMeta({});
         setNoteDraft("");
         setNoteSaving(false);
         setNoteSavedAt("");
+        setNotesSearch("");
+        setNewPinnedPointText("");
+        setPinnedKeyPoints([]);
+        setNoteTags({});
+        setNewTagInput("");
+        setNotesTagFilter("all");
+        setFlashcardsByLesson({});
+        setFlashcardIndex(0);
+        setFlashcardReveal(false);
         setLoading(false);
         setDataLoading(false);
       }
@@ -167,6 +188,9 @@ export default function Home() {
         setQuizAttempts(data.quizAttempts || []);
         setWeakLessonIds(data.weakLessonIds || []);
         setLessonNotes((data.lessonNotes && typeof data.lessonNotes === "object") ? data.lessonNotes : {});
+        setNotesMeta((data.notesMeta && typeof data.notesMeta === "object") ? data.notesMeta : {});
+        setPinnedKeyPoints(Array.isArray(data.pinnedKeyPoints) ? data.pinnedKeyPoints : []);
+        setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -184,7 +208,10 @@ export default function Home() {
           weeklyKey: "",
           quizAttempts: [],
           weakLessonIds: [],
-          lessonNotes: {}
+          lessonNotes: {},
+          notesMeta: {},
+          pinnedKeyPoints: [],
+          noteTags: {}
         }, { merge: true });
         setUserXP(0);
         setLastLesson(null);
@@ -198,6 +225,9 @@ export default function Home() {
         setQuizAttempts([]);
         setWeakLessonIds([]);
         setLessonNotes({});
+        setNotesMeta({});
+        setPinnedKeyPoints([]);
+        setNoteTags({});
       }
       setDataLoading(false);
     });
@@ -617,6 +647,9 @@ export default function Home() {
     setQuizOptionOrder({});
     setCurrentQuizPos(0);
     setShowShortcuts(false);
+    setNewTagInput("");
+    setFlashcardIndex(0);
+    setFlashcardReveal(false);
     const currentNote = lessonNotes[chapter.id] || "";
     setNoteDraft(currentNote);
     lastSavedNoteRef.current = currentNote;
@@ -1237,6 +1270,21 @@ export default function Home() {
   })();
 
   const normalizedLibraryQuery = libraryQuery.trim().toLowerCase();
+  const getBookLastEditedAt = (book: any) =>
+    (book.chapters || []).reduce((latest: string, ch: any) => {
+      const current = notesMeta[ch.id] || "";
+      if (!current) return latest;
+      if (!latest) return current;
+      return current > latest ? current : latest;
+    }, "");
+
+  const formatNoteEdited = (iso: string) => {
+    if (!iso) return "No notes yet";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "No notes yet";
+    return `Last edited ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
   const filteredBooks = books.filter((book: any) => {
     const chapters = book.chapters || [];
     const titleMatch = (book.title || "").toLowerCase().includes(normalizedLibraryQuery);
@@ -1248,6 +1296,12 @@ export default function Home() {
     if (libraryFilter === "mastered") return queryMatch && totalLessons > 0 && masteredLessons === totalLessons;
     if (libraryFilter === "inProgress") return queryMatch && masteredLessons > 0 && masteredLessons < totalLessons;
     return queryMatch;
+  });
+  const sortedFilteredBooks = [...filteredBooks].sort((a: any, b: any) => {
+    if (librarySort !== "lastEdited") return 0;
+    const aEdited = getBookLastEditedAt(a);
+    const bEdited = getBookLastEditedAt(b);
+    return bEdited.localeCompare(aEdited);
   });
 
   const startQuickReview = () => {
@@ -1265,13 +1319,19 @@ export default function Home() {
     openLesson(nextLesson.book, nextLesson.chapter);
   };
 
-  const persistLessonNote = async (chapterId: string, text: string) => {
+  const persistLessonNote = async (chapterId: string, text: string, touchedAt: string) => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
     try {
-      await updateDoc(userRef, { [`lessonNotes.${chapterId}`]: text });
+      await updateDoc(userRef, {
+        [`lessonNotes.${chapterId}`]: text,
+        [`notesMeta.${chapterId}`]: touchedAt
+      });
     } catch {
-      await setDoc(userRef, { lessonNotes: { [chapterId]: text } }, { merge: true });
+      await setDoc(userRef, {
+        lessonNotes: { [chapterId]: text },
+        notesMeta: { [chapterId]: touchedAt }
+      }, { merge: true });
     }
   };
 
@@ -1281,8 +1341,10 @@ export default function Home() {
     if (textToSave === lastSavedNoteRef.current) return;
     setNoteSaving(true);
     try {
-      await persistLessonNote(curChapter.id, textToSave);
+      const touchedAt = new Date().toISOString();
+      await persistLessonNote(curChapter.id, textToSave, touchedAt);
       setLessonNotes((prev) => ({ ...prev, [curChapter.id]: textToSave }));
+      setNotesMeta((prev) => ({ ...prev, [curChapter.id]: touchedAt }));
       lastSavedNoteRef.current = textToSave;
       setNoteSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     } catch (e) {
@@ -1291,6 +1353,188 @@ export default function Home() {
     } finally {
       setNoteSaving(false);
     }
+  };
+
+  const exportCurrentNote = () => {
+    if (!curChapter) return;
+    const content = `${noteDraft || ""}`.trim();
+    if (!content) {
+      setSaveStatus("No note content to export");
+      setTimeout(() => setSaveStatus(""), 1500);
+      return;
+    }
+    const title = (curChapter.title || "lesson-note").replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-").toLowerCase();
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title || "lesson-note"}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const noteTemplates: Record<string, string> = {
+    Definition: "Definition:\nTerm:\nMeaning:\nExample:\n",
+    "Cause/Effect": "Cause:\n1.\n2.\n\nEffect:\n1.\n2.\n",
+    Timeline: "Timeline:\n- Year/Event:\n- Year/Event:\n- Year/Event:\n",
+  };
+
+  const insertNoteTemplate = (templateKey: string) => {
+    const template = noteTemplates[templateKey];
+    if (!template) return;
+    setNoteDraft((prev) => {
+      const prefix = prev.trim() ? `${prev}\n\n` : "";
+      return `${prefix}${template}`;
+    });
+  };
+
+  const addPinnedKeyPoint = async () => {
+    const text = newPinnedPointText.trim();
+    if (!user || !curChapter?.id || !text) return;
+    const point = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      lessonId: curChapter.id,
+      text,
+      createdAt: new Date().toISOString()
+    };
+    const next = [point, ...pinnedKeyPoints].slice(0, 30);
+    setPinnedKeyPoints(next);
+    setNewPinnedPointText("");
+    try {
+      await setDoc(doc(db, "users", user.uid), { pinnedKeyPoints: next }, { merge: true });
+    } catch {
+      setSaveStatus("Pin failed");
+      setTimeout(() => setSaveStatus(""), 1500);
+    }
+  };
+
+  const removePinnedKeyPoint = async (pointId: string) => {
+    if (!user) return;
+    const next = pinnedKeyPoints.filter((p) => p.id !== pointId);
+    setPinnedKeyPoints(next);
+    try {
+      await setDoc(doc(db, "users", user.uid), { pinnedKeyPoints: next }, { merge: true });
+    } catch {
+      setSaveStatus("Remove failed");
+      setTimeout(() => setSaveStatus(""), 1500);
+    }
+  };
+
+  const saveLessonTags = async (chapterId: string, tags: string[]) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), { [`noteTags.${chapterId}`]: tags });
+    } catch {
+      await setDoc(doc(db, "users", user.uid), { noteTags: { [chapterId]: tags } }, { merge: true });
+    }
+  };
+
+  const addTagToCurrentLesson = async (rawTag: string) => {
+    if (!curChapter?.id) return;
+    const normalized = rawTag.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!normalized) return;
+    const current = noteTags[curChapter.id] || [];
+    if (current.includes(normalized)) return;
+    const next = [...current, normalized].slice(0, 10);
+    setNoteTags((prev) => ({ ...prev, [curChapter.id]: next }));
+    setNewTagInput("");
+    await saveLessonTags(curChapter.id, next);
+  };
+
+  const removeTagFromCurrentLesson = async (tag: string) => {
+    if (!curChapter?.id) return;
+    const current = noteTags[curChapter.id] || [];
+    const next = current.filter((t) => t !== tag);
+    setNoteTags((prev) => ({ ...prev, [curChapter.id]: next }));
+    await saveLessonTags(curChapter.id, next);
+  };
+
+  const generateFlashcardsFromNote = () => {
+    if (!curChapter?.id) return;
+    const text = `${noteDraft || ""}`;
+    const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
+    const cards: Array<{ q: string; a: string }> = [];
+
+    lines.forEach((line) => {
+      if (cards.length >= 24) return;
+      if (line.includes(":")) {
+        const [left, ...rightParts] = line.split(":");
+        const right = rightParts.join(":").trim();
+        const leftText = left.trim();
+        if (leftText && right) cards.push({ q: leftText.endsWith("?") ? leftText : `What is ${leftText}?`, a: right });
+        return;
+      }
+      if (line.includes(" - ")) {
+        const [left, ...rightParts] = line.split(" - ");
+        const right = rightParts.join(" - ").trim();
+        const leftText = left.trim();
+        if (leftText && right) cards.push({ q: `Explain ${leftText}`, a: right });
+      }
+    });
+
+    if (cards.length === 0) {
+      const sentences = text
+        .split(/[.!?]\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 20);
+      sentences.slice(0, 12).forEach((sentence, idx) => {
+        cards.push({ q: `Recall point ${idx + 1}`, a: sentence });
+      });
+    }
+
+    if (cards.length === 0) {
+      setSaveStatus("Add note content first");
+      setTimeout(() => setSaveStatus(""), 1500);
+      return;
+    }
+
+    setFlashcardsByLesson((prev) => ({ ...prev, [curChapter.id]: cards }));
+    setFlashcardIndex(0);
+    setFlashcardReveal(false);
+    setSaveStatus(`Generated ${cards.length} flashcards`);
+    setTimeout(() => setSaveStatus(""), 1600);
+  };
+
+  const exportAllNotesMarkdown = () => {
+    const sections: string[] = ["# Pajji Learn Notes", ""];
+    books.forEach((book: any) => {
+      const chapterSections: string[] = [];
+      (book.chapters || []).forEach((chapter: any) => {
+        const note = `${lessonNotes[chapter.id] || ""}`.trim();
+        if (!note) return;
+        const tags = noteTags[chapter.id] || [];
+        chapterSections.push(`## ${chapter.title || "Untitled Lesson"}`);
+        if (tags.length > 0) chapterSections.push(`Tags: ${tags.map((tag) => `#${tag}`).join(" ")}`);
+        chapterSections.push("");
+        chapterSections.push(note);
+        chapterSections.push("");
+      });
+      if (chapterSections.length > 0) {
+        sections.push(`## Book: ${book.title || "Untitled Book"}`);
+        sections.push("");
+        sections.push(...chapterSections);
+      }
+    });
+
+    const finalDoc = sections.join("\n").trim();
+    if (!finalDoc || finalDoc === "# Pajji Learn Notes") {
+      setSaveStatus("No notes to export");
+      setTimeout(() => setSaveStatus(""), 1500);
+      return;
+    }
+
+    const today = getLocalDateKey();
+    const blob = new Blob([`${finalDoc}\n`], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pajji-notes-${today}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   useEffect(() => {
@@ -1386,6 +1630,35 @@ export default function Home() {
   const todayCompletedCount = dailyProgressDate === todayKey ? dailyCompleted : 0;
   const goalProgressPct = Math.min(100, Math.round((todayCompletedCount / Math.max(1, dailyGoal)) * 100));
   const recentQuizAttempts = quizAttempts.slice(-5).reverse();
+  const recentPinnedPoints = pinnedKeyPoints.slice(0, 6);
+  const lessonPinnedPoints = curChapter ? pinnedKeyPoints.filter((p) => p.lessonId === curChapter.id).slice(0, 6) : [];
+  const currentLessonTags = curChapter ? (noteTags[curChapter.id] || []) : [];
+  const quickTagOptions = ["important", "exam", "doubt", "revise"];
+  const availableNoteTags = Array.from(new Set(Object.values(noteTags).flat())).sort();
+  const normalizedNotesSearch = notesSearch.trim().toLowerCase();
+  const allNotesEntries = Object.entries(lessonNotes)
+    .filter(([, note]) => `${note || ""}`.trim().length > 0)
+    .map(([lessonId, note]) => {
+      const lesson = getLessonById(lessonId);
+      return {
+        lessonId,
+        note,
+        lessonTitle: lesson?.chapter?.title || "Unknown Lesson",
+        bookTitle: lesson?.book?.title || "Unknown Book",
+        lesson,
+        tags: noteTags[lessonId] || []
+      };
+    })
+    .filter((item) => {
+      if (!normalizedNotesSearch) return true;
+      const hay = `${item.lessonTitle} ${item.bookTitle} ${item.note} ${(item.tags || []).join(" ")}`.toLowerCase();
+      return hay.includes(normalizedNotesSearch);
+    })
+    .filter((item) => {
+      if (notesTagFilter === "all") return true;
+      return (item.tags || []).includes(notesTagFilter);
+    });
+  const lessonFlashcards = curChapter ? (flashcardsByLesson[curChapter.id] || []) : [];
   const bestQuizScore = quizAttempts.length > 0
     ? Math.max(...quizAttempts.map((a: any) => Math.round(((a.score || 0) / Math.max(1, a.total || 1)) * 100)))
     : 0;
@@ -1779,6 +2052,86 @@ export default function Home() {
                 </div>
               )}
             </div>
+            <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>Pinned Key Points</h2>
+            <div className="card" style={{padding: "18px"}}>
+              {recentPinnedPoints.length === 0 ? (
+                <p style={{fontSize: "13px", color: "var(--muted)"}}>No pinned points yet. Add them from lesson notes.</p>
+              ) : (
+                <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                  {recentPinnedPoints.map((point) => {
+                    const lesson = getLessonById(point.lessonId);
+                    return (
+                      <div key={point.id} style={{display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px"}}>
+                        <div>
+                          <div style={{fontWeight: "700", fontSize: "13px"}}>{point.text}</div>
+                          <div style={{fontSize: "11px", color: "var(--muted)"}}>
+                            {(lesson?.book?.title || "Unknown Book")} • {(lesson?.chapter?.title || "Unknown Lesson")}
+                          </div>
+                        </div>
+                        <div style={{display: "flex", gap: "6px", alignItems: "center"}}>
+                          {lesson && (
+                            <button className="btn btn-secondary" style={{padding: "6px 10px"}} onClick={() => openLesson(lesson.book, lesson.chapter)}>Open</button>
+                          )}
+                          <button className="btn btn-danger" style={{padding: "6px 10px"}} onClick={() => removePinnedKeyPoint(point.id)}>Remove</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>All Notes</h2>
+            <div className="card" style={{padding: "18px"}}>
+              <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "10px"}}>
+                <input
+                  type="text"
+                  placeholder="Search across all your notes..."
+                  value={notesSearch}
+                  onChange={(e) => setNotesSearch(e.target.value)}
+                  style={{padding: "12px", flex: 1, minWidth: "220px"}}
+                />
+                <button className="btn btn-secondary" onClick={exportAllNotesMarkdown}>Export All (.md)</button>
+              </div>
+              <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px"}}>
+                <button className="btn btn-secondary" onClick={() => setNotesTagFilter("all")} style={{padding: "6px 10px", background: notesTagFilter === "all" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>All Tags</button>
+                {availableNoteTags.map((tag) => (
+                  <button key={`filter-${tag}`} className="btn btn-secondary" onClick={() => setNotesTagFilter(tag)} style={{padding: "6px 10px", background: notesTagFilter === tag ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+              {allNotesEntries.length === 0 ? (
+                <p style={{fontSize: "13px", color: "var(--muted)"}}>No matching notes found.</p>
+              ) : (
+                <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
+                  {allNotesEntries.slice(0, 20).map((item) => (
+                    <div key={item.lessonId} style={{border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px"}}>
+                      <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center"}}>
+                        <div>
+                          <div style={{fontWeight: "700", fontSize: "13px"}}>{item.lessonTitle}</div>
+                          <div style={{fontSize: "11px", color: "var(--muted)"}}>{item.bookTitle}</div>
+                        </div>
+                        {(() => {
+                          const lessonEntry = item.lesson;
+                          if (!lessonEntry) return null;
+                          return <button className="btn btn-secondary" style={{padding: "6px 10px"}} onClick={() => openLesson(lessonEntry.book, lessonEntry.chapter)}>Open</button>;
+                        })()}
+                      </div>
+                      {(item.tags || []).length > 0 && (
+                        <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px"}}>
+                          {(item.tags || []).map((tag: string) => (
+                            <span key={`${item.lessonId}-${tag}`} style={{fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "6px", whiteSpace: "pre-wrap"}}>{`${item.note}`.slice(0, 180)}{`${item.note}`.length > 180 ? "..." : ""}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1808,7 +2161,7 @@ export default function Home() {
               <h1 className="page-title">Library</h1>
               {isOwner && <button className="btn btn-primary" onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}}>+ New Book</button>}
             </div>
-            <div className="card library-tools" style={{display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", padding: "14px", marginBottom: "20px"}}>
+            <div className="card library-tools" style={{display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "12px", padding: "14px", marginBottom: "20px"}}>
               <input type="text" placeholder="Search books or lessons..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{padding: "12px"}} />
               <select value={libraryFilter} onChange={(e) => setLibraryFilter(e.target.value as "all" | "notStarted" | "inProgress" | "mastered")} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "14px", padding: "12px"}}>
                 <option value="all">All Books</option>
@@ -1816,11 +2169,16 @@ export default function Home() {
                 <option value="inProgress">In Progress</option>
                 <option value="mastered">Mastered</option>
               </select>
+              <select value={librarySort} onChange={(e) => setLibrarySort(e.target.value as "default" | "lastEdited")} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "14px", padding: "12px"}}>
+                <option value="default">Sort: Default</option>
+                <option value="lastEdited">Sort: Last Edited</option>
+              </select>
             </div>
             <div className="library-grid" style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px"}}>
-              {filteredBooks.map(b => {
+              {sortedFilteredBooks.map(b => {
                 const progress = getBookProgress(b);
                 const insights = getBookAttemptInsights(b);
+                const bookLastEditedAt = getBookLastEditedAt(b);
                 return (
                 <div key={b.id} className="card" style={{textAlign: "center", transition: "0.2s", cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
                   <div style={{height: "120px", background: "var(--input-bg)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", marginBottom: "16px"}}>📖</div>
@@ -1834,6 +2192,7 @@ export default function Home() {
                     <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
                       Attempts: {insights.attemptsCount} • Avg: {insights.avgAccuracy === null ? "--" : `${insights.avgAccuracy}%`}
                     </p>
+                    <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{formatNoteEdited(bookLastEditedAt)}</p>
                     {insights.trend.length > 0 && (
                       <div style={{display: "flex", gap: "4px", marginTop: "6px", alignItems: "flex-end", justifyContent: "center", height: "28px"}}>
                         {insights.trend.map((v: number, idx: number) => (
@@ -2127,7 +2486,14 @@ export default function Home() {
                      style={{minHeight: "340px", lineHeight: 1.6}}
                    />
                    <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                     <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Definition")}>Template: Definition</button>
+                     <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Cause/Effect")}>Template: Cause/Effect</button>
+                     <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Timeline")}>Template: Timeline</button>
+                   </div>
+                   <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
                      <button onClick={() => saveCurrentNote()} className="btn btn-primary" disabled={noteSaving} style={{opacity: noteSaving ? 0.7 : 1}}>Save Note</button>
+                     <button onClick={generateFlashcardsFromNote} className="btn btn-secondary">Generate Flashcards</button>
+                     <button onClick={exportCurrentNote} className="btn btn-secondary">Export Note (.txt)</button>
                      <button
                        onClick={async () => {
                          if (!confirm("Clear note for this lesson?")) return;
@@ -2140,6 +2506,86 @@ export default function Home() {
                      >
                        Clear Note
                      </button>
+                   </div>
+                   <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)"}}>
+                     <p style={{fontSize: "12px", fontWeight: "800", marginBottom: "8px"}}>Tags</p>
+                     <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px"}}>
+                       <input
+                         type="text"
+                         placeholder="Add tag (example: exam)"
+                         value={newTagInput}
+                         onChange={(e) => setNewTagInput(e.target.value)}
+                         onKeyDown={(e) => {
+                           if (e.key === "Enter") {
+                             e.preventDefault();
+                             addTagToCurrentLesson(newTagInput);
+                           }
+                         }}
+                         style={{padding: "10px", flex: 1, minWidth: "220px"}}
+                       />
+                       <button className="btn btn-secondary" onClick={() => addTagToCurrentLesson(newTagInput)}>Add Tag</button>
+                     </div>
+                     <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px"}}>
+                       {quickTagOptions.map((tag) => (
+                         <button key={`quick-tag-${tag}`} className="btn btn-secondary" style={{padding: "5px 8px"}} onClick={() => addTagToCurrentLesson(tag)}>
+                           + #{tag}
+                         </button>
+                       ))}
+                     </div>
+                     {currentLessonTags.length > 0 && (
+                       <div style={{display: "flex", gap: "6px", flexWrap: "wrap"}}>
+                         {currentLessonTags.map((tag) => (
+                           <button key={`tag-${tag}`} className="btn btn-secondary" style={{padding: "4px 8px"}} onClick={() => removeTagFromCurrentLesson(tag)}>
+                             #{tag} x
+                           </button>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                   {lessonFlashcards.length > 0 && (
+                     <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)"}}>
+                       <p style={{fontSize: "12px", fontWeight: "800", marginBottom: "8px"}}>
+                         Flashcards ({Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length})
+                       </p>
+                       <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "12px", background: "var(--card)", minHeight: "88px"}}>
+                         <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px"}}>Q</p>
+                         <p style={{fontSize: "14px", fontWeight: "700"}}>{lessonFlashcards[flashcardIndex]?.q}</p>
+                         {flashcardReveal && (
+                           <>
+                             <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginTop: "10px", marginBottom: "6px"}}>A</p>
+                             <p style={{fontSize: "13px", color: "var(--muted)"}}>{lessonFlashcards[flashcardIndex]?.a}</p>
+                           </>
+                         )}
+                       </div>
+                       <div style={{display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap"}}>
+                         <button className="btn btn-secondary" onClick={() => setFlashcardIndex((prev) => Math.max(0, prev - 1))} disabled={flashcardIndex === 0} style={{opacity: flashcardIndex === 0 ? 0.6 : 1}}>Prev</button>
+                         <button className="btn btn-secondary" onClick={() => setFlashcardReveal((prev) => !prev)}>{flashcardReveal ? "Hide Answer" : "Show Answer"}</button>
+                         <button className="btn btn-secondary" onClick={() => { setFlashcardReveal(false); setFlashcardIndex((prev) => Math.min(lessonFlashcards.length - 1, prev + 1)); }} disabled={flashcardIndex >= lessonFlashcards.length - 1} style={{opacity: flashcardIndex >= lessonFlashcards.length - 1 ? 0.6 : 1}}>Next</button>
+                       </div>
+                     </div>
+                   )}
+                   <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)"}}>
+                     <p style={{fontSize: "12px", fontWeight: "800", marginBottom: "8px"}}>Pin Key Point</p>
+                     <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                       <input
+                         type="text"
+                         placeholder="Add a key takeaway from this lesson..."
+                         value={newPinnedPointText}
+                         onChange={(e) => setNewPinnedPointText(e.target.value)}
+                         style={{padding: "10px", flex: 1, minWidth: "220px"}}
+                       />
+                       <button className="btn btn-primary" onClick={addPinnedKeyPoint}>Pin</button>
+                     </div>
+                     {lessonPinnedPoints.length > 0 && (
+                       <div style={{display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px"}}>
+                         {lessonPinnedPoints.map((point) => (
+                           <div key={point.id} style={{display: "flex", justifyContent: "space-between", gap: "8px", border: "1px solid var(--border)", borderRadius: "10px", padding: "6px 8px", background: "var(--card)"}}>
+                             <span style={{fontSize: "12px"}}>{point.text}</span>
+                             <button className="btn btn-danger" style={{padding: "4px 8px"}} onClick={() => removePinnedKeyPoint(point.id)}>x</button>
+                           </div>
+                         ))}
+                       </div>
+                     )}
                    </div>
                  </div>
                )}
