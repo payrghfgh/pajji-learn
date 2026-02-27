@@ -79,9 +79,15 @@ export default function Home() {
   const [parserMode, setParserMode] = useState<"strict" | "balanced" | "aggressive">("balanced");
   const [parsedPreview, setParsedPreview] = useState<any[]>([]);
   const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [lessonNotes, setLessonNotes] = useState<Record<string, string>>({});
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteSavedAt, setNoteSavedAt] = useState("");
 
   const curBookIdRef = useRef<string | null>(null);
   const lastAutosavePayloadRef = useRef("");
+  const noteAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedNoteRef = useRef("");
 
   useEffect(() => {
     curBookIdRef.current = curBook?.id || null;
@@ -114,6 +120,10 @@ export default function Home() {
         setAchievementToast("");
         setQuizAttempts([]);
         setWeakLessonIds([]);
+        setLessonNotes({});
+        setNoteDraft("");
+        setNoteSaving(false);
+        setNoteSavedAt("");
         setLoading(false);
         setDataLoading(false);
       }
@@ -156,6 +166,7 @@ export default function Home() {
         setDailyGoalHits(data.dailyGoalHits || 0);
         setQuizAttempts(data.quizAttempts || []);
         setWeakLessonIds(data.weakLessonIds || []);
+        setLessonNotes((data.lessonNotes && typeof data.lessonNotes === "object") ? data.lessonNotes : {});
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -172,7 +183,8 @@ export default function Home() {
           weeklyXP: 0,
           weeklyKey: "",
           quizAttempts: [],
-          weakLessonIds: []
+          weakLessonIds: [],
+          lessonNotes: {}
         }, { merge: true });
         setUserXP(0);
         setLastLesson(null);
@@ -185,6 +197,7 @@ export default function Home() {
         setDailyGoalHits(0);
         setQuizAttempts([]);
         setWeakLessonIds([]);
+        setLessonNotes({});
       }
       setDataLoading(false);
     });
@@ -604,6 +617,10 @@ export default function Home() {
     setQuizOptionOrder({});
     setCurrentQuizPos(0);
     setShowShortcuts(false);
+    const currentNote = lessonNotes[chapter.id] || "";
+    setNoteDraft(currentNote);
+    lastSavedNoteRef.current = currentNote;
+    setNoteSavedAt("");
     if (!user) return;
     const latestLesson = { bookId: book.id, chapterId: chapter.id };
     setLastLesson(latestLesson);
@@ -1248,6 +1265,34 @@ export default function Home() {
     openLesson(nextLesson.book, nextLesson.chapter);
   };
 
+  const persistLessonNote = async (chapterId: string, text: string) => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    try {
+      await updateDoc(userRef, { [`lessonNotes.${chapterId}`]: text });
+    } catch {
+      await setDoc(userRef, { lessonNotes: { [chapterId]: text } }, { merge: true });
+    }
+  };
+
+  const saveCurrentNote = async (nextText?: string) => {
+    if (!user || !curChapter?.id) return;
+    const textToSave = typeof nextText === "string" ? nextText : noteDraft;
+    if (textToSave === lastSavedNoteRef.current) return;
+    setNoteSaving(true);
+    try {
+      await persistLessonNote(curChapter.id, textToSave);
+      setLessonNotes((prev) => ({ ...prev, [curChapter.id]: textToSave }));
+      lastSavedNoteRef.current = textToSave;
+      setNoteSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+    } catch (e) {
+      setSaveStatus("Note save failed");
+      setTimeout(() => setSaveStatus(""), 1800);
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!achievementToast) return;
     const timer = setTimeout(() => setAchievementToast(""), 3500);
@@ -1286,6 +1331,26 @@ export default function Home() {
     tick();
     return () => window.clearInterval(interval);
   }, [user, reminderEnabled, dailyCompleted, dailyGoal, dailyProgressDate]);
+
+  useEffect(() => {
+    if (!curChapter?.id) return;
+    const currentNote = lessonNotes[curChapter.id] || "";
+    setNoteDraft(currentNote);
+    lastSavedNoteRef.current = currentNote;
+    setNoteSavedAt("");
+  }, [curChapter?.id, lessonNotes]);
+
+  useEffect(() => {
+    if (view !== "study" || activeTab !== "My Notes" || !user || !curChapter?.id) return;
+    if (noteDraft === lastSavedNoteRef.current) return;
+    if (noteAutosaveTimerRef.current) clearTimeout(noteAutosaveTimerRef.current);
+    noteAutosaveTimerRef.current = setTimeout(() => {
+      saveCurrentNote();
+    }, 1200);
+    return () => {
+      if (noteAutosaveTimerRef.current) clearTimeout(noteAutosaveTimerRef.current);
+    };
+  }, [view, activeTab, user, curChapter?.id, noteDraft]);
 
   useEffect(() => {
     if (view !== "edit" || !tempChapter || !isOwner || !curBook) return;
@@ -1836,7 +1901,7 @@ export default function Home() {
             </div>
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
-                {["Summary", "Spellings", "Quiz", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
+                {["Summary", "Spellings", "Quiz", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => setActiveTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
@@ -2047,6 +2112,37 @@ export default function Home() {
                  );
                })()}
                {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)"}} /> : "No video available.")}
+               {activeTab === "My Notes" && (
+                 <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
+                   <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap"}}>
+                     <p style={{fontSize: "13px", color: "var(--muted)"}}>Write your own notes from Summary, Spellings, Quiz, PDFs, and videos.</p>
+                     <span style={{fontSize: "12px", fontWeight: "700", color: noteSaving ? "#f59e0b" : "#10b981"}}>
+                       {noteSaving ? "Saving..." : (noteSavedAt ? `Saved at ${noteSavedAt}` : "Autosave on")}
+                     </span>
+                   </div>
+                   <textarea
+                     placeholder="Type your lesson notes here..."
+                     value={noteDraft}
+                     onChange={(e) => setNoteDraft(e.target.value)}
+                     style={{minHeight: "340px", lineHeight: 1.6}}
+                   />
+                   <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                     <button onClick={() => saveCurrentNote()} className="btn btn-primary" disabled={noteSaving} style={{opacity: noteSaving ? 0.7 : 1}}>Save Note</button>
+                     <button
+                       onClick={async () => {
+                         if (!confirm("Clear note for this lesson?")) return;
+                         setNoteDraft("");
+                         await saveCurrentNote("");
+                       }}
+                       className="btn btn-secondary"
+                       disabled={noteSaving}
+                       style={{opacity: noteSaving ? 0.7 : 1}}
+                     >
+                       Clear Note
+                     </button>
+                   </div>
+                 </div>
+               )}
                {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => { 
                  let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", ""); 
                  let link = curChapter[k]; 
