@@ -48,6 +48,7 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState("");
   const [userXP, setUserXP] = useState(0);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [uiTheme, setUiTheme] = useState<"default" | "f1">("default");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "notStarted" | "inProgress" | "mastered">("all");
   const [librarySort, setLibrarySort] = useState<"default" | "lastEdited">("default");
@@ -107,6 +108,8 @@ export default function Home() {
   useEffect(() => {
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setTheme(darkQuery.matches ? 'dark' : 'light');
+    const storedUiTheme = window.localStorage.getItem("uiTheme");
+    if (storedUiTheme === "f1" || storedUiTheme === "default") setUiTheme(storedUiTheme);
     const themeListener = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
     darkQuery.addEventListener('change', themeListener);
 
@@ -155,6 +158,11 @@ export default function Home() {
       unsubAuth();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("uiTheme", uiTheme);
+  }, [uiTheme]);
 
   useEffect(() => {
     if (!user) return;
@@ -1733,6 +1741,7 @@ export default function Home() {
   const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
   const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
   const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
+  const IconSettings = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a1 1 0 0 1 .97.757l.26 1.04a7.97 7.97 0 0 1 1.8.75l.92-.54a1 1 0 0 1 1.23.17l1.41 1.41a1 1 0 0 1 .17 1.23l-.54.92c.31.57.56 1.17.75 1.8l1.04.26A1 1 0 0 1 21 12a1 1 0 0 1-.76.97l-1.03.26a7.97 7.97 0 0 1-.75 1.8l.54.92a1 1 0 0 1-.17 1.23l-1.41 1.41a1 1 0 0 1-1.23.17l-.92-.54a7.97 7.97 0 0 1-1.8.75l-.26 1.04A1 1 0 0 1 12 21a1 1 0 0 1-.97-.76l-.26-1.03a7.97 7.97 0 0 1-1.8-.75l-.92.54a1 1 0 0 1-1.23-.17l-1.41-1.41a1 1 0 0 1-.17-1.23l.54-.92a7.97 7.97 0 0 1-.75-1.8l-1.04-.26A1 1 0 0 1 3 12a1 1 0 0 1 .76-.97l1.03-.26c.19-.63.44-1.23.75-1.8l-.54-.92a1 1 0 0 1 .17-1.23l1.41-1.41a1 1 0 0 1 1.23-.17l.92.54c.57-.31 1.17-.56 1.8-.75l.26-1.04A1 1 0 0 1 12 3z"/><circle cx="12" cy="12" r="3.2"/></svg>;
 
   if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
 
@@ -1756,9 +1765,35 @@ export default function Home() {
   }
 
   return (
-    <div className={`app-container ${theme}`}>
+    <div className={`app-container ${theme} ${uiTheme === "f1" ? "theme-f1" : "theme-default"}`}>
       <style>{`
-        :root { --accent: #10b981; }
+        :root {
+          --accent: #10b981;
+          --accent-rgb: 16, 185, 129;
+          --accent-soft: rgba(16, 185, 129, 0.15);
+          --accent-soft-strong: rgba(16, 185, 129, 0.25);
+          --accent-grad: linear-gradient(90deg, #10b981, #34d399);
+          --brand-gradient: linear-gradient(135deg, #059669, #10b981);
+          --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .theme-default {
+          --accent: #10b981;
+          --accent-rgb: 16, 185, 129;
+          --accent-soft: rgba(16, 185, 129, 0.15);
+          --accent-soft-strong: rgba(16, 185, 129, 0.25);
+          --accent-grad: linear-gradient(90deg, #10b981, #34d399);
+          --brand-gradient: linear-gradient(135deg, #059669, #10b981);
+          --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        .theme-f1 {
+          --accent: #e10600;
+          --accent-rgb: 225, 6, 0;
+          --accent-soft: rgba(225, 6, 0, 0.14);
+          --accent-soft-strong: rgba(225, 6, 0, 0.28);
+          --accent-grad: linear-gradient(90deg, #e10600, #ff4a43);
+          --brand-gradient: linear-gradient(130deg, #0b0b0c 0%, #1f1f22 48%, #e10600 128%);
+          --card-shadow: 0 12px 34px rgba(0, 0, 0, 0.32);
+        }
         .dark { 
           --bg: #020617; 
           --side: #0f172a; 
@@ -1777,17 +1812,47 @@ export default function Home() {
           --border: rgba(0, 0, 0, 0.05); 
           --input-bg: #f1f5f9; 
         }
+        .theme-f1.dark {
+          --bg: #090909;
+          --side: #101012;
+          --card: #16161a;
+          --text: #f5f5f5;
+          --muted: #a5a5ac;
+          --border: rgba(225, 6, 0, 0.22);
+          --input-bg: #1d1d22;
+        }
+        .theme-f1.light {
+          --bg: #f7f7f8;
+          --side: #ffffff;
+          --card: #ffffff;
+          --text: #101013;
+          --muted: #64646d;
+          --border: rgba(225, 6, 0, 0.18);
+          --input-bg: #f4f4f6;
+        }
         
         .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
+        .theme-f1 .app-container, .theme-f1.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(225, 6, 0, 0.09), transparent 42%),
+            radial-gradient(circle at 100% 100%, rgba(225, 6, 0, 0.06), transparent 44%);
+        }
         .sidebar { width: 280px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
+        .theme-f1 .sidebar { box-shadow: inset -1px 0 0 rgba(225, 6, 0, 0.2); }
         .main-content { flex: 1; padding: 48px; overflow-y: auto; }
+        .theme-f1 .main-content {
+          background-image: linear-gradient(to bottom, rgba(225, 6, 0, 0.045), transparent 18%);
+        }
         .card {
           background: var(--card);
           border: 1px solid var(--border);
           padding: 24px;
           border-radius: 24px;
-          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          box-shadow: var(--card-shadow);
           position: relative;
+        }
+        .theme-f1 .card {
+          backdrop-filter: saturate(1.08);
         }
         .page-shell { max-width: 980px; margin: 0 auto; }
         .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
@@ -1796,7 +1861,7 @@ export default function Home() {
         .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
         .stack-12 { display: flex; flex-direction: column; gap: 12px; }
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px -8px rgba(16, 185, 129, 0.45); }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px -8px color-mix(in oklab, var(--accent) 55%, transparent); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
         .btn-warning { background: #fbbf24; color: #111827; }
@@ -1807,17 +1872,18 @@ export default function Home() {
         
         .nav-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 6px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 15px; transition: 0.2s; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
-        .nav-btn:hover { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); }
+        .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
+        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--accent) 35%, transparent); }
         .nav-btn.active svg { opacity: 1; }
+        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 10px 20px -5px color-mix(in oklab, var(--accent) 35%, transparent); }
         
         .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px; background: var(--card); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 0 0 auto; text-align: center; transition: 0.2s; }
         .tab-btn.active { background: var(--accent); color: white; border-color: transparent; }
         
         textarea, input[type="text"], select { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; outline: none; }
-        textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14); }
+        textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14); }
         
-        .xp-badge { background: rgba(16, 185, 129, 0.15); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .xp-badge { background: var(--accent-soft); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(var(--accent-rgb), 0.2); }
         .mobile-header { display: none; }
         .quiz-question-card { animation: fadeSlideIn 0.2s ease; }
         @keyframes fadeSlideIn {
@@ -1878,8 +1944,8 @@ export default function Home() {
 
       <div className="sidebar">
         <div className="sidebar-extras">
-            <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
-            <div style={{background: "linear-gradient(135deg, #059669, #10b981)", padding: "18px", borderRadius: "20px", color: "white", marginBottom: "24px", boxShadow: "0 10px 20px -5px rgba(16, 185, 129, 0.4)"}}>
+            <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
+            <div className="profile-card">
               <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.8, marginBottom: "4px"}}>LEVEL {userLevel}</p>
               <h3 style={{fontSize: "15px", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>{getUserName(user)}</h3>
               <div style={{height: "6px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", overflow: "hidden"}}>
@@ -1893,22 +1959,20 @@ export default function Home() {
           <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home</span></button>
           <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library</span></button>
           <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings</span></button>
+          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><IconSettings /> <span>Settings</span></button>
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}}>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="btn btn-secondary" style={{width: "100%", marginBottom: "12px", textAlign: "left"}}>
-            {theme === 'dark' ? "☀️ Light Mode" : "🌙 Dark Mode"}
-          </button>
           <button onClick={() => signOut(auth)} className="btn btn-danger" style={{width: "100%", padding: "12px"}}>Sign Out</button>
         </div>
       </div>
 
       <div className="main-content">
         <div className="mobile-header">
-            <h1 style={{fontSize: "18px", fontWeight: "900", marginLeft: "4px"}}>PAJJI <span style={{color: "#10b981"}}>LEARN</span></h1>
+            <h1 style={{fontSize: "18px", fontWeight: "900", marginLeft: "4px"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
             <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
                 <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent)", color: "white", padding: "4px 10px", borderRadius: "20px"}}>{userXP} XP</div>
-                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{background: "none", border: "none", fontSize: "18px"}}>{theme === 'dark' ? "☀️" : "🌙"}</button>
+                <button onClick={() => setView("settings")} style={{background: "var(--input-bg)", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "800", color: "var(--accent)", padding: "4px 8px", borderRadius: "14px"}}>Settings</button>
             </div>
         </div>
 
@@ -1921,9 +1985,9 @@ export default function Home() {
               </div>
             </header>
             <div className="dashboard-grid" style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginBottom: "40px"}}>
-              <div className="card stat-card" style={{borderLeftColor: "#10b981"}}>
+              <div className="card stat-card" style={{borderLeftColor: "var(--accent)"}}>
                   <p className="stat-label">Learning Points</p>
-                  <h3 className="stat-value" style={{color: "#10b981"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
+                  <h3 className="stat-value" style={{color: "var(--accent)"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
               </div>
               <div className="card stat-card" style={{borderLeftColor: "#3b82f6"}}>
                   <p className="stat-label">Mastered</p>
@@ -1943,7 +2007,7 @@ export default function Home() {
             </div>
             <div className="card" style={{marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap"}}>
               <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
-                <div style={{width: "68px", height: "68px", borderRadius: "999px", display: "grid", placeItems: "center", background: `conic-gradient(#10b981 ${goalProgressPct * 3.6}deg, rgba(148, 163, 184, 0.25) 0deg)`, padding: "6px"}}>
+                <div style={{width: "68px", height: "68px", borderRadius: "999px", display: "grid", placeItems: "center", background: `conic-gradient(var(--accent) ${goalProgressPct * 3.6}deg, rgba(148, 163, 184, 0.25) 0deg)`, padding: "6px"}}>
                   <div style={{width: "100%", height: "100%", borderRadius: "999px", display: "grid", placeItems: "center", background: "var(--bg)", fontSize: "12px", fontWeight: "900"}}>{goalProgressPct}%</div>
                 </div>
                 <div>
@@ -1991,10 +2055,10 @@ export default function Home() {
               {getUnmastered().slice(0, 5).map(ch => (
                 <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px"}}>
                   <div>
-                      <p style={{fontSize: "10px", color: "#10b981", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
+                      <p style={{fontSize: "10px", color: "var(--accent)", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
                       <h3 style={{fontSize: "16px", marginTop: "4px", fontWeight: "700"}}>{ch.title}</h3>
                   </div>
-                  <button onClick={() => openLesson(ch.parentBook, ch)} style={{padding: "10px 20px", background: "#10b981", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 4px 10px rgba(16, 185, 129, 0.2)"}}>Start</button>
+                  <button onClick={() => openLesson(ch.parentBook, ch)} style={{padding: "10px 20px", background: "var(--accent)", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 4px 10px rgba(var(--accent-rgb), 0.28)"}}>Start</button>
                 </div>
               ))}
               {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", padding: "40px", opacity: 0.6}}>You've mastered everything! </div>}
@@ -2004,15 +2068,15 @@ export default function Home() {
               <p style={{fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px"}}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
               <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px"}}>
                 {achievementProgressList.map(a => (
-                  <div key={a.id} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "rgba(16, 185, 129, 0.1)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(16, 185, 129, 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
+                  <div key={a.id} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
                     <p style={{fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px"}}>
                       <span>{a.title}</span>
-                      <span style={{fontSize: "10px", color: a.unlocked ? "#10b981" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
+                      <span style={{fontSize: "10px", color: a.unlocked ? "var(--accent)" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
                     </p>
                     <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{a.description}</p>
                     <div style={{marginTop: "8px"}}>
                       <div style={{height: "6px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
-                        <div style={{height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "#10b981" : "#64748b"}} />
+                        <div style={{height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "var(--accent)" : "#64748b"}} />
                       </div>
                       <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{Math.min(a.progress, a.target)}/{a.target}</p>
                     </div>
@@ -2046,7 +2110,7 @@ export default function Home() {
                         <div style={{fontWeight: "700"}}>{a.lessonTitle || "Lesson"}</div>
                         <div style={{fontSize: "11px", color: "var(--muted)"}}>{new Date(a.createdAt).toLocaleString()}</div>
                       </div>
-                      <div style={{fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "#10b981" : "#ef4444"}}>{a.score}/{a.total} ({a.accuracy}%)</div>
+                      <div style={{fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "var(--accent)" : "#ef4444"}}>{a.score}/{a.total} ({a.accuracy}%)</div>
                     </div>
                   ))}
                 </div>
@@ -2093,9 +2157,9 @@ export default function Home() {
                 <button className="btn btn-secondary" onClick={exportAllNotesMarkdown}>Export All (.md)</button>
               </div>
               <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px"}}>
-                <button className="btn btn-secondary" onClick={() => setNotesTagFilter("all")} style={{padding: "6px 10px", background: notesTagFilter === "all" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>All Tags</button>
+                <button className="btn btn-secondary" onClick={() => setNotesTagFilter("all")} style={{padding: "6px 10px", background: notesTagFilter === "all" ? "var(--accent-soft)" : "var(--input-bg)"}}>All Tags</button>
                 {availableNoteTags.map((tag) => (
-                  <button key={`filter-${tag}`} className="btn btn-secondary" onClick={() => setNotesTagFilter(tag)} style={{padding: "6px 10px", background: notesTagFilter === tag ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>
+                  <button key={`filter-${tag}`} className="btn btn-secondary" onClick={() => setNotesTagFilter(tag)} style={{padding: "6px 10px", background: notesTagFilter === tag ? "var(--accent-soft)" : "var(--input-bg)"}}>
                     #{tag}
                   </button>
                 ))}
@@ -2139,19 +2203,42 @@ export default function Home() {
           <div style={{maxWidth: "600px", margin: "0 auto"}}>
             <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners</h1>
             <div style={{display: "flex", justifyContent: "center", gap: "8px", marginBottom: "14px"}}>
-              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "rgba(16, 185, 129, 0.15)" : "var(--input-bg)"}}>All Time</button>
-              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "rgba(16, 185, 129, 0.15)" : "var(--input-bg)"}}>Weekly</button>
+              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "var(--accent-soft)" : "var(--input-bg)"}}>All Time</button>
+              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "var(--accent-soft)" : "var(--input-bg)"}}>Weekly</button>
             </div>
             {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
-              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", padding: "16px 20px", borderColor: p.id === user.uid ? "var(--accent)" : "var(--border)", background: p.id === user.uid ? "rgba(16, 185, 129, 0.05)" : "var(--card)"}}>
+              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", padding: "16px 20px", borderColor: p.id === user.uid ? "var(--accent)" : "var(--border)", background: p.id === user.uid ? "var(--accent-soft)" : "var(--card)"}}>
                 <span style={{width: "40px", fontWeight: "900", fontSize: "18px", color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "var(--muted)"}}>#{i+1}</span>
                 <div style={{flex: 1}}>
                     <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
-                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "#10b981", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
+                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "var(--accent)", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
                 </div>
                 <span className="xp-badge">{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {view === "settings" && (
+          <div className="page-shell" style={{maxWidth: "760px"}}>
+            <div className="page-header">
+              <h1 className="page-title">Settings</h1>
+            </div>
+            <div className="card" style={{marginBottom: "14px"}}>
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>App Theme</p>
+              <div style={{display: "flex", gap: "10px", flexWrap: "wrap"}}>
+                <button onClick={() => setUiTheme("default")} className="btn btn-secondary" style={{background: uiTheme === "default" ? "var(--accent-soft)" : "var(--input-bg)", color: uiTheme === "default" ? "var(--accent)" : "var(--text)"}}>Default Theme</button>
+                <button onClick={() => setUiTheme("f1")} className="btn btn-secondary" style={{background: uiTheme === "f1" ? "var(--accent-soft)" : "var(--input-bg)", color: uiTheme === "f1" ? "var(--accent)" : "var(--text)"}}>F1 Theme</button>
+              </div>
+              <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "8px"}}>Current: <strong style={{color: "var(--text)"}}>{uiTheme === "f1" ? "F1 Theme" : "Default Theme"}</strong></p>
+            </div>
+            <div className="card">
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Display Mode</p>
+              <div style={{display: "flex", gap: "10px", flexWrap: "wrap"}}>
+                <button onClick={() => setTheme("light")} className="btn btn-secondary" style={{background: theme === "light" ? "var(--accent-soft)" : "var(--input-bg)", color: theme === "light" ? "var(--accent)" : "var(--text)"}}>Light</button>
+                <button onClick={() => setTheme("dark")} className="btn btn-secondary" style={{background: theme === "dark" ? "var(--accent-soft)" : "var(--input-bg)", color: theme === "dark" ? "var(--accent)" : "var(--text)"}}>Dark</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -2186,7 +2273,7 @@ export default function Home() {
                   <p style={{fontSize: "12px", opacity: 0.5, fontWeight: "600"}}>{b.chapters?.length || 0} Lessons</p>
                   <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginTop: "10px", marginBottom: "6px"}}>{progress.masteredLessons}/{progress.totalLessons} mastered</p>
                   <div style={{height: "7px", background: "var(--input-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)"}}>
-                    <div style={{height: "100%", width: `${progress.progressPercent}%`, background: "linear-gradient(90deg, #10b981, #34d399)"}} />
+                    <div style={{height: "100%", width: `${progress.progressPercent}%`, background: "var(--accent-grad)"}} />
                   </div>
                   <div style={{marginTop: "10px", borderTop: "1px dashed var(--border)", paddingTop: "10px"}}>
                     <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
@@ -2196,7 +2283,7 @@ export default function Home() {
                     {insights.trend.length > 0 && (
                       <div style={{display: "flex", gap: "4px", marginTop: "6px", alignItems: "flex-end", justifyContent: "center", height: "28px"}}>
                         {insights.trend.map((v: number, idx: number) => (
-                          <div key={`trend-${b.id}-${idx}`} title={`${v}%`} style={{width: "8px", height: `${Math.max(4, Math.round((v / 100) * 28))}px`, borderRadius: "4px", background: v >= 70 ? "#10b981" : "#ef4444"}} />
+                          <div key={`trend-${b.id}-${idx}`} title={`${v}%`} style={{width: "8px", height: `${Math.max(4, Math.round((v / 100) * 28))}px`, borderRadius: "4px", background: v >= 70 ? "var(--accent)" : "#ef4444"}} />
                         ))}
                       </div>
                     )}
