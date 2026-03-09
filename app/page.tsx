@@ -48,7 +48,11 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState("");
   const [userXP, setUserXP] = useState(0);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [uiTheme, setUiTheme] = useState<"default" | "f1">("default");
+  const [uiTheme, setUiTheme] = useState<"default" | "f1" | "liquid" | "amoled" | "paper" | "ocean" | "sunset" | "cyber">("default");
+  const [textSize, setTextSize] = useState<"compact" | "default" | "large">("default");
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [highContrast, setHighContrast] = useState(false);
+  const [sidebarDensity, setSidebarDensity] = useState<"comfortable" | "compact">("comfortable");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "notStarted" | "inProgress" | "mastered">("all");
   const [librarySort, setLibrarySort] = useState<"default" | "lastEdited">("default");
@@ -100,6 +104,7 @@ export default function Home() {
   const lastAutosavePayloadRef = useRef("");
   const noteAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedNoteRef = useRef("");
+  const settingsHydratedRef = useRef(false);
 
   useEffect(() => {
     curBookIdRef.current = curBook?.id || null;
@@ -109,7 +114,13 @@ export default function Home() {
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setTheme(darkQuery.matches ? 'dark' : 'light');
     const storedUiTheme = window.localStorage.getItem("uiTheme");
-    if (storedUiTheme === "f1" || storedUiTheme === "default") setUiTheme(storedUiTheme);
+    if (["default", "f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber"].includes(storedUiTheme || "")) setUiTheme(storedUiTheme as any);
+    const storedTextSize = window.localStorage.getItem("textSize");
+    if (storedTextSize === "compact" || storedTextSize === "default" || storedTextSize === "large") setTextSize(storedTextSize);
+    setReduceMotion(window.localStorage.getItem("reduceMotion") === "1");
+    setHighContrast(window.localStorage.getItem("highContrast") === "1");
+    const storedDensity = window.localStorage.getItem("sidebarDensity");
+    if (storedDensity === "comfortable" || storedDensity === "compact") setSidebarDensity(storedDensity);
     const themeListener = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
     darkQuery.addEventListener('change', themeListener);
 
@@ -148,6 +159,7 @@ export default function Home() {
         setFlashcardsByLesson({});
         setFlashcardIndex(0);
         setFlashcardReveal(false);
+        settingsHydratedRef.current = false;
         setLoading(false);
         setDataLoading(false);
       }
@@ -162,7 +174,25 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("uiTheme", uiTheme);
-  }, [uiTheme]);
+    window.localStorage.setItem("textSize", textSize);
+    window.localStorage.setItem("reduceMotion", reduceMotion ? "1" : "0");
+    window.localStorage.setItem("highContrast", highContrast ? "1" : "0");
+    window.localStorage.setItem("sidebarDensity", sidebarDensity);
+  }, [uiTheme, textSize, reduceMotion, highContrast, sidebarDensity]);
+
+  useEffect(() => {
+    if (!user || !settingsHydratedRef.current) return;
+    setDoc(doc(db, "users", user.uid), {
+      uiSettings: {
+        theme,
+        uiTheme,
+        textSize,
+        reduceMotion,
+        highContrast,
+        sidebarDensity
+      }
+    }, { merge: true }).catch(() => {});
+  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity]);
 
   useEffect(() => {
     if (!user) return;
@@ -199,6 +229,13 @@ export default function Home() {
         setNotesMeta((data.notesMeta && typeof data.notesMeta === "object") ? data.notesMeta : {});
         setPinnedKeyPoints(Array.isArray(data.pinnedKeyPoints) ? data.pinnedKeyPoints : []);
         setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
+        const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
+        if (prefs.uiTheme && ["default", "f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber"].includes(prefs.uiTheme)) setUiTheme(prefs.uiTheme);
+        if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
+        if (prefs.textSize && (prefs.textSize === "compact" || prefs.textSize === "default" || prefs.textSize === "large")) setTextSize(prefs.textSize);
+        setReduceMotion(!!prefs.reduceMotion);
+        setHighContrast(!!prefs.highContrast);
+        if (prefs.sidebarDensity && (prefs.sidebarDensity === "comfortable" || prefs.sidebarDensity === "compact")) setSidebarDensity(prefs.sidebarDensity);
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -219,7 +256,15 @@ export default function Home() {
           lessonNotes: {},
           notesMeta: {},
           pinnedKeyPoints: [],
-          noteTags: {}
+          noteTags: {},
+          uiSettings: {
+            theme,
+            uiTheme,
+            textSize,
+            reduceMotion,
+            highContrast,
+            sidebarDensity
+          }
         }, { merge: true });
         setUserXP(0);
         setLastLesson(null);
@@ -237,6 +282,7 @@ export default function Home() {
         setPinnedKeyPoints([]);
         setNoteTags({});
       }
+      settingsHydratedRef.current = true;
       setDataLoading(false);
     });
 
@@ -1743,7 +1789,62 @@ export default function Home() {
   const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
   const IconSettings = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a1 1 0 0 1 .97.757l.26 1.04a7.97 7.97 0 0 1 1.8.75l.92-.54a1 1 0 0 1 1.23.17l1.41 1.41a1 1 0 0 1 .17 1.23l-.54.92c.31.57.56 1.17.75 1.8l1.04.26A1 1 0 0 1 21 12a1 1 0 0 1-.76.97l-1.03.26a7.97 7.97 0 0 1-.75 1.8l.54.92a1 1 0 0 1-.17 1.23l-1.41 1.41a1 1 0 0 1-1.23.17l-.92-.54a7.97 7.97 0 0 1-1.8.75l-.26 1.04A1 1 0 0 1 12 21a1 1 0 0 1-.97-.76l-.26-1.03a7.97 7.97 0 0 1-1.8-.75l-.92.54a1 1 0 0 1-1.23-.17l-1.41-1.41a1 1 0 0 1-.17-1.23l.54-.92a7.97 7.97 0 0 1-.75-1.8l-1.04-.26A1 1 0 0 1 3 12a1 1 0 0 1 .76-.97l1.03-.26c.19-.63.44-1.23.75-1.8l-.54-.92a1 1 0 0 1 .17-1.23l1.41-1.41a1 1 0 0 1 1.23-.17l.92.54c.57-.31 1.17-.56 1.8-.75l.26-1.04A1 1 0 0 1 12 3z"/><circle cx="12" cy="12" r="3.2"/></svg>;
 
-  if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "#10b981", fontWeight: "900"}}>PAJJI LEARN...</div>;
+  const uiThemeClass = uiTheme === "f1"
+    ? "theme-f1"
+    : uiTheme === "liquid"
+      ? "theme-liquid"
+      : uiTheme === "amoled"
+        ? "theme-amoled"
+        : uiTheme === "paper"
+          ? "theme-paper"
+          : uiTheme === "ocean"
+            ? "theme-ocean"
+            : uiTheme === "sunset"
+              ? "theme-sunset"
+              : uiTheme === "cyber"
+                ? "theme-cyber"
+                : "theme-default";
+  const uiThemeLabel = uiTheme === "f1"
+    ? "F1 Theme"
+    : uiTheme === "liquid"
+      ? "Glass"
+      : uiTheme === "amoled"
+        ? "AMOLED"
+        : uiTheme === "paper"
+          ? "Paper"
+          : uiTheme === "ocean"
+            ? "Ocean"
+            : uiTheme === "sunset"
+              ? "Sunset"
+              : uiTheme === "cyber"
+                ? "Cyber"
+                : "Default Theme";
+  const textSizeClass = textSize === "compact" ? "text-size-compact" : textSize === "large" ? "text-size-large" : "text-size-default";
+  const motionClass = reduceMotion ? "motion-reduced" : "motion-normal";
+  const contrastClass = highContrast ? "contrast-high" : "contrast-normal";
+  const densityClass = sidebarDensity === "compact" ? "density-compact" : "density-comfortable";
+  const themePreviewCards = [
+    { key: "default", label: "Default", accent: "#10b981", bg: "linear-gradient(135deg,#f8fafc,#ecfeff)" },
+    { key: "f1", label: "F1", accent: "#e10600", bg: "linear-gradient(135deg,#0b0b0c,#2a2a2e)" },
+    { key: "liquid", label: "Glass", accent: "#45b7ff", bg: "linear-gradient(135deg,#dff3ff,#f3f8ff)" },
+    { key: "amoled", label: "AMOLED", accent: "#29f2a3", bg: "linear-gradient(135deg,#000,#0b0b0b)" },
+    { key: "paper", label: "Paper", accent: "#6e5435", bg: "linear-gradient(135deg,#f6efe2,#fffaf1)" },
+    { key: "ocean", label: "Ocean", accent: "#0ea5e9", bg: "linear-gradient(135deg,#e0f2fe,#cffafe)" },
+    { key: "sunset", label: "Sunset", accent: "#f97316", bg: "linear-gradient(135deg,#fff3ec,#ffe4e6)" },
+    { key: "cyber", label: "Cyber", accent: "#22d3ee", bg: "linear-gradient(135deg,#0f172a,#1e293b)" },
+  ] as const;
+  const resetAllSettings = async () => {
+    setTheme("dark");
+    setUiTheme("default");
+    setTextSize("default");
+    setReduceMotion(false);
+    setHighContrast(false);
+    setSidebarDensity("comfortable");
+    setSaveStatus("Settings reset");
+    setTimeout(() => setSaveStatus(""), 1500);
+  };
+
+  if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "var(--accent)", fontWeight: "900"}}>PAJJI LEARN...</div>;
 
   if (!user) {
     return (
@@ -1765,7 +1866,7 @@ export default function Home() {
   }
 
   return (
-    <div className={`app-container ${theme} ${uiTheme === "f1" ? "theme-f1" : "theme-default"}`}>
+    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass}`}>
       <style>{`
         :root {
           --accent: #10b981;
@@ -1775,6 +1876,10 @@ export default function Home() {
           --accent-grad: linear-gradient(90deg, #10b981, #34d399);
           --brand-gradient: linear-gradient(135deg, #059669, #10b981);
           --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          --info: #3b82f6;
+          --warning: #f59e0b;
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
         }
         .theme-default {
           --accent: #10b981;
@@ -1784,6 +1889,10 @@ export default function Home() {
           --accent-grad: linear-gradient(90deg, #10b981, #34d399);
           --brand-gradient: linear-gradient(135deg, #059669, #10b981);
           --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          --info: #3b82f6;
+          --warning: #f59e0b;
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
         }
         .theme-f1 {
           --accent: #e10600;
@@ -1793,6 +1902,88 @@ export default function Home() {
           --accent-grad: linear-gradient(90deg, #e10600, #ff4a43);
           --brand-gradient: linear-gradient(130deg, #0b0b0c 0%, #1f1f22 48%, #e10600 128%);
           --card-shadow: 0 12px 34px rgba(0, 0, 0, 0.32);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ff6b6b;
+          --danger-rgb: 255, 107, 107;
+        }
+        .theme-liquid {
+          --accent: #45b7ff;
+          --accent-rgb: 69, 183, 255;
+          --accent-soft: rgba(69, 183, 255, 0.18);
+          --accent-soft-strong: rgba(69, 183, 255, 0.3);
+          --accent-grad: linear-gradient(90deg, #5ed0ff, #67b7ff);
+          --brand-gradient: linear-gradient(130deg, rgba(87, 198, 255, 0.9), rgba(115, 167, 255, 0.75));
+          --card-shadow: 0 16px 34px rgba(22, 48, 90, 0.16);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ff6b88;
+          --danger-rgb: 255, 107, 136;
+        }
+        .theme-amoled {
+          --accent: #29f2a3;
+          --accent-rgb: 41, 242, 163;
+          --accent-soft: rgba(41, 242, 163, 0.16);
+          --accent-soft-strong: rgba(41, 242, 163, 0.28);
+          --accent-grad: linear-gradient(90deg, #12d98e, #29f2a3);
+          --brand-gradient: linear-gradient(120deg, #020202, #0f0f10 55%, #19a873 130%);
+          --card-shadow: 0 10px 28px rgba(0, 0, 0, 0.52);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ff5f5f;
+          --danger-rgb: 255, 95, 95;
+        }
+        .theme-paper {
+          --accent: #5f4b32;
+          --accent-rgb: 95, 75, 50;
+          --accent-soft: rgba(95, 75, 50, 0.15);
+          --accent-soft-strong: rgba(95, 75, 50, 0.25);
+          --accent-grad: linear-gradient(90deg, #6e5435, #8b6a42);
+          --brand-gradient: linear-gradient(120deg, #c9b08b, #efe2c9);
+          --card-shadow: 0 6px 22px rgba(88, 66, 38, 0.12);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #c65a3a;
+          --danger-rgb: 198, 90, 58;
+        }
+        .theme-ocean {
+          --accent: #0ea5e9;
+          --accent-rgb: 14, 165, 233;
+          --accent-soft: rgba(14, 165, 233, 0.15);
+          --accent-soft-strong: rgba(14, 165, 233, 0.3);
+          --accent-grad: linear-gradient(90deg, #0ea5e9, #06b6d4);
+          --brand-gradient: linear-gradient(130deg, #0b3f6f, #0ea5e9 80%, #67e8f9 140%);
+          --card-shadow: 0 10px 30px rgba(7, 48, 86, 0.24);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #fb7185;
+          --danger-rgb: 251, 113, 133;
+        }
+        .theme-sunset {
+          --accent: #f97316;
+          --accent-rgb: 249, 115, 22;
+          --accent-soft: rgba(249, 115, 22, 0.16);
+          --accent-soft-strong: rgba(249, 115, 22, 0.3);
+          --accent-grad: linear-gradient(90deg, #f97316, #ef4444);
+          --brand-gradient: linear-gradient(130deg, #7c2d12, #fb7185 70%, #f59e0b 135%);
+          --card-shadow: 0 10px 30px rgba(124, 45, 18, 0.22);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #dc2626;
+          --danger-rgb: 220, 38, 38;
+        }
+        .theme-cyber {
+          --accent: #22d3ee;
+          --accent-rgb: 34, 211, 238;
+          --accent-soft: rgba(34, 211, 238, 0.15);
+          --accent-soft-strong: rgba(34, 211, 238, 0.3);
+          --accent-grad: linear-gradient(90deg, #22d3ee, #a3e635);
+          --brand-gradient: linear-gradient(130deg, #0a0f1f, #1e293b 58%, #22d3ee 125%);
+          --card-shadow: 0 12px 32px rgba(8, 13, 28, 0.4);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #fb7185;
+          --danger-rgb: 251, 113, 133;
         }
         .dark { 
           --bg: #020617; 
@@ -1821,6 +2012,60 @@ export default function Home() {
           --border: rgba(225, 6, 0, 0.22);
           --input-bg: #1d1d22;
         }
+        .theme-liquid.dark {
+          --bg: #0b1220;
+          --side: rgba(20, 33, 56, 0.56);
+          --card: rgba(21, 34, 56, 0.46);
+          --text: #eef4ff;
+          --muted: #adc3e8;
+          --border: rgba(147, 192, 255, 0.28);
+          --input-bg: rgba(18, 34, 61, 0.5);
+        }
+        .theme-amoled.dark {
+          --bg: #000000;
+          --side: #000000;
+          --card: #000000;
+          --text: #f3f4f6;
+          --muted: #9ca3af;
+          --border: rgba(255, 255, 255, 0.09);
+          --input-bg: #000000;
+        }
+        .theme-paper.dark {
+          --bg: #2e251d;
+          --side: #3a3026;
+          --card: #4a3d30;
+          --text: #f4ead8;
+          --muted: #d4c3a7;
+          --border: rgba(244, 234, 216, 0.16);
+          --input-bg: #5a4a3a;
+        }
+        .theme-ocean.dark {
+          --bg: #031627;
+          --side: #07263d;
+          --card: #0b334f;
+          --text: #e0f2fe;
+          --muted: #93c5fd;
+          --border: rgba(125, 211, 252, 0.2);
+          --input-bg: #104062;
+        }
+        .theme-sunset.dark {
+          --bg: #2f0d0d;
+          --side: #3f1616;
+          --card: #572323;
+          --text: #fff1ea;
+          --muted: #fdba74;
+          --border: rgba(253, 186, 116, 0.2);
+          --input-bg: #6b2d2d;
+        }
+        .theme-cyber.dark {
+          --bg: #050816;
+          --side: #0a1024;
+          --card: #111933;
+          --text: #ecfeff;
+          --muted: #93c5fd;
+          --border: rgba(34, 211, 238, 0.24);
+          --input-bg: #17213f;
+        }
         .theme-f1.light {
           --bg: #f7f7f8;
           --side: #ffffff;
@@ -1830,18 +2075,112 @@ export default function Home() {
           --border: rgba(225, 6, 0, 0.18);
           --input-bg: #f4f4f6;
         }
+        .theme-liquid.light {
+          --bg: #eaf4ff;
+          --side: rgba(255, 255, 255, 0.62);
+          --card: rgba(255, 255, 255, 0.58);
+          --text: #12223a;
+          --muted: #4b5f7e;
+          --border: rgba(124, 168, 232, 0.35);
+          --input-bg: rgba(255, 255, 255, 0.56);
+        }
+        .theme-amoled.light {
+          --bg: #f5f5f5;
+          --side: #ffffff;
+          --card: #ffffff;
+          --text: #101010;
+          --muted: #4b5563;
+          --border: rgba(0, 0, 0, 0.08);
+          --input-bg: #ededed;
+        }
+        .theme-paper.light {
+          --bg: #f6efe2;
+          --side: #fff9ef;
+          --card: #fffaf1;
+          --text: #3f3123;
+          --muted: #7c664e;
+          --border: rgba(121, 95, 63, 0.2);
+          --input-bg: #f2e8d5;
+        }
+        .theme-ocean.light {
+          --bg: #eef8ff;
+          --side: #f8fcff;
+          --card: #ffffff;
+          --text: #0f2940;
+          --muted: #34658e;
+          --border: rgba(52, 101, 142, 0.18);
+          --input-bg: #e7f4ff;
+        }
+        .theme-sunset.light {
+          --bg: #fff3ec;
+          --side: #fff8f3;
+          --card: #fffaf7;
+          --text: #4a1d12;
+          --muted: #9a3412;
+          --border: rgba(194, 65, 12, 0.2);
+          --input-bg: #ffe8d9;
+        }
+        .theme-cyber.light {
+          --bg: #f0f9ff;
+          --side: #f8fdff;
+          --card: #ffffff;
+          --text: #082f49;
+          --muted: #0e7490;
+          --border: rgba(34, 211, 238, 0.22);
+          --input-bg: #e0f7ff;
+        }
         
-        .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; }
+        .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; overflow-x: hidden; }
+        .text-size-default { --font-scale: 1; }
+        .text-size-compact { --font-scale: 0.94; }
+        .text-size-large { --font-scale: 1.08; }
+        .motion-reduced *, .motion-reduced *::before, .motion-reduced *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+        .contrast-high.dark { --muted: #e2e8f0; --border: rgba(255, 255, 255, 0.28); }
+        .contrast-high.light { --muted: #334155; --border: rgba(15, 23, 42, 0.24); }
         .theme-f1 .app-container, .theme-f1.app-container {
           background-image:
             radial-gradient(circle at 0% 0%, rgba(225, 6, 0, 0.09), transparent 42%),
             radial-gradient(circle at 100% 100%, rgba(225, 6, 0, 0.06), transparent 44%);
         }
-        .sidebar { width: 280px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
+        .theme-liquid .app-container, .theme-liquid.app-container {
+          background-image:
+            radial-gradient(circle at 10% 0%, rgba(119, 214, 255, 0.3), transparent 42%),
+            radial-gradient(circle at 95% 95%, rgba(120, 160, 255, 0.22), transparent 44%);
+        }
+        .theme-amoled .app-container, .theme-amoled.app-container {
+          background-image: radial-gradient(circle at 100% 0%, rgba(41, 242, 163, 0.08), transparent 30%);
+        }
+        .theme-paper .app-container, .theme-paper.app-container {
+          background-image: radial-gradient(circle at 10% 0%, rgba(143, 112, 74, 0.11), transparent 35%);
+        }
+        .theme-ocean .app-container, .theme-ocean.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.16), transparent 36%),
+            radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.12), transparent 42%);
+        }
+        .theme-sunset .app-container, .theme-sunset.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(249, 115, 22, 0.2), transparent 36%),
+            radial-gradient(circle at 100% 100%, rgba(239, 68, 68, 0.14), transparent 40%);
+        }
+        .theme-cyber .app-container, .theme-cyber.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.16), transparent 34%),
+            radial-gradient(circle at 100% 100%, rgba(163, 230, 53, 0.12), transparent 42%);
+        }
+        .sidebar { width: 280px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; font-size: calc(1rem * var(--font-scale)); }
+        .density-compact .sidebar { width: 244px; padding: 20px 14px; }
         .theme-f1 .sidebar { box-shadow: inset -1px 0 0 rgba(225, 6, 0, 0.2); }
-        .main-content { flex: 1; padding: 48px; overflow-y: auto; }
+        .theme-liquid .sidebar {
+          backdrop-filter: blur(14px) saturate(1.2);
+          box-shadow: inset -1px 0 0 rgba(160, 203, 255, 0.3);
+        }
+        .main-content { flex: 1; padding: 48px; overflow-y: auto; font-size: calc(1rem * var(--font-scale)); overflow-x: hidden; }
         .theme-f1 .main-content {
           background-image: linear-gradient(to bottom, rgba(225, 6, 0, 0.045), transparent 18%);
+        }
+        .theme-liquid .main-content {
+          background-image: linear-gradient(to bottom, rgba(122, 178, 255, 0.16), transparent 25%);
         }
         .card {
           background: var(--card);
@@ -1853,6 +2192,10 @@ export default function Home() {
         }
         .theme-f1 .card {
           backdrop-filter: saturate(1.08);
+        }
+        .theme-liquid .card {
+          backdrop-filter: blur(16px) saturate(1.22);
+          -webkit-backdrop-filter: blur(16px) saturate(1.22);
         }
         .page-shell { max-width: 980px; margin: 0 auto; }
         .page-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
@@ -1871,11 +2214,17 @@ export default function Home() {
         .stat-value { font-size: 32px; margin-top: 8px; margin-bottom: 0; font-weight: 900; }
         
         .nav-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 6px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 15px; transition: 0.2s; }
+        .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
         .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--accent) 35%, transparent); }
         .nav-btn.active svg { opacity: 1; }
         .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 10px 20px -5px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .theme-liquid .profile-card {
+          border: 1px solid rgba(255, 255, 255, 0.26);
+          backdrop-filter: blur(14px) saturate(1.2);
+          -webkit-backdrop-filter: blur(14px) saturate(1.2);
+        }
         
         .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px; background: var(--card); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 0 0 auto; text-align: center; transition: 0.2s; }
         .tab-btn.active { background: var(--accent); color: white; border-color: transparent; }
@@ -1895,6 +2244,7 @@ export default function Home() {
           .app-container { flex-direction: column; }
           .sidebar {
             position: fixed;
+            top: auto;
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
@@ -1909,6 +2259,7 @@ export default function Home() {
             border-radius: 50px;
             background: var(--side);
             z-index: 1000;
+            box-sizing: border-box;
           }
           
           .sidebar-extras, .sidebar h1 { display: none; }
@@ -1926,13 +2277,16 @@ export default function Home() {
             flex: 1; /* ENSURES THEY SHARE WIDTH EQUALLY */
             background: transparent !important;
             box-shadow: none !important;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--muted);
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
           }
           .nav-btn svg { width: 22px; height: 22px; margin-bottom: 2px; }
           .nav-btn.active { color: var(--accent); }
           .nav-btn.active svg { opacity: 1; stroke-width: 2.5px; }
           
-          .main-content { padding: 20px; padding-bottom: 120px; }
+          .main-content { padding: 20px; padding-bottom: 120px; overflow-x: hidden; }
+          .page-shell { max-width: 100%; }
           .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); }
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
           .library-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
@@ -1962,9 +2316,7 @@ export default function Home() {
           <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><IconSettings /> <span>Settings</span></button>
         </nav>
         
-        <div className="sidebar-extras" style={{marginTop: "auto"}}>
-          <button onClick={() => signOut(auth)} className="btn btn-danger" style={{width: "100%", padding: "12px"}}>Sign Out</button>
-        </div>
+        <div className="sidebar-extras" style={{marginTop: "auto"}} />
       </div>
 
       <div className="main-content">
@@ -1989,13 +2341,13 @@ export default function Home() {
                   <p className="stat-label">Learning Points</p>
                   <h3 className="stat-value" style={{color: "var(--accent)"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
               </div>
-              <div className="card stat-card" style={{borderLeftColor: "#3b82f6"}}>
+              <div className="card stat-card" style={{borderLeftColor: "var(--info)"}}>
                   <p className="stat-label">Mastered</p>
-                  <h3 className="stat-value" style={{color: "#3b82f6"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
+                  <h3 className="stat-value" style={{color: "var(--info)"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
               </div>
-              <div className="card stat-card" style={{borderLeftColor: "#f59e0b"}}>
+              <div className="card stat-card" style={{borderLeftColor: "var(--warning)"}}>
                   <p className="stat-label">Streak</p>
-                  <h3 className="stat-value" style={{color: "#f59e0b"}}>{streakCount} <span style={{fontSize: "16px", opacity: 0.5}}>Days</span></h3>
+                  <h3 className="stat-value" style={{color: "var(--warning)"}}>{streakCount} <span style={{fontSize: "16px", opacity: 0.5}}>Days</span></h3>
                   <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{lastStudyDate ? `Last study: ${lastStudyDate}` : "Start your streak today"}</p>
               </div>
             </div>
@@ -2044,8 +2396,8 @@ export default function Home() {
               </button>
             </div>
             {resumeLesson && (
-              <div className="card" style={{marginBottom: "16px", borderLeft: "4px solid #fbbf24"}}>
-                <p style={{fontSize: "11px", fontWeight: "900", color: "#f59e0b", textTransform: "uppercase", marginBottom: "6px"}}>Resume Last Lesson</p>
+              <div className="card" style={{marginBottom: "16px", borderLeft: "4px solid var(--warning)"}}>
+                <p style={{fontSize: "11px", fontWeight: "900", color: "var(--warning)", textTransform: "uppercase", marginBottom: "6px"}}>Resume Last Lesson</p>
                 <h3 style={{fontSize: "18px", fontWeight: "800", marginBottom: "4px"}}>{resumeLesson.chapter.title}</h3>
                 <p style={{fontSize: "13px", color: "var(--muted)", marginBottom: "14px"}}>{resumeLesson.book.title}</p>
                 <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} className="btn btn-warning">Resume</button>
@@ -2110,7 +2462,7 @@ export default function Home() {
                         <div style={{fontWeight: "700"}}>{a.lessonTitle || "Lesson"}</div>
                         <div style={{fontSize: "11px", color: "var(--muted)"}}>{new Date(a.createdAt).toLocaleString()}</div>
                       </div>
-                      <div style={{fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "var(--accent)" : "#ef4444"}}>{a.score}/{a.total} ({a.accuracy}%)</div>
+                      <div style={{fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "var(--accent)" : "var(--danger)"}}>{a.score}/{a.total} ({a.accuracy}%)</div>
                     </div>
                   ))}
                 </div>
@@ -2226,17 +2578,60 @@ export default function Home() {
             </div>
             <div className="card" style={{marginBottom: "14px"}}>
               <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>App Theme</p>
-              <div style={{display: "flex", gap: "10px", flexWrap: "wrap"}}>
-                <button onClick={() => setUiTheme("default")} className="btn btn-secondary" style={{background: uiTheme === "default" ? "var(--accent-soft)" : "var(--input-bg)", color: uiTheme === "default" ? "var(--accent)" : "var(--text)"}}>Default Theme</button>
-                <button onClick={() => setUiTheme("f1")} className="btn btn-secondary" style={{background: uiTheme === "f1" ? "var(--accent-soft)" : "var(--input-bg)", color: uiTheme === "f1" ? "var(--accent)" : "var(--text)"}}>F1 Theme</button>
+              <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px"}}>
+                {themePreviewCards.map((item) => {
+                  const selected = item.key === uiTheme;
+                  return (
+                    <button
+                      key={`preview-${item.key}`}
+                      onClick={() => setUiTheme(item.key as any)}
+                      className="btn btn-secondary"
+                      style={{textAlign: "left", border: selected ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--card)", padding: "10px"}}
+                    >
+                      <div style={{height: "62px", borderRadius: "10px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative", overflow: "hidden"}}>
+                        <div style={{position: "absolute", left: "10px", top: "10px", width: "32px", height: "5px", borderRadius: "999px", background: item.accent}} />
+                        <div style={{position: "absolute", left: "10px", top: "22px", width: "54px", height: "4px", borderRadius: "999px", background: "rgba(255,255,255,0.7)"}} />
+                      </div>
+                      <span style={{fontWeight: "800", color: selected ? "var(--accent)" : "var(--text)", fontSize: "12px"}}>{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "8px"}}>Current: <strong style={{color: "var(--text)"}}>{uiTheme === "f1" ? "F1 Theme" : "Default Theme"}</strong></p>
+              <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "8px"}}>Current: <strong style={{color: "var(--text)"}}>{uiThemeLabel}</strong></p>
             </div>
-            <div className="card">
-              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Display Mode</p>
-              <div style={{display: "flex", gap: "10px", flexWrap: "wrap"}}>
+
+            <div className="card" style={{marginBottom: "14px"}}>
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Display</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
                 <button onClick={() => setTheme("light")} className="btn btn-secondary" style={{background: theme === "light" ? "var(--accent-soft)" : "var(--input-bg)", color: theme === "light" ? "var(--accent)" : "var(--text)"}}>Light</button>
                 <button onClick={() => setTheme("dark")} className="btn btn-secondary" style={{background: theme === "dark" ? "var(--accent-soft)" : "var(--input-bg)", color: theme === "dark" ? "var(--accent)" : "var(--text)"}}>Dark</button>
+              </div>
+
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Typography Size</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => setTextSize("compact")} className="btn btn-secondary" style={{background: textSize === "compact" ? "var(--accent-soft)" : "var(--input-bg)", color: textSize === "compact" ? "var(--accent)" : "var(--text)"}}>Compact</button>
+                <button onClick={() => setTextSize("default")} className="btn btn-secondary" style={{background: textSize === "default" ? "var(--accent-soft)" : "var(--input-bg)", color: textSize === "default" ? "var(--accent)" : "var(--text)"}}>Default</button>
+                <button onClick={() => setTextSize("large")} className="btn btn-secondary" style={{background: textSize === "large" ? "var(--accent-soft)" : "var(--input-bg)", color: textSize === "large" ? "var(--accent)" : "var(--text)"}}>Large</button>
+              </div>
+
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Layout</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => setSidebarDensity("comfortable")} className="btn btn-secondary" style={{background: sidebarDensity === "comfortable" ? "var(--accent-soft)" : "var(--input-bg)", color: sidebarDensity === "comfortable" ? "var(--accent)" : "var(--text)"}}>Sidebar Comfortable</button>
+                <button onClick={() => setSidebarDensity("compact")} className="btn btn-secondary" style={{background: sidebarDensity === "compact" ? "var(--accent-soft)" : "var(--input-bg)", color: sidebarDensity === "compact" ? "var(--accent)" : "var(--text)"}}>Sidebar Compact</button>
+              </div>
+
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Accessibility</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                <button onClick={() => setReduceMotion((v) => !v)} className="btn btn-secondary" style={{background: reduceMotion ? "var(--accent-soft)" : "var(--input-bg)", color: reduceMotion ? "var(--accent)" : "var(--text)"}}>Reduce Motion: {reduceMotion ? "On" : "Off"}</button>
+                <button onClick={() => setHighContrast((v) => !v)} className="btn btn-secondary" style={{background: highContrast ? "var(--accent-soft)" : "var(--input-bg)", color: highContrast ? "var(--accent)" : "var(--text)"}}>High Contrast: {highContrast ? "On" : "Off"}</button>
+              </div>
+            </div>
+
+            <div className="card">
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Account</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                <button onClick={resetAllSettings} className="btn btn-secondary">Reset To Defaults</button>
+                <button onClick={() => signOut(auth)} className="btn btn-danger">Sign Out</button>
               </div>
             </div>
           </div>
@@ -2283,17 +2678,17 @@ export default function Home() {
                     {insights.trend.length > 0 && (
                       <div style={{display: "flex", gap: "4px", marginTop: "6px", alignItems: "flex-end", justifyContent: "center", height: "28px"}}>
                         {insights.trend.map((v: number, idx: number) => (
-                          <div key={`trend-${b.id}-${idx}`} title={`${v}%`} style={{width: "8px", height: `${Math.max(4, Math.round((v / 100) * 28))}px`, borderRadius: "4px", background: v >= 70 ? "var(--accent)" : "#ef4444"}} />
+                          <div key={`trend-${b.id}-${idx}`} title={`${v}%`} style={{width: "8px", height: `${Math.max(4, Math.round((v / 100) * 28))}px`, borderRadius: "4px", background: v >= 70 ? "var(--accent)" : "var(--danger)"}} />
                         ))}
                       </div>
                     )}
                     {insights.weakCount > 0 && (
-                      <p style={{fontSize: "10px", color: "#ef4444", fontWeight: "800", marginTop: "6px"}}>
+                      <p style={{fontSize: "10px", color: "var(--danger)", fontWeight: "800", marginTop: "6px"}}>
                         Weak tags: {insights.weakCount}
                       </p>
                     )}
                   </div>
-                  {isOwner && <button className="del-btn" style={{marginTop: "16px", width: "100%", background: "rgba(239, 68, 68, 0.1)", border: "none", color: "#ef4444", padding: "8px", borderRadius: "10px", fontWeight: "bold", fontSize: "11px"}} onClick={(e) => {e.stopPropagation(); deleteItem('book', b.id)}}>Delete</button>}
+                  {isOwner && <button className="del-btn" style={{marginTop: "16px", width: "100%", background: "rgba(var(--danger-rgb), 0.1)", border: "none", color: "var(--danger)", padding: "8px", borderRadius: "10px", fontWeight: "bold", fontSize: "11px"}} onClick={(e) => {e.stopPropagation(); deleteItem('book', b.id)}}>Delete</button>}
                 </div>
               )})}
             </div>
@@ -2316,7 +2711,7 @@ export default function Home() {
               <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px"}}>
                 <div style={{flex: 1}}>
                     <span style={{fontSize: "17px", fontWeight: "700"}}>{ch.title}</span>
-                    {completedLessons.includes(ch.id) && <span style={{marginLeft: "12px", fontSize: "11px", color: "#10b981", fontWeight: "900", background: "rgba(16, 185, 129, 0.1)", padding: "2px 8px", borderRadius: "10px"}}>✓ MASTERED</span>}
+                    {completedLessons.includes(ch.id) && <span style={{marginLeft: "12px", fontSize: "11px", color: "var(--accent)", fontWeight: "900", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "10px"}}>✓ MASTERED</span>}
                 </div>
                 <div style={{display: "flex", gap: "10px"}}>
                   <button onClick={() => openLesson(curBook, ch)} className="btn btn-primary" style={{padding: "8px 20px"}}>Study</button>
@@ -2378,7 +2773,7 @@ export default function Home() {
                       <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
                         Retry Wrong Only
                       </button>
-                      <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "rgba(16,185,129,0.12)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+                      <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
                         Shuffle: {quizShuffleEnabled ? "On" : "Off"}
                       </button>
                       <button onClick={() => setShowShortcuts((prev) => !prev)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
@@ -2393,10 +2788,10 @@ export default function Home() {
                     <div className="card" style={{padding: "12px 14px"}}>
                       <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px"}}>
                         <span style={{fontSize: "12px", fontWeight: "800", color: "var(--muted)"}}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
-                        <span style={{fontSize: "12px", fontWeight: "800", color: "#10b981"}}>{Math.round(((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100)}%</span>
+                        <span style={{fontSize: "12px", fontWeight: "800", color: "var(--accent)"}}>{Math.round(((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100)}%</span>
                       </div>
                       <div style={{height: "7px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
-                        <div style={{height: "100%", width: `${((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100}%`, background: "linear-gradient(90deg, #10b981, #34d399)"}} />
+                        <div style={{height: "100%", width: `${((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100}%`, background: "var(--accent-grad)"}} />
                       </div>
                     </div>
                     <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(34px, 1fr))", gap: "6px"}}>
@@ -2404,8 +2799,8 @@ export default function Home() {
                         const isCurrent = navIndex === safePos;
                         const isAnswered = quizAnswers[qIndex] !== undefined && `${quizAnswers[qIndex]}`.trim() !== "";
                         const reviewed = quizReview[qIndex];
-                        const bg = reviewed ? (reviewed.isCorrect ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)") : (isAnswered ? "rgba(59,130,246,0.16)" : "var(--input-bg)");
-                        const border = isCurrent ? "2px solid #10b981" : "1px solid var(--border)";
+                        const bg = reviewed ? (reviewed.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.2)") : (isAnswered ? "var(--accent-soft)" : "var(--input-bg)");
+                        const border = isCurrent ? "2px solid var(--accent)" : "1px solid var(--border)";
                         return (
                           <button
                             key={`nav-${qIndex}`}
@@ -2424,7 +2819,7 @@ export default function Home() {
                             <>
                         <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px"}}>
                           <p style={{fontWeight: "800"}}>{safePos + 1}. {q.question}</p>
-                          <span style={{fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.35)"}}>
+                          <span style={{fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)"}}>
                             {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
                           </span>
                         </div>
@@ -2495,8 +2890,8 @@ export default function Home() {
                                     textAlign: "left",
                                     padding: "10px 12px",
                                     borderRadius: "12px",
-                                    border: showWrongSelected ? "1px solid #ef4444" : showCorrectOption ? "1px solid #10b981" : selected ? "1px solid #10b981" : "1px solid var(--border)",
-                                    background: showWrongSelected ? "rgba(239,68,68,0.14)" : showCorrectOption ? "rgba(16,185,129,0.16)" : selected ? "rgba(16,185,129,0.16)" : "rgba(15,23,42,0.08)",
+                                    border: showWrongSelected ? "1px solid var(--danger)" : showCorrectOption ? "1px solid var(--accent)" : selected ? "1px solid var(--accent)" : "1px solid var(--border)",
+                                    background: showWrongSelected ? "rgba(var(--danger-rgb),0.14)" : showCorrectOption ? "var(--accent-soft)" : selected ? "var(--accent-soft)" : "rgba(15,23,42,0.08)",
                                     color: "var(--text)",
                                     cursor: "pointer",
                                     fontWeight: selected ? "700" : "500"
@@ -2522,11 +2917,11 @@ export default function Home() {
                           />
                         )}
                         {quizSubmitted && review && (
-                          <div style={{marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: review.isCorrect ? "1px solid rgba(16,185,129,0.35)" : "1px solid rgba(239,68,68,0.35)", background: review.isCorrect ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)", fontSize: "13px"}}>
+                          <div style={{marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: review.isCorrect ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--danger-rgb),0.35)", background: review.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.12)", fontSize: "13px"}}>
                             {review.isCorrect ? (
-                              <span style={{fontWeight: "800", color: "#10b981"}}>Correct answer.</span>
+                              <span style={{fontWeight: "800", color: "var(--accent)"}}>Correct answer.</span>
                             ) : (
-                              <span style={{fontWeight: "700", color: "#ef4444"}}>
+                              <span style={{fontWeight: "700", color: "var(--danger)"}}>
                                 Wrong answer. Your answer: {review.submitted}. Correct answer: {review.expected || "Not set"}.
                               </span>
                             )}
@@ -2547,11 +2942,11 @@ export default function Home() {
                         <button onClick={() => setCurrentQuizPos(prev => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer"}}>Next</button>
                       </div>
                       <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap"}}>
-                        <button onClick={submitQuiz} style={{padding: "9px 14px", borderRadius: "10px", border: "none", background: "#10b981", color: "white", fontWeight: "800", cursor: "pointer"}}>Submit Quiz</button>
-                        <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
+                        <button onClick={submitQuiz} style={{padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "800", cursor: "pointer"}}>Submit Quiz</button>
+                        <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
                           Retry Wrong
                         </button>
-                        {quizResult && <span style={{fontWeight: "800", color: quizResult.startsWith("Score") ? "#10b981" : "#f59e0b"}}>{quizResult}</span>}
+                        {quizResult && <span style={{fontWeight: "800", color: quizResult.startsWith("Score") ? "var(--accent)" : "var(--warning)"}}>{quizResult}</span>}
                       </div>
                     </div>
                   </div>
@@ -2562,7 +2957,7 @@ export default function Home() {
                  <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
                    <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap"}}>
                      <p style={{fontSize: "13px", color: "var(--muted)"}}>Write your own notes from Summary, Spellings, Quiz, PDFs, and videos.</p>
-                     <span style={{fontSize: "12px", fontWeight: "700", color: noteSaving ? "#f59e0b" : "#10b981"}}>
+                     <span style={{fontSize: "12px", fontWeight: "700", color: noteSaving ? "var(--warning)" : "var(--accent)"}}>
                        {noteSaving ? "Saving..." : (noteSavedAt ? `Saved at ${noteSavedAt}` : "Autosave on")}
                      </span>
                    </div>
@@ -2689,22 +3084,22 @@ export default function Home() {
           <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
             <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
                 <h2 style={{fontWeight: "900"}}>Editor</h2>
-                <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{background: "#10b981", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer"}}>SAVE CHANGES</button>
+                <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{background: "var(--accent)", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer"}}>SAVE CHANGES</button>
             </div>
             <div style={{display: "flex", flexDirection: "column", gap: "24px"}}>
-                <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
-                <div><label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
+                <div><label style={{color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
+                <div><label style={{color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
                 <div style={{padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)"}}>
                     <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap"}}>
-                      <label style={{color: "#10b981", fontWeight: "800", fontSize: "13px", textTransform: "uppercase"}}>Interactive Quiz</label>
-                      <button onClick={addQuizQuestion} style={{padding: "8px 12px", borderRadius: "10px", border: "none", background: "#10b981", color: "white", fontWeight: "700", cursor: "pointer"}}>+ Add Question</button>
+                      <label style={{color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase"}}>Interactive Quiz</label>
+                      <button onClick={addQuizQuestion} style={{padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "700", cursor: "pointer"}}>+ Add Question</button>
                     </div>
                     <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
                       {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
                         <div key={`edit-quiz-${qIndex}`} style={{border: "1px solid var(--border)", borderRadius: "14px", padding: "12px", background: "rgba(15,23,42,0.08)"}}>
                           <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px"}}>
                             <p style={{fontWeight: "800", fontSize: "12px"}}>Question {qIndex + 1}</p>
-                            <button onClick={() => removeQuizQuestion(qIndex)} style={{background: "rgba(239,68,68,0.14)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "4px 8px", cursor: "pointer", fontWeight: "700"}}>Remove</button>
+                            <button onClick={() => removeQuizQuestion(qIndex)} style={{background: "rgba(var(--danger-rgb),0.14)", color: "var(--danger)", border: "1px solid rgba(var(--danger-rgb),0.3)", borderRadius: "8px", padding: "4px 8px", cursor: "pointer", fontWeight: "700"}}>Remove</button>
                           </div>
                           <div style={{marginBottom: "8px"}}>
                             <p style={{fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)"}}>Question Type</p>
@@ -2757,9 +3152,9 @@ export default function Home() {
                       <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase"}}>Quick Bulk Add (NotebookLM Friendly)</p>
                       <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px"}}>
                         <span style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>Parser mode:</span>
-                        <button onClick={() => setParserMode("strict")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "strict" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>Strict</button>
-                        <button onClick={() => setParserMode("balanced")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "balanced" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>Balanced</button>
-                        <button onClick={() => setParserMode("aggressive")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "aggressive" ? "rgba(16,185,129,0.12)" : "var(--input-bg)"}}>Aggressive</button>
+                        <button onClick={() => setParserMode("strict")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "strict" ? "var(--accent-soft)" : "var(--input-bg)"}}>Strict</button>
+                        <button onClick={() => setParserMode("balanced")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "balanced" ? "var(--accent-soft)" : "var(--input-bg)"}}>Balanced</button>
+                        <button onClick={() => setParserMode("aggressive")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "aggressive" ? "var(--accent-soft)" : "var(--input-bg)"}}>Aggressive</button>
                       </div>
                       <textarea
                         placeholder={`Paste from NotebookLM directly.\nSupported examples:\n1) What is ...?\nA) ...\nB) ...\nC) ...\nD) ...\nCorrect Answer: B\n\nQ2: Another question...\nA. ...\nB. ...\nAnswer: Option text`}
@@ -2771,15 +3166,15 @@ export default function Home() {
                         <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer"}}>
                           Preview Paste
                         </button>
-                        <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer"}}>
+                        <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer"}}>
                           Add Preview
                         </button>
-                        <button onClick={bulkAddQuizQuestions} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Parse & Add Questions</button>
+                        <button onClick={bulkAddQuizQuestions} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Parse & Add Questions</button>
                         <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1}}>
                           {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
                         </button>
                         <button onClick={exportQuizPack} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Export Pack</button>
-                        <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "rgba(16,185,129,0.12)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer"}}>
+                        <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer"}}>
                           Import Pack
                         </button>
                       </div>
@@ -2795,7 +3190,7 @@ export default function Home() {
                           <div style={{display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto"}}>
                             {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
                               <div key={`preview-${idx}`} style={{fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px"}}>
-                                <strong style={{fontSize: "10px", color: "#10b981", marginRight: "6px"}}>{q.type}</strong>{q.question}
+                                <strong style={{fontSize: "10px", color: "var(--accent)", marginRight: "6px"}}>{q.type}</strong>{q.question}
                               </div>
                             ))}
                           </div>
@@ -2805,7 +3200,7 @@ export default function Home() {
                 </div>
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
                     {["video", "slides", "bookPdf", "infographic", "mindMap"].map(f => (
-                        <div key={f}><p style={{fontSize: "11px", color: "#10b981", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
+                        <div key={f}><p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
                     ))}
                 </div>
             </div>
@@ -2818,7 +3213,7 @@ export default function Home() {
           </div>
         )}
         {achievementToast && (
-          <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid #059669", background: "#10b981", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(16,185,129,0.28)"}}>
+          <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)"}}>
             🏆 {achievementToast}
           </div>
         )}
