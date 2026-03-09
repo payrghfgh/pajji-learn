@@ -25,6 +25,41 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+type ThemePreview = {
+  key: string;
+  label: string;
+  accent: string;
+  bg: string;
+  isAdminOnly?: boolean;
+  source: "builtIn" | "custom";
+};
+type CustomTheme = {
+  id: string;
+  name: string;
+  background: string;
+  primary: string;
+  accent: string;
+  adminOnly?: boolean;
+  createdBy?: string;
+  createdAt?: string;
+};
+const THEME_CONFIG_DOC = doc(db, "data", "pajji_database");
+const toCanonicalEmail = (value: string) => {
+  const email = `${value || ""}`.trim().toLowerCase();
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return email;
+  if (domain === "gmail.com") {
+    const noPlus = local.split("+")[0];
+    const noDots = noPlus.replace(/\./g, "");
+    return `${noDots}@gmail.com`;
+  }
+  return email;
+};
+const ADMIN_EMAILS = new Set([
+  "rushanbindra@gmail.com",
+  "rushianbindra@gmail.com",
+].map(toCanonicalEmail));
+
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [authEmail, setAuthEmail] = useState("");
@@ -48,12 +83,24 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState("");
   const [userXP, setUserXP] = useState(0);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [uiTheme, setUiTheme] = useState<"default" | "f1" | "liquid" | "amoled" | "paper" | "ocean" | "sunset" | "cyber">("default");
+  const [uiTheme, setUiTheme] = useState<string>("default");
   const [textSize, setTextSize] = useState<"compact" | "default" | "large">("default");
   const [reduceMotion, setReduceMotion] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [sidebarDensity, setSidebarDensity] = useState<"comfortable" | "compact">("comfortable");
   const [mobileQuickSettings, setMobileQuickSettings] = useState(true);
+  const [adminOnlyThemeIds, setAdminOnlyThemeIds] = useState<string[]>([]);
+  const [giftedThemes, setGiftedThemes] = useState<string[]>([]);
+  const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [giftUserSearch, setGiftUserSearch] = useState("");
+  const [giftUserResults, setGiftUserResults] = useState<Array<{ id: string; email: string }>>([]);
+  const [giftTargetUserId, setGiftTargetUserId] = useState("");
+  const [giftThemeId, setGiftThemeId] = useState("");
+  const [newThemeName, setNewThemeName] = useState("");
+  const [newThemeBackground, setNewThemeBackground] = useState("#0f172a");
+  const [newThemePrimary, setNewThemePrimary] = useState("#1e293b");
+  const [newThemeAccent, setNewThemeAccent] = useState("#10b981");
+  const [newThemeAdminOnly, setNewThemeAdminOnly] = useState(false);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "notStarted" | "inProgress" | "mastered">("all");
   const [librarySort, setLibrarySort] = useState<"default" | "lastEdited">("default");
@@ -116,7 +163,7 @@ export default function Home() {
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
     setTheme(darkQuery.matches ? 'dark' : 'light');
     const storedUiTheme = window.localStorage.getItem("uiTheme");
-    if (["default", "f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber"].includes(storedUiTheme || "")) setUiTheme(storedUiTheme as any);
+    if (storedUiTheme) setUiTheme(storedUiTheme);
     const storedTextSize = window.localStorage.getItem("textSize");
     if (storedTextSize === "compact" || storedTextSize === "default" || storedTextSize === "large") setTextSize(storedTextSize);
     setReduceMotion(window.localStorage.getItem("reduceMotion") === "1");
@@ -130,7 +177,8 @@ export default function Home() {
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsOwner(currentUser?.email === "rushanbindra@gmail.com");
+      const canonicalEmail = toCanonicalEmail(`${currentUser?.email || ""}`);
+      setIsOwner(ADMIN_EMAILS.has(canonicalEmail));
       
       if (!currentUser) {
         setBooks([]);
@@ -164,6 +212,18 @@ export default function Home() {
         setFlashcardIndex(0);
         setFlashcardReveal(false);
         setLastStudyTabByLesson({});
+        setAdminOnlyThemeIds([]);
+        setGiftedThemes([]);
+        setCustomThemes([]);
+        setGiftUserSearch("");
+        setGiftUserResults([]);
+        setGiftTargetUserId("");
+        setGiftThemeId("");
+        setNewThemeName("");
+        setNewThemeBackground("#0f172a");
+        setNewThemePrimary("#1e293b");
+        setNewThemeAccent("#10b981");
+        setNewThemeAdminOnly(false);
         setMobileQuickSettings(true);
         settingsHydratedRef.current = false;
         setLoading(false);
@@ -207,20 +267,40 @@ export default function Home() {
     
     const unsubBooks = onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
       if (ds.exists()) {
-        const data = ds.data().books || [];
+        const root = ds.data() || {};
+        const data = root.books || [];
         setBooks(data);
+        const themeConfig = (root.themeConfig && typeof root.themeConfig === "object") ? root.themeConfig : {};
+        setAdminOnlyThemeIds(
+          Array.isArray(themeConfig.adminOnlyThemeIds)
+            ? Array.from(new Set(themeConfig.adminOnlyThemeIds.filter((id: any) => typeof id === "string")))
+            : []
+        );
+        setCustomThemes(Array.isArray(themeConfig.customThemes) ? themeConfig.customThemes : []);
         if (curBookIdRef.current) {
           const updatedBook = data.find((b: any) => b.id === curBookIdRef.current);
           if (updatedBook) setCurBook(updatedBook);
           else { setCurBook(null); setView("library"); }
         }
-      } else { setBooks([]); }
+      } else {
+        setBooks([]);
+        setAdminOnlyThemeIds([]);
+        setCustomThemes([]);
+      }
       setLoading(false);
+    }, (err) => {
+      console.error(err);
+      setLoading(false);
+      if ((err as any)?.code === "permission-denied") {
+        setSaveStatus("Permission error loading app data.");
+        setTimeout(() => setSaveStatus(""), 2200);
+      }
     });
 
     const unsubUserData = onSnapshot(doc(db, "users", user.uid), (ds) => {
       if (ds.exists()) {
         const data = ds.data();
+        if (data?.isAdmin === true) setIsOwner(true);
         setCompletedLessons(data.completed || []);
         setUserXP(data.xp || 0);
         setLastLesson(data.lastLesson || null);
@@ -238,8 +318,9 @@ export default function Home() {
         setPinnedKeyPoints(Array.isArray(data.pinnedKeyPoints) ? data.pinnedKeyPoints : []);
         setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
         setLastStudyTabByLesson((data.lastStudyTabByLesson && typeof data.lastStudyTabByLesson === "object") ? data.lastStudyTabByLesson : {});
+        setGiftedThemes(Array.isArray(data.giftedThemes) ? data.giftedThemes : []);
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
-        if (prefs.uiTheme && ["default", "f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber"].includes(prefs.uiTheme)) setUiTheme(prefs.uiTheme);
+        if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
         if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
         if (prefs.textSize && (prefs.textSize === "compact" || prefs.textSize === "default" || prefs.textSize === "large")) setTextSize(prefs.textSize);
         setReduceMotion(!!prefs.reduceMotion);
@@ -267,6 +348,8 @@ export default function Home() {
           notesMeta: {},
           pinnedKeyPoints: [],
           noteTags: {},
+          giftedThemes: [],
+          isAdmin: ADMIN_EMAILS.has(toCanonicalEmail(user.email || "")),
           lastStudyTabByLesson: {},
           uiSettings: {
             theme,
@@ -297,6 +380,13 @@ export default function Home() {
       }
       settingsHydratedRef.current = true;
       setDataLoading(false);
+    }, (err) => {
+      console.error(err);
+      setDataLoading(false);
+      if ((err as any)?.code === "permission-denied") {
+        setSaveStatus("Permission error loading user data.");
+        setTimeout(() => setSaveStatus(""), 2200);
+      }
     });
 
     fetchLeaderboard();
@@ -343,17 +433,21 @@ export default function Home() {
   };
 
   const achievementCatalog = [
-    { id: "first_mastery", title: "First Mastery", description: "Master your first lesson.", metric: "completed", target: 1 },
-    { id: "five_masteries", title: "Knowledge Builder", description: "Master 5 lessons.", metric: "completed", target: 5 },
-    { id: "twenty_masteries", title: "Learning Machine", description: "Master 20 lessons.", metric: "completed", target: 20 },
-    { id: "fifty_masteries", title: "Grand Scholar", description: "Master 50 lessons.", metric: "completed", target: 50 },
-    { id: "streak_3", title: "On Fire", description: "Keep a 3-day learning streak.", metric: "streak", target: 3 },
-    { id: "streak_7", title: "Unstoppable", description: "Keep a 7-day learning streak.", metric: "streak", target: 7 },
-    { id: "streak_14", title: "Legendary Streak", description: "Keep a 14-day learning streak.", metric: "streak", target: 14 },
-    { id: "xp_1000", title: "XP Grinder", description: "Reach 1,000 XP.", metric: "xp", target: 1000 },
-    { id: "xp_5000", title: "XP Titan", description: "Reach 5,000 XP.", metric: "xp", target: 5000 },
+    { id: "first_mastery", title: "Kickoff", description: "Master your first lesson.", metric: "completed", target: 1 },
+    { id: "five_masteries", title: "Builder", description: "Master 5 lessons.", metric: "completed", target: 5 },
+    { id: "twenty_masteries", title: "Deep Learner", description: "Master 20 lessons.", metric: "completed", target: 20 },
+    { id: "fifty_masteries", title: "Ace Scholar", description: "Master 50 lessons.", metric: "completed", target: 50 },
+    { id: "hundred_masteries", title: "Century Scholar", description: "Master 100 lessons.", metric: "completed", target: 100 },
+    { id: "streak_3", title: "Momentum", description: "Keep a 3-day learning streak.", metric: "streak", target: 3 },
+    { id: "streak_7", title: "Streak Engine", description: "Keep a 7-day learning streak.", metric: "streak", target: 7 },
+    { id: "streak_14", title: "Iron Routine", description: "Keep a 14-day learning streak.", metric: "streak", target: 14 },
+    { id: "streak_21", title: "Marathon Mind", description: "Keep a 21-day learning streak.", metric: "streak", target: 21 },
+    { id: "xp_1000", title: "XP Starter", description: "Reach 1,000 XP.", metric: "xp", target: 1000 },
+    { id: "xp_5000", title: "XP Engine", description: "Reach 5,000 XP.", metric: "xp", target: 5000 },
+    { id: "xp_10000", title: "XP Mythic", description: "Reach 10,000 XP.", metric: "xp", target: 10000 },
     { id: "daily_goal_3", title: "Consistency", description: "Hit your daily goal on 3 days.", metric: "dailyGoalHits", target: 3 },
-    { id: "daily_goal_10", title: "Relentless", description: "Hit your daily goal on 10 days.", metric: "dailyGoalHits", target: 10 },
+    { id: "daily_goal_10", title: "Locked In", description: "Hit your daily goal on 10 days.", metric: "dailyGoalHits", target: 10 },
+    { id: "daily_goal_25", title: "Habit Architect", description: "Hit your daily goal on 25 days.", metric: "dailyGoalHits", target: 25 },
   ];
 
   const getAchievementProgress = (
@@ -1815,6 +1909,77 @@ export default function Home() {
   const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
   const IconSettings = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a1 1 0 0 1 .97.757l.26 1.04a7.97 7.97 0 0 1 1.8.75l.92-.54a1 1 0 0 1 1.23.17l1.41 1.41a1 1 0 0 1 .17 1.23l-.54.92c.31.57.56 1.17.75 1.8l1.04.26A1 1 0 0 1 21 12a1 1 0 0 1-.76.97l-1.03.26a7.97 7.97 0 0 1-.75 1.8l.54.92a1 1 0 0 1-.17 1.23l-1.41 1.41a1 1 0 0 1-1.23.17l-.92-.54a7.97 7.97 0 0 1-1.8.75l-.26 1.04A1 1 0 0 1 12 21a1 1 0 0 1-.97-.76l-.26-1.03a7.97 7.97 0 0 1-1.8-.75l-.92.54a1 1 0 0 1-1.23-.17l-1.41-1.41a1 1 0 0 1-.17-1.23l.54-.92a7.97 7.97 0 0 1-.75-1.8l-1.04-.26A1 1 0 0 1 3 12a1 1 0 0 1 .76-.97l1.03-.26c.19-.63.44-1.23.75-1.8l-.54-.92a1 1 0 0 1 .17-1.23l1.41-1.41a1 1 0 0 1 1.23-.17l.92.54c.57-.31 1.17-.56 1.8-.75l.26-1.04A1 1 0 0 1 12 3z"/><circle cx="12" cy="12" r="3.2"/></svg>;
 
+  const isHexColor = (value: string) => /^#([0-9a-fA-F]{6})$/.test(value || "");
+  const hexToRgb = (hex: string) => {
+    if (!isHexColor(hex)) return null;
+    const clean = hex.slice(1);
+    return {
+      r: parseInt(clean.slice(0, 2), 16),
+      g: parseInt(clean.slice(2, 4), 16),
+      b: parseInt(clean.slice(4, 6), 16),
+    };
+  };
+  const hexToRgba = (hex: string, alpha: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return `rgba(16,185,129,${alpha})`;
+    return `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+  };
+  const getContrastText = (hex: string) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return "#f8fafc";
+    const luminance = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+    return luminance > 0.55 ? "#0f172a" : "#f8fafc";
+  };
+  const themeAchievementRequirements: Record<string, string> = {
+    ocean: "five_masteries",
+    sunset: "streak_7",
+    cyber: "xp_1000",
+    nebula: "streak_21",
+    emerald: "xp_10000",
+    arctic: "hundred_masteries",
+  };
+  const getThemeAchievementRequirement = (themeId: string) => themeAchievementRequirements[themeId] || "";
+  const getAchievementTitleById = (achievementId: string) =>
+    achievementCatalog.find((a) => a.id === achievementId)?.title || achievementId;
+  const isThemeAdminOnly = (themeId: string) => adminOnlyThemeIds.includes(themeId);
+  const hasThemeAccess = (themeId: string) => {
+    const adminAccess = !isThemeAdminOnly(themeId) || isOwner || giftedThemes.includes(themeId);
+    const requiredAchievementId = getThemeAchievementRequirement(themeId);
+    const achievementAccess = !requiredAchievementId || isOwner || allUnlockedAchievementIds.includes(requiredAchievementId);
+    return adminAccess && achievementAccess;
+  };
+  const builtInThemeCards: ThemePreview[] = [
+    { key: "default", label: "Default", accent: "#10b981", bg: "linear-gradient(135deg,#f8fafc,#ecfeff)", source: "builtIn" },
+    { key: "f1", label: "F1", accent: "#e10600", bg: "linear-gradient(135deg,#0b0b0c,#2a2a2e)", source: "builtIn" },
+    { key: "liquid", label: "Glass", accent: "#45b7ff", bg: "linear-gradient(135deg,#dff3ff,#f3f8ff)", source: "builtIn" },
+    { key: "amoled", label: "AMOLED", accent: "#29f2a3", bg: "linear-gradient(135deg,#000,#0b0b0b)", source: "builtIn" },
+    { key: "paper", label: "Paper", accent: "#6e5435", bg: "linear-gradient(135deg,#f6efe2,#fffaf1)", source: "builtIn" },
+    { key: "ocean", label: "Ocean", accent: "#0ea5e9", bg: "linear-gradient(135deg,#e0f2fe,#cffafe)", source: "builtIn" },
+    { key: "sunset", label: "Sunset", accent: "#f97316", bg: "linear-gradient(135deg,#fff3ec,#ffe4e6)", source: "builtIn" },
+    { key: "cyber", label: "Cyber", accent: "#22d3ee", bg: "linear-gradient(135deg,#0f172a,#1e293b)", source: "builtIn" },
+    { key: "nebula", label: "Nebula", accent: "#a78bfa", bg: "linear-gradient(135deg,#1b1038,#2f1f69)", source: "builtIn" },
+    { key: "emerald", label: "Emerald", accent: "#22c55e", bg: "linear-gradient(135deg,#022c22,#14532d)", source: "builtIn" },
+    { key: "arctic", label: "Arctic", accent: "#38bdf8", bg: "linear-gradient(135deg,#dbeafe,#ecfeff)", source: "builtIn" },
+  ];
+  const customThemeCards: ThemePreview[] = customThemes.map((t) => ({
+    key: t.id,
+    label: t.name || "Custom Theme",
+    accent: t.accent || "#10b981",
+    bg: `linear-gradient(135deg, ${t.background || "#0f172a"}, ${t.primary || "#1e293b"})`,
+    source: "custom",
+  }));
+  const themePreviewCards = [...builtInThemeCards, ...customThemeCards].map((item) => ({
+    ...item,
+    isAdminOnly: isThemeAdminOnly(item.key),
+  }));
+  const visibleThemePreviewCards = isOwner
+    ? themePreviewCards
+    : themePreviewCards.filter((item) => !isThemeAdminOnly(item.key) || giftedThemes.includes(item.key));
+  const selectedThemeCard = themePreviewCards.find((t) => t.key === uiTheme);
+  const selectedThemeAchievementId = getThemeAchievementRequirement(uiTheme);
+  const uiThemeLabel = selectedThemeCard
+    ? `${selectedThemeCard.label}${selectedThemeCard.isAdminOnly ? " (ADMIN)" : ""}${selectedThemeAchievementId ? " (ACHIEVEMENT)" : ""}`
+    : "Default Theme";
   const uiThemeClass = uiTheme === "f1"
     ? "theme-f1"
     : uiTheme === "liquid"
@@ -1829,36 +1994,58 @@ export default function Home() {
               ? "theme-sunset"
               : uiTheme === "cyber"
                 ? "theme-cyber"
-                : "theme-default";
-  const uiThemeLabel = uiTheme === "f1"
-    ? "F1 Theme"
-    : uiTheme === "liquid"
-      ? "Glass"
-      : uiTheme === "amoled"
-        ? "AMOLED"
-        : uiTheme === "paper"
-          ? "Paper"
-          : uiTheme === "ocean"
-            ? "Ocean"
-            : uiTheme === "sunset"
-              ? "Sunset"
-              : uiTheme === "cyber"
-                ? "Cyber"
-                : "Default Theme";
+                : uiTheme === "nebula"
+                  ? "theme-nebula"
+                  : uiTheme === "emerald"
+                    ? "theme-emerald"
+                    : uiTheme === "arctic"
+                      ? "theme-arctic"
+                : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
+                  ? "theme-custom"
+                  : "theme-default";
   const textSizeClass = textSize === "compact" ? "text-size-compact" : textSize === "large" ? "text-size-large" : "text-size-default";
   const motionClass = reduceMotion ? "motion-reduced" : "motion-normal";
   const contrastClass = highContrast ? "contrast-high" : "contrast-normal";
   const densityClass = sidebarDensity === "compact" ? "density-compact" : "density-comfortable";
-  const themePreviewCards = [
-    { key: "default", label: "Default", accent: "#10b981", bg: "linear-gradient(135deg,#f8fafc,#ecfeff)" },
-    { key: "f1", label: "F1", accent: "#e10600", bg: "linear-gradient(135deg,#0b0b0c,#2a2a2e)" },
-    { key: "liquid", label: "Glass", accent: "#45b7ff", bg: "linear-gradient(135deg,#dff3ff,#f3f8ff)" },
-    { key: "amoled", label: "AMOLED", accent: "#29f2a3", bg: "linear-gradient(135deg,#000,#0b0b0b)" },
-    { key: "paper", label: "Paper", accent: "#6e5435", bg: "linear-gradient(135deg,#f6efe2,#fffaf1)" },
-    { key: "ocean", label: "Ocean", accent: "#0ea5e9", bg: "linear-gradient(135deg,#e0f2fe,#cffafe)" },
-    { key: "sunset", label: "Sunset", accent: "#f97316", bg: "linear-gradient(135deg,#fff3ec,#ffe4e6)" },
-    { key: "cyber", label: "Cyber", accent: "#22d3ee", bg: "linear-gradient(135deg,#0f172a,#1e293b)" },
-  ] as const;
+  const activeCustomTheme = customThemes.find((t) => t.id === uiTheme);
+  const customThemeVars = activeCustomTheme
+    ? (() => {
+        const bg = isHexColor(activeCustomTheme.background) ? activeCustomTheme.background : "#0f172a";
+        const primary = isHexColor(activeCustomTheme.primary) ? activeCustomTheme.primary : "#1e293b";
+        const accent = isHexColor(activeCustomTheme.accent) ? activeCustomTheme.accent : "#10b981";
+        const text = getContrastText(primary);
+        const muted = text === "#0f172a" ? "#475569" : "#94a3b8";
+        return {
+          "--bg": bg,
+          "--side": bg,
+          "--card": primary,
+          "--text": text,
+          "--muted": muted,
+          "--accent": accent,
+          "--accent-grad": `linear-gradient(90deg, ${accent}, ${accent})`,
+          "--accent-soft": hexToRgba(accent, text === "#0f172a" ? 0.2 : 0.18),
+          "--border": hexToRgba(text === "#0f172a" ? "#0f172a" : "#f8fafc", text === "#0f172a" ? 0.12 : 0.14),
+          "--input-bg": hexToRgba(text === "#0f172a" ? "#0f172a" : "#f8fafc", text === "#0f172a" ? 0.06 : 0.08),
+          "--danger": "#ef4444",
+          "--danger-rgb": "239,68,68",
+          "--warning": "#f59e0b",
+          "--info": accent,
+        } as Record<string, string>;
+      })()
+    : undefined;
+  useEffect(() => {
+    if (!uiTheme) return;
+    if (!hasThemeAccess(uiTheme)) {
+      setUiTheme("default");
+      const requiredAchievementId = getThemeAchievementRequirement(uiTheme);
+      if (requiredAchievementId && !isOwner && !allUnlockedAchievementIds.includes(requiredAchievementId)) {
+        setSaveStatus(`Theme locked: unlock "${getAchievementTitleById(requiredAchievementId)}".`);
+      } else {
+        setSaveStatus("This theme is admin-only.");
+      }
+      setTimeout(() => setSaveStatus(""), 1800);
+    }
+  }, [uiTheme, isOwner, giftedThemes, adminOnlyThemeIds, allUnlockedAchievementIds]);
   const resetAllSettings = async () => {
     setTheme("dark");
     setUiTheme("default");
@@ -1896,6 +2083,117 @@ export default function Home() {
     setHighContrast(true);
     setSidebarDensity("compact");
   };
+  const toggleThemeAdminOnly = async (themeId: string, makeAdminOnly: boolean) => {
+    if (!isOwner) return;
+    try {
+      const snap = await getDoc(THEME_CONFIG_DOC);
+      const data = snap.exists() ? snap.data() : {};
+      const themeConfig = (data?.themeConfig && typeof data.themeConfig === "object") ? data.themeConfig : {};
+      const currentIds = Array.isArray((themeConfig as any)?.adminOnlyThemeIds)
+        ? (themeConfig as any).adminOnlyThemeIds.filter((id: any) => typeof id === "string")
+        : [];
+      const nextIds = makeAdminOnly
+        ? Array.from(new Set([...currentIds, themeId]))
+        : currentIds.filter((id: string) => id !== themeId);
+      await setDoc(THEME_CONFIG_DOC, { themeConfig: { ...themeConfig, adminOnlyThemeIds: nextIds } }, { merge: true });
+      setSaveStatus(makeAdminOnly ? "Theme marked admin-only" : "Theme open to all");
+      setTimeout(() => setSaveStatus(""), 1400);
+    } catch (e) {
+      console.error(e);
+      setSaveStatus("Failed to update theme access");
+      setTimeout(() => setSaveStatus(""), 1600);
+    }
+  };
+  const searchUsersForThemeGift = async () => {
+    if (!isOwner) return;
+    const q = giftUserSearch.trim().toLowerCase();
+    if (!q) {
+      setGiftUserResults([]);
+      return;
+    }
+    try {
+      const snap = await getDocs(query(collection(db, "users"), limit(200)));
+      const matches = snap.docs
+        .map((d) => ({ id: d.id, email: `${d.data()?.email || ""}`.trim() }))
+        .filter((u) => !!u.email && u.email.toLowerCase().includes(q))
+        .slice(0, 20);
+      setGiftUserResults(matches);
+    } catch (e) {
+      console.error(e);
+      setSaveStatus("User search failed");
+      setTimeout(() => setSaveStatus(""), 1600);
+    }
+  };
+  const giftThemeToUser = async () => {
+    if (!isOwner || !giftTargetUserId || !giftThemeId) return;
+    try {
+      await setDoc(doc(db, "users", giftTargetUserId), {
+        giftedThemes: arrayUnion(giftThemeId),
+      }, { merge: true });
+      setSaveStatus("Theme gifted");
+      setTimeout(() => setSaveStatus(""), 1500);
+    } catch (e) {
+      console.error(e);
+      setSaveStatus("Failed to gift theme");
+      setTimeout(() => setSaveStatus(""), 1600);
+    }
+  };
+  const createCustomTheme = async () => {
+    if (!isOwner) return;
+    const name = newThemeName.trim();
+    if (!name) {
+      setSaveStatus("Theme name required");
+      setTimeout(() => setSaveStatus(""), 1300);
+      return;
+    }
+    if (!isHexColor(newThemeBackground) || !isHexColor(newThemePrimary) || !isHexColor(newThemeAccent)) {
+      setSaveStatus("Use hex colors like #0f172a");
+      setTimeout(() => setSaveStatus(""), 1500);
+      return;
+    }
+    const nextTheme: CustomTheme = {
+      id: `custom-${Date.now()}`,
+      name,
+      background: newThemeBackground,
+      primary: newThemePrimary,
+      accent: newThemeAccent,
+      adminOnly: newThemeAdminOnly,
+      createdBy: user?.email || user?.uid || "",
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const snap = await getDoc(THEME_CONFIG_DOC);
+      const data = snap.exists() ? snap.data() : {};
+      const themeConfig = (data?.themeConfig && typeof data.themeConfig === "object") ? data.themeConfig : {};
+      const currentThemes = Array.isArray((themeConfig as any)?.customThemes)
+        ? (themeConfig as any).customThemes.filter((t: any) => t && typeof t.id === "string")
+        : [];
+      const currentAdminIds = Array.isArray((themeConfig as any)?.adminOnlyThemeIds)
+        ? (themeConfig as any).adminOnlyThemeIds.filter((id: any) => typeof id === "string")
+        : [];
+      const nextAdminIds = newThemeAdminOnly
+        ? Array.from(new Set([...currentAdminIds, nextTheme.id]))
+        : currentAdminIds.filter((id: string) => id !== nextTheme.id);
+      await setDoc(THEME_CONFIG_DOC, {
+        themeConfig: {
+          ...themeConfig,
+          customThemes: [...currentThemes, nextTheme],
+          adminOnlyThemeIds: nextAdminIds,
+        },
+      }, { merge: true });
+      setNewThemeName("");
+      setNewThemeBackground("#0f172a");
+      setNewThemePrimary("#1e293b");
+      setNewThemeAccent("#10b981");
+      setNewThemeAdminOnly(false);
+      setSaveStatus("Custom theme created");
+      setTimeout(() => setSaveStatus(""), 1600);
+    } catch (e) {
+      console.error(e);
+      setSaveStatus("Theme creation failed");
+      setTimeout(() => setSaveStatus(""), 1600);
+    }
+  };
 
   if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "var(--accent)", fontWeight: "900"}}>PAJJI LEARN...</div>;
 
@@ -1919,7 +2217,7 @@ export default function Home() {
   }
 
   return (
-    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass}`}>
+    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass}`} style={customThemeVars as any}>
       <style>{`
         :root {
           --accent: #10b981;
@@ -2038,6 +2336,45 @@ export default function Home() {
           --danger: #fb7185;
           --danger-rgb: 251, 113, 133;
         }
+        .theme-nebula {
+          --accent: #a78bfa;
+          --accent-rgb: 167, 139, 250;
+          --accent-soft: rgba(167, 139, 250, 0.17);
+          --accent-soft-strong: rgba(167, 139, 250, 0.3);
+          --accent-grad: linear-gradient(90deg, #8b5cf6, #a78bfa);
+          --brand-gradient: linear-gradient(130deg, #120b2f, #2f1f69 62%, #6d28d9 128%);
+          --card-shadow: 0 12px 34px rgba(20, 12, 44, 0.36);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #fb7185;
+          --danger-rgb: 251, 113, 133;
+        }
+        .theme-emerald {
+          --accent: #22c55e;
+          --accent-rgb: 34, 197, 94;
+          --accent-soft: rgba(34, 197, 94, 0.16);
+          --accent-soft-strong: rgba(34, 197, 94, 0.3);
+          --accent-grad: linear-gradient(90deg, #16a34a, #22c55e);
+          --brand-gradient: linear-gradient(130deg, #022c22, #14532d 65%, #16a34a 130%);
+          --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.3);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #f87171;
+          --danger-rgb: 248, 113, 113;
+        }
+        .theme-arctic {
+          --accent: #38bdf8;
+          --accent-rgb: 56, 189, 248;
+          --accent-soft: rgba(56, 189, 248, 0.18);
+          --accent-soft-strong: rgba(56, 189, 248, 0.3);
+          --accent-grad: linear-gradient(90deg, #0ea5e9, #38bdf8);
+          --brand-gradient: linear-gradient(130deg, #cffafe, #dbeafe 62%, #7dd3fc 128%);
+          --card-shadow: 0 10px 28px rgba(30, 64, 175, 0.14);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
+        }
         .dark { 
           --bg: #020617; 
           --side: #0f172a; 
@@ -2119,6 +2456,33 @@ export default function Home() {
           --border: rgba(34, 211, 238, 0.24);
           --input-bg: #17213f;
         }
+        .theme-nebula.dark {
+          --bg: #090618;
+          --side: #140e2f;
+          --card: #1f1745;
+          --text: #efe9ff;
+          --muted: #c4b5fd;
+          --border: rgba(167, 139, 250, 0.24);
+          --input-bg: #2a215a;
+        }
+        .theme-emerald.dark {
+          --bg: #031610;
+          --side: #05241a;
+          --card: #0b3a29;
+          --text: #dcfce7;
+          --muted: #86efac;
+          --border: rgba(52, 211, 153, 0.22);
+          --input-bg: #134e3a;
+        }
+        .theme-arctic.dark {
+          --bg: #07172d;
+          --side: #0b2746;
+          --card: #12365f;
+          --text: #e0f2fe;
+          --muted: #7dd3fc;
+          --border: rgba(125, 211, 252, 0.22);
+          --input-bg: #164876;
+        }
         .theme-f1.light {
           --bg: #f7f7f8;
           --side: #ffffff;
@@ -2182,6 +2546,33 @@ export default function Home() {
           --border: rgba(34, 211, 238, 0.22);
           --input-bg: #e0f7ff;
         }
+        .theme-nebula.light {
+          --bg: #f5f3ff;
+          --side: #faf7ff;
+          --card: #ffffff;
+          --text: #2e1065;
+          --muted: #7c3aed;
+          --border: rgba(124, 58, 237, 0.18);
+          --input-bg: #ede9fe;
+        }
+        .theme-emerald.light {
+          --bg: #ecfdf5;
+          --side: #f7fefb;
+          --card: #ffffff;
+          --text: #052e16;
+          --muted: #15803d;
+          --border: rgba(21, 128, 61, 0.18);
+          --input-bg: #dcfce7;
+        }
+        .theme-arctic.light {
+          --bg: #f0f9ff;
+          --side: #f7fcff;
+          --card: #ffffff;
+          --text: #0c4a6e;
+          --muted: #0369a1;
+          --border: rgba(3, 105, 161, 0.16);
+          --input-bg: #e0f2fe;
+        }
         
         .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; overflow-x: hidden; }
         .text-size-default { --font-scale: 1; }
@@ -2220,6 +2611,21 @@ export default function Home() {
           background-image:
             radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.16), transparent 34%),
             radial-gradient(circle at 100% 100%, rgba(163, 230, 53, 0.12), transparent 42%);
+        }
+        .theme-nebula .app-container, .theme-nebula.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(167, 139, 250, 0.2), transparent 34%),
+            radial-gradient(circle at 100% 100%, rgba(192, 132, 252, 0.12), transparent 42%);
+        }
+        .theme-emerald .app-container, .theme-emerald.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.18), transparent 36%),
+            radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.12), transparent 40%);
+        }
+        .theme-arctic .app-container, .theme-arctic.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.18), transparent 36%),
+            radial-gradient(circle at 100% 100%, rgba(125, 211, 252, 0.14), transparent 40%);
         }
         .sidebar { width: 280px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; font-size: calc(1rem * var(--font-scale)); }
         .density-compact .sidebar { width: 244px; padding: 20px 14px; }
@@ -2278,7 +2684,7 @@ export default function Home() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg {
+        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg, .theme-nebula .nav-btn.active svg, .theme-emerald .nav-btn.active svg, .theme-arctic .nav-btn.active svg {
           background: rgba(var(--accent-rgb), 0.22);
           border-radius: 8px;
           padding: 2px;
@@ -2651,26 +3057,114 @@ export default function Home() {
                 <button onClick={() => applyThemePreset("focus")} className="btn btn-secondary">Preset: Focus</button>
               </div>
               <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px"}}>
-                {themePreviewCards.map((item) => {
+                {visibleThemePreviewCards.map((item) => {
                   const selected = item.key === uiTheme;
+                  const allowed = hasThemeAccess(item.key);
+                  const showAdminTag = !!item.isAdminOnly;
+                  const requiredAchievementId = getThemeAchievementRequirement(item.key);
+                  const showAchievementTag = !!requiredAchievementId;
+                  const achievementUnlocked = !requiredAchievementId || allUnlockedAchievementIds.includes(requiredAchievementId) || isOwner;
                   return (
-                    <button
-                      key={`preview-${item.key}`}
-                      onClick={() => setUiTheme(item.key as any)}
-                      className="btn btn-secondary"
-                      style={{textAlign: "left", border: selected ? "2px solid var(--accent)" : "1px solid var(--border)", background: "var(--card)", padding: "10px"}}
-                    >
-                      <div style={{height: "62px", borderRadius: "10px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative", overflow: "hidden"}}>
-                        <div style={{position: "absolute", left: "10px", top: "10px", width: "32px", height: "5px", borderRadius: "999px", background: item.accent}} />
-                        <div style={{position: "absolute", left: "10px", top: "22px", width: "54px", height: "4px", borderRadius: "999px", background: "rgba(255,255,255,0.7)"}} />
-                      </div>
-                      <span style={{fontWeight: "800", color: selected ? "var(--accent)" : "var(--text)", fontSize: "12px"}}>{item.label}</span>
-                    </button>
+                    <div key={`preview-${item.key}`} style={{border: selected ? "2px solid var(--accent)" : "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--card)", opacity: allowed ? 1 : 0.6}}>
+                      <button
+                        onClick={() => {
+                          if (!allowed) return;
+                          setUiTheme(item.key);
+                        }}
+                        className="btn btn-secondary"
+                        style={{textAlign: "left", border: "1px solid var(--border)", background: "transparent", padding: "8px", width: "100%", cursor: allowed ? "pointer" : "not-allowed"}}
+                        disabled={!allowed}
+                      >
+                        <div style={{height: "62px", borderRadius: "10px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative", overflow: "hidden"}}>
+                          <div style={{position: "absolute", left: "10px", top: "10px", width: "32px", height: "5px", borderRadius: "999px", background: item.accent}} />
+                          <div style={{position: "absolute", left: "10px", top: "22px", width: "54px", height: "4px", borderRadius: "999px", background: "rgba(255,255,255,0.7)"}} />
+                        </div>
+                        <span style={{fontWeight: "800", color: selected ? "var(--accent)" : "var(--text)", fontSize: "12px"}}>
+                          {item.label}{showAdminTag ? " (ADMIN)" : ""}{showAchievementTag ? " (ACHIEVEMENT)" : ""}
+                        </span>
+                        {!allowed && (
+                          <span style={{display: "block", fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>
+                            {requiredAchievementId && !achievementUnlocked
+                              ? `Unlock: ${getAchievementTitleById(requiredAchievementId)}`
+                              : "Locked"}
+                          </span>
+                        )}
+                      </button>
+                      {isOwner && (
+                        <label style={{display: "flex", alignItems: "center", gap: "6px", marginTop: "8px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                          <input
+                            type="checkbox"
+                            checked={!!item.isAdminOnly}
+                            onChange={(e) => toggleThemeAdminOnly(item.key, e.target.checked)}
+                          />
+                          Admin only
+                        </label>
+                      )}
+                    </div>
                   );
                 })}
               </div>
               <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "8px"}}>Current: <strong style={{color: "var(--text)"}}>{uiThemeLabel}</strong></p>
+              {!isOwner && (
+                <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "6px"}}>
+                  Admin-only themes are hidden unless granted. Achievement themes unlock as you earn badges.
+                </p>
+              )}
             </div>
+
+            {isOwner && (
+              <div className="card" style={{marginBottom: "14px"}}>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Create Custom Theme</p>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px"}}>
+                  <input type="text" placeholder="Theme name" value={newThemeName} onChange={(e) => setNewThemeName(e.target.value)} />
+                  <div />
+                  <label style={{display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                    Background
+                    <input type="text" placeholder="#0f172a" value={newThemeBackground} onChange={(e) => setNewThemeBackground(e.target.value)} />
+                  </label>
+                  <label style={{display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                    Primary
+                    <input type="text" placeholder="#1e293b" value={newThemePrimary} onChange={(e) => setNewThemePrimary(e.target.value)} />
+                  </label>
+                  <label style={{display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                    Accent
+                    <input type="text" placeholder="#10b981" value={newThemeAccent} onChange={(e) => setNewThemeAccent(e.target.value)} />
+                  </label>
+                  <label style={{display: "flex", alignItems: "center", gap: "6px", marginTop: "20px", fontSize: "12px", color: "var(--muted)", fontWeight: "700"}}>
+                    <input type="checkbox" checked={newThemeAdminOnly} onChange={(e) => setNewThemeAdminOnly(e.target.checked)} />
+                    Admin only
+                  </label>
+                </div>
+                <div style={{display: "flex", gap: "8px", marginTop: "10px"}}>
+                  <button onClick={createCustomTheme} className="btn btn-primary">Create Theme</button>
+                </div>
+              </div>
+            )}
+
+            {isOwner && (
+              <div className="card" style={{marginBottom: "14px"}}>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Gift Admin Themes</p>
+                <div style={{display: "grid", gridTemplateColumns: "1fr auto", gap: "8px", marginBottom: "8px"}}>
+                  <input type="text" placeholder="Search user by email..." value={giftUserSearch} onChange={(e) => setGiftUserSearch(e.target.value)} />
+                  <button onClick={searchUsersForThemeGift} className="btn btn-secondary">Search</button>
+                </div>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px", alignItems: "center"}}>
+                  <select value={giftTargetUserId} onChange={(e) => setGiftTargetUserId(e.target.value)} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px"}}>
+                    <option value="">Select user</option>
+                    {giftUserResults.map((u) => (
+                      <option key={`gift-user-${u.id}`} value={u.id}>{u.email}</option>
+                    ))}
+                  </select>
+                  <select value={giftThemeId} onChange={(e) => setGiftThemeId(e.target.value)} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px"}}>
+                    <option value="">Select admin theme</option>
+                    {themePreviewCards.filter((t) => t.isAdminOnly).map((t) => (
+                      <option key={`gift-theme-${t.key}`} value={t.key}>{t.label} (ADMIN)</option>
+                    ))}
+                  </select>
+                  <button onClick={giftThemeToUser} className="btn btn-primary" disabled={!giftTargetUserId || !giftThemeId}>Gift</button>
+                </div>
+              </div>
+            )}
 
             <div className="card" style={{marginBottom: "14px"}}>
               <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Display</p>
