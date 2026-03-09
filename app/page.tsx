@@ -53,6 +53,7 @@ export default function Home() {
   const [reduceMotion, setReduceMotion] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [sidebarDensity, setSidebarDensity] = useState<"comfortable" | "compact">("comfortable");
+  const [mobileQuickSettings, setMobileQuickSettings] = useState(true);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [libraryFilter, setLibraryFilter] = useState<"all" | "notStarted" | "inProgress" | "mastered">("all");
   const [librarySort, setLibrarySort] = useState<"default" | "lastEdited">("default");
@@ -99,6 +100,7 @@ export default function Home() {
   const [flashcardsByLesson, setFlashcardsByLesson] = useState<Record<string, Array<{ q: string; a: string }>>>({});
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flashcardReveal, setFlashcardReveal] = useState(false);
+  const [lastStudyTabByLesson, setLastStudyTabByLesson] = useState<Record<string, string>>({});
 
   const curBookIdRef = useRef<string | null>(null);
   const lastAutosavePayloadRef = useRef("");
@@ -121,6 +123,8 @@ export default function Home() {
     setHighContrast(window.localStorage.getItem("highContrast") === "1");
     const storedDensity = window.localStorage.getItem("sidebarDensity");
     if (storedDensity === "comfortable" || storedDensity === "compact") setSidebarDensity(storedDensity);
+    const storedQuickSettings = window.localStorage.getItem("mobileQuickSettings");
+    if (storedQuickSettings === "1" || storedQuickSettings === "0") setMobileQuickSettings(storedQuickSettings === "1");
     const themeListener = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
     darkQuery.addEventListener('change', themeListener);
 
@@ -159,6 +163,8 @@ export default function Home() {
         setFlashcardsByLesson({});
         setFlashcardIndex(0);
         setFlashcardReveal(false);
+        setLastStudyTabByLesson({});
+        setMobileQuickSettings(true);
         settingsHydratedRef.current = false;
         setLoading(false);
         setDataLoading(false);
@@ -178,7 +184,8 @@ export default function Home() {
     window.localStorage.setItem("reduceMotion", reduceMotion ? "1" : "0");
     window.localStorage.setItem("highContrast", highContrast ? "1" : "0");
     window.localStorage.setItem("sidebarDensity", sidebarDensity);
-  }, [uiTheme, textSize, reduceMotion, highContrast, sidebarDensity]);
+    window.localStorage.setItem("mobileQuickSettings", mobileQuickSettings ? "1" : "0");
+  }, [uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings]);
 
   useEffect(() => {
     if (!user || !settingsHydratedRef.current) return;
@@ -189,10 +196,11 @@ export default function Home() {
         textSize,
         reduceMotion,
         highContrast,
-        sidebarDensity
+        sidebarDensity,
+        mobileQuickSettings
       }
     }, { merge: true }).catch(() => {});
-  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity]);
+  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings]);
 
   useEffect(() => {
     if (!user) return;
@@ -229,6 +237,7 @@ export default function Home() {
         setNotesMeta((data.notesMeta && typeof data.notesMeta === "object") ? data.notesMeta : {});
         setPinnedKeyPoints(Array.isArray(data.pinnedKeyPoints) ? data.pinnedKeyPoints : []);
         setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
+        setLastStudyTabByLesson((data.lastStudyTabByLesson && typeof data.lastStudyTabByLesson === "object") ? data.lastStudyTabByLesson : {});
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (prefs.uiTheme && ["default", "f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber"].includes(prefs.uiTheme)) setUiTheme(prefs.uiTheme);
         if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
@@ -236,6 +245,7 @@ export default function Home() {
         setReduceMotion(!!prefs.reduceMotion);
         setHighContrast(!!prefs.highContrast);
         if (prefs.sidebarDensity && (prefs.sidebarDensity === "comfortable" || prefs.sidebarDensity === "compact")) setSidebarDensity(prefs.sidebarDensity);
+        if (typeof prefs.mobileQuickSettings === "boolean") setMobileQuickSettings(prefs.mobileQuickSettings);
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -257,13 +267,15 @@ export default function Home() {
           notesMeta: {},
           pinnedKeyPoints: [],
           noteTags: {},
+          lastStudyTabByLesson: {},
           uiSettings: {
             theme,
             uiTheme,
             textSize,
             reduceMotion,
             highContrast,
-            sidebarDensity
+            sidebarDensity,
+            mobileQuickSettings
           }
         }, { merge: true });
         setUserXP(0);
@@ -281,6 +293,7 @@ export default function Home() {
         setNotesMeta({});
         setPinnedKeyPoints([]);
         setNoteTags({});
+        setLastStudyTabByLesson({});
       }
       settingsHydratedRef.current = true;
       setDataLoading(false);
@@ -690,7 +703,8 @@ export default function Home() {
     setCurBook(book);
     setCurChapter(chapter);
     setView("study");
-    setActiveTab("Summary");
+    const rememberedTab = lastStudyTabByLesson[chapter.id];
+    setActiveTab(rememberedTab || "Summary");
     setQuizAnswers({});
     setQuizResult("");
     setQuizImageErrors({});
@@ -715,6 +729,18 @@ export default function Home() {
       await setDoc(doc(db, "users", user.uid), { lastLesson: latestLesson }, { merge: true });
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const switchStudyTab = async (nextTab: string) => {
+    setActiveTab(nextTab);
+    if (!user || !curChapter?.id) return;
+    const chapterId = curChapter.id;
+    setLastStudyTabByLesson((prev) => ({ ...prev, [chapterId]: nextTab }));
+    try {
+      await updateDoc(doc(db, "users", user.uid), { [`lastStudyTabByLesson.${chapterId}`]: nextTab });
+    } catch {
+      await setDoc(doc(db, "users", user.uid), { lastStudyTabByLesson: { [chapterId]: nextTab } }, { merge: true });
     }
   };
 
@@ -1840,8 +1866,35 @@ export default function Home() {
     setReduceMotion(false);
     setHighContrast(false);
     setSidebarDensity("comfortable");
+    setMobileQuickSettings(true);
     setSaveStatus("Settings reset");
     setTimeout(() => setSaveStatus(""), 1500);
+  };
+  const applyThemePreset = (preset: "study" | "night" | "focus") => {
+    if (preset === "study") {
+      setTheme("light");
+      setUiTheme("paper");
+      setTextSize("default");
+      setReduceMotion(false);
+      setHighContrast(false);
+      setSidebarDensity("comfortable");
+      return;
+    }
+    if (preset === "night") {
+      setTheme("dark");
+      setUiTheme("amoled");
+      setTextSize("default");
+      setReduceMotion(true);
+      setHighContrast(true);
+      setSidebarDensity("compact");
+      return;
+    }
+    setTheme("dark");
+    setUiTheme("cyber");
+    setTextSize("compact");
+    setReduceMotion(true);
+    setHighContrast(true);
+    setSidebarDensity("compact");
   };
 
   if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "var(--accent)", fontWeight: "900"}}>PAJJI LEARN...</div>;
@@ -2219,6 +2272,18 @@ export default function Home() {
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
         .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--accent) 35%, transparent); }
         .nav-btn.active svg { opacity: 1; }
+        .theme-default .nav-btn.active svg, .theme-paper .nav-btn.active svg {
+          border: 1px solid rgba(var(--accent-rgb), 0.65);
+          border-radius: 7px;
+          padding: 2px;
+          box-sizing: border-box;
+        }
+        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg {
+          background: rgba(var(--accent-rgb), 0.22);
+          border-radius: 8px;
+          padding: 2px;
+          box-sizing: border-box;
+        }
         .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 10px 20px -5px color-mix(in oklab, var(--accent) 35%, transparent); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
@@ -2245,7 +2310,7 @@ export default function Home() {
           .sidebar {
             position: fixed;
             top: auto;
-            bottom: 24px;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
@@ -2285,7 +2350,7 @@ export default function Home() {
           .nav-btn.active { color: var(--accent); }
           .nav-btn.active svg { opacity: 1; stroke-width: 2.5px; }
           
-          .main-content { padding: 20px; padding-bottom: 120px; overflow-x: hidden; }
+          .main-content { padding: 20px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 110px); overflow-x: hidden; }
           .page-shell { max-width: 100%; }
           .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); }
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
@@ -2324,7 +2389,9 @@ export default function Home() {
             <h1 style={{fontSize: "18px", fontWeight: "900", marginLeft: "4px"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
             <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
                 <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent)", color: "white", padding: "4px 10px", borderRadius: "20px"}}>{userXP} XP</div>
-                <button onClick={() => setView("settings")} style={{background: "var(--input-bg)", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "800", color: "var(--accent)", padding: "4px 8px", borderRadius: "14px"}}>Settings</button>
+                {mobileQuickSettings && (
+                  <button onClick={() => setView("settings")} style={{background: "var(--input-bg)", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "800", color: "var(--accent)", padding: "4px 8px", borderRadius: "14px"}}>Settings</button>
+                )}
             </div>
         </div>
 
@@ -2578,6 +2645,11 @@ export default function Home() {
             </div>
             <div className="card" style={{marginBottom: "14px"}}>
               <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>App Theme</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => applyThemePreset("study")} className="btn btn-secondary">Preset: Study</button>
+                <button onClick={() => applyThemePreset("night")} className="btn btn-secondary">Preset: Night</button>
+                <button onClick={() => applyThemePreset("focus")} className="btn btn-secondary">Preset: Focus</button>
+              </div>
               <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px"}}>
                 {themePreviewCards.map((item) => {
                   const selected = item.key === uiTheme;
@@ -2624,6 +2696,7 @@ export default function Home() {
               <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
                 <button onClick={() => setReduceMotion((v) => !v)} className="btn btn-secondary" style={{background: reduceMotion ? "var(--accent-soft)" : "var(--input-bg)", color: reduceMotion ? "var(--accent)" : "var(--text)"}}>Reduce Motion: {reduceMotion ? "On" : "Off"}</button>
                 <button onClick={() => setHighContrast((v) => !v)} className="btn btn-secondary" style={{background: highContrast ? "var(--accent-soft)" : "var(--input-bg)", color: highContrast ? "var(--accent)" : "var(--text)"}}>High Contrast: {highContrast ? "On" : "Off"}</button>
+                <button onClick={() => setMobileQuickSettings((v) => !v)} className="btn btn-secondary" style={{background: mobileQuickSettings ? "var(--accent-soft)" : "var(--input-bg)", color: mobileQuickSettings ? "var(--accent)" : "var(--text)"}}>Mobile Quick Settings: {mobileQuickSettings ? "On" : "Off"}</button>
               </div>
             </div>
 
@@ -2743,7 +2816,7 @@ export default function Home() {
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
                 {["Summary", "Spellings", "Quiz", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
-                    <button key={t} onClick={() => setActiveTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
+                    <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
             <div className="card" style={{minHeight: "500px", padding: "32px"}}>
