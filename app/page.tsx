@@ -114,6 +114,9 @@ export default function Home() {
   const [dailyGoalHits, setDailyGoalHits] = useState(0);
   const [quickReviewMode, setQuickReviewMode] = useState(false);
   const [achievementToast, setAchievementToast] = useState("");
+  const [masteryConfetti, setMasteryConfetti] = useState(false);
+  const [fireworksMode, setFireworksMode] = useState(false);
+  const [themeUnlockShowcase, setThemeUnlockShowcase] = useState<{ id: string; label: string } | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string | number>>({});
   const [quizResult, setQuizResult] = useState("");
   const [quizBuilderText, setQuizBuilderText] = useState("");
@@ -148,6 +151,16 @@ export default function Home() {
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flashcardReveal, setFlashcardReveal] = useState(false);
   const [lastStudyTabByLesson, setLastStudyTabByLesson] = useState<Record<string, string>>({});
+  const [streakFreezes, setStreakFreezes] = useState(0);
+  const [masteriesSinceMystery, setMasteriesSinceMystery] = useState(0);
+  const [mysteryReady, setMysteryReady] = useState(false);
+  const [lastSpinDate, setLastSpinDate] = useState<string | null>(null);
+  const [spinReward, setSpinReward] = useState("");
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [usedFiftyFifty, setUsedFiftyFifty] = useState<Record<number, boolean>>({});
+  const [hiddenOptionsByQuestion, setHiddenOptionsByQuestion] = useState<Record<number, number[]>>({});
+  const [usedHint, setUsedHint] = useState<Record<number, boolean>>({});
+  const [usedSkip, setUsedSkip] = useState<Record<number, boolean>>({});
 
   const curBookIdRef = useRef<string | null>(null);
   const lastAutosavePayloadRef = useRef("");
@@ -172,6 +185,8 @@ export default function Home() {
     if (storedDensity === "comfortable" || storedDensity === "compact") setSidebarDensity(storedDensity);
     const storedQuickSettings = window.localStorage.getItem("mobileQuickSettings");
     if (storedQuickSettings === "1" || storedQuickSettings === "0") setMobileQuickSettings(storedQuickSettings === "1");
+    const storedSound = window.localStorage.getItem("soundEnabled");
+    if (storedSound === "1" || storedSound === "0") setSoundEnabled(storedSound === "1");
     const themeListener = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
     darkQuery.addEventListener('change', themeListener);
 
@@ -195,6 +210,9 @@ export default function Home() {
         setDailyGoalHits(0);
         setQuickReviewMode(false);
         setAchievementToast("");
+        setMasteryConfetti(false);
+        setFireworksMode(false);
+        setThemeUnlockShowcase(null);
         setQuizAttempts([]);
         setWeakLessonIds([]);
         setLessonNotes({});
@@ -212,6 +230,16 @@ export default function Home() {
         setFlashcardIndex(0);
         setFlashcardReveal(false);
         setLastStudyTabByLesson({});
+        setStreakFreezes(0);
+        setMasteriesSinceMystery(0);
+        setMysteryReady(false);
+        setLastSpinDate(null);
+        setSpinReward("");
+        setSoundEnabled(true);
+        setUsedFiftyFifty({});
+        setHiddenOptionsByQuestion({});
+        setUsedHint({});
+        setUsedSkip({});
         setAdminOnlyThemeIds([]);
         setGiftedThemes([]);
         setCustomThemes([]);
@@ -245,7 +273,8 @@ export default function Home() {
     window.localStorage.setItem("highContrast", highContrast ? "1" : "0");
     window.localStorage.setItem("sidebarDensity", sidebarDensity);
     window.localStorage.setItem("mobileQuickSettings", mobileQuickSettings ? "1" : "0");
-  }, [uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings]);
+    window.localStorage.setItem("soundEnabled", soundEnabled ? "1" : "0");
+  }, [uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled]);
 
   useEffect(() => {
     if (!user || !settingsHydratedRef.current) return;
@@ -257,10 +286,11 @@ export default function Home() {
         reduceMotion,
         highContrast,
         sidebarDensity,
-        mobileQuickSettings
+        mobileQuickSettings,
+        soundEnabled
       }
     }, { merge: true }).catch(() => {});
-  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings]);
+  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled]);
 
   useEffect(() => {
     if (!user) return;
@@ -319,6 +349,11 @@ export default function Home() {
         setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
         setLastStudyTabByLesson((data.lastStudyTabByLesson && typeof data.lastStudyTabByLesson === "object") ? data.lastStudyTabByLesson : {});
         setGiftedThemes(Array.isArray(data.giftedThemes) ? data.giftedThemes : []);
+        setStreakFreezes(data.streakFreezes || 0);
+        setMasteriesSinceMystery(data.masteriesSinceMystery || 0);
+        setMysteryReady(!!data.mysteryReady);
+        setLastSpinDate(data.lastSpinDate || null);
+        setSpinReward(data.spinReward || "");
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
         if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
@@ -327,6 +362,7 @@ export default function Home() {
         setHighContrast(!!prefs.highContrast);
         if (prefs.sidebarDensity && (prefs.sidebarDensity === "comfortable" || prefs.sidebarDensity === "compact")) setSidebarDensity(prefs.sidebarDensity);
         if (typeof prefs.mobileQuickSettings === "boolean") setMobileQuickSettings(prefs.mobileQuickSettings);
+        if (typeof prefs.soundEnabled === "boolean") setSoundEnabled(prefs.soundEnabled);
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -349,6 +385,11 @@ export default function Home() {
           pinnedKeyPoints: [],
           noteTags: {},
           giftedThemes: [],
+          streakFreezes: 0,
+          masteriesSinceMystery: 0,
+          mysteryReady: false,
+          lastSpinDate: null,
+          spinReward: "",
           isAdmin: ADMIN_EMAILS.has(toCanonicalEmail(user.email || "")),
           lastStudyTabByLesson: {},
           uiSettings: {
@@ -358,7 +399,8 @@ export default function Home() {
             reduceMotion,
             highContrast,
             sidebarDensity,
-            mobileQuickSettings
+            mobileQuickSettings,
+            soundEnabled
           }
         }, { merge: true });
         setUserXP(0);
@@ -377,6 +419,11 @@ export default function Home() {
         setPinnedKeyPoints([]);
         setNoteTags({});
         setLastStudyTabByLesson({});
+        setStreakFreezes(0);
+        setMasteriesSinceMystery(0);
+        setMysteryReady(false);
+        setLastSpinDate(null);
+        setSpinReward("");
       }
       settingsHydratedRef.current = true;
       setDataLoading(false);
@@ -430,6 +477,27 @@ export default function Home() {
     const toDate = new Date(ty, tm - 1, td);
     const msInDay = 24 * 60 * 60 * 1000;
     return Math.round((toDate.getTime() - fromDate.getTime()) / msInDay);
+  };
+  const playVictoryTone = () => {
+    if (!soundEnabled || typeof window === "undefined") return;
+    try {
+      const Ctx = (window.AudioContext || (window as any).webkitAudioContext);
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.value = 740;
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      gain.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+      osc.frequency.exponentialRampToValueAtTime(980, now + 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+      osc.start(now);
+      osc.stop(now + 0.24);
+    } catch {}
   };
 
   const achievementCatalog = [
@@ -516,11 +584,18 @@ export default function Home() {
       const currentDailyCompleted = snap.exists() ? (snap.data().dailyCompleted || 0) : 0;
       const currentDailyDate = snap.exists() ? (snap.data().dailyProgressDate || null) : null;
       const currentDailyGoalHits = snap.exists() ? (snap.data().dailyGoalHits || 0) : 0;
+      const currentStreakFreezes = snap.exists() ? (snap.data().streakFreezes || 0) : 0;
+      const currentMasteriesSinceMystery = snap.exists() ? (snap.data().masteriesSinceMystery || 0) : 0;
 
       const today = getLocalDateKey();
       let nextStreak = 1;
+      let nextStreakFreezes = currentStreakFreezes;
       if (previousStudyDate === today) nextStreak = currentStreak || 1;
       else if (previousStudyDate && getDayDiff(previousStudyDate, today) === 1) nextStreak = currentStreak + 1;
+      else if (previousStudyDate && getDayDiff(previousStudyDate, today) > 1 && currentStreak > 0 && currentStreakFreezes > 0) {
+        nextStreak = currentStreak + 1;
+        nextStreakFreezes = Math.max(0, currentStreakFreezes - 1);
+      }
 
       let nextDailyCompleted = 1;
       if (currentDailyDate === today) nextDailyCompleted = currentDailyCompleted + 1;
@@ -528,6 +603,9 @@ export default function Home() {
       const nextDailyGoalHits = currentDailyGoalHits + (goalReachedNow ? 1 : 0);
 
       const nextCompletedCount = currentCompleted.includes(lessonId) ? currentCompleted.length : currentCompleted.length + 1;
+      const nextMasteriesSinceMysteryRaw = currentMasteriesSinceMystery + 1;
+      const nextMysteryReady = nextMasteriesSinceMysteryRaw >= 3;
+      const nextMasteriesSinceMystery = nextMysteryReady ? 0 : nextMasteriesSinceMysteryRaw;
       const nextXP = currentXP + 100;
       const activeWeekKey = getWeekKey();
       const baseWeekly = currentWeeklyKey === activeWeekKey ? currentWeeklyXP : 0;
@@ -546,11 +624,16 @@ export default function Home() {
         email: user.email || "guest",
         lastStudyDate: today,
         streakCount: nextStreak,
+        streakFreezes: nextStreakFreezes,
         achievements: mergedAchievements,
         dailyProgressDate: today,
         dailyCompleted: nextDailyCompleted,
-        dailyGoalHits: nextDailyGoalHits
+        dailyGoalHits: nextDailyGoalHits,
+        masteriesSinceMystery: nextMasteriesSinceMystery,
+        mysteryReady: nextMysteryReady
       }, { merge: true });
+      setMasteryConfetti(true);
+      playVictoryTone();
       setSaveStatus(
         goalReachedNow
           ? "Success! +100 XP • Daily goal complete"
@@ -558,6 +641,13 @@ export default function Home() {
       );
       if (newAchievementTitles.length > 0) {
         setAchievementToast(`Unlocked: ${newAchievementTitles.join(" • ")}`);
+      }
+      const newlyUnlockedTheme = Object.entries(themeAchievementRequirements).find(([, achievementId]) =>
+        newAchievementIds.includes(achievementId)
+      );
+      if (newlyUnlockedTheme) {
+        const themeMeta = themePreviewCards.find((t) => t.key === newlyUnlockedTheme[0]);
+        setThemeUnlockShowcase({ id: newlyUnlockedTheme[0], label: themeMeta?.label || newlyUnlockedTheme[0] });
       }
 
       if (quickReviewMode) {
@@ -930,6 +1020,10 @@ export default function Home() {
     setQuizQuestionOrder(orderedQuestions);
     setQuizOptionOrder(nextOptionOrder);
     setCurrentQuizPos(0);
+    setUsedFiftyFifty({});
+    setHiddenOptionsByQuestion({});
+    setUsedHint({});
+    setUsedSkip({});
   };
 
   const submitQuiz = async () => {
@@ -944,7 +1038,7 @@ export default function Home() {
     if (!answeredAll) {
       setQuizSubmitted(false);
       setQuizReview({});
-      setQuizResult("Answer all questions first.");
+      setQuizResult("📝 Answer all questions first.");
       return;
     }
     let score = 0;
@@ -974,10 +1068,21 @@ export default function Home() {
     });
     setQuizSubmitted(true);
     setQuizReview(review);
-    setQuizResult(`Score: ${score}/${indices.length}`);
+    const accuracy = indices.length > 0 ? score / indices.length : 0;
+    const reaction = accuracy >= 0.85 ? "🎯" : accuracy >= 0.6 ? "💪" : "📘";
+    setQuizResult(`${reaction} Score: ${score}/${indices.length}`);
+    const accuracyPct = Math.round((score / indices.length) * 100);
+    const prevBest = quizAttempts.length > 0
+      ? Math.max(...quizAttempts.map((a: any) => Math.round(((a.score || 0) / Math.max(1, a.total || 1)) * 100)))
+      : 0;
+    if (accuracyPct > prevBest) {
+      setFireworksMode(true);
+      playVictoryTone();
+      setSaveStatus("🎆 New personal best!");
+      setTimeout(() => setSaveStatus(""), 1800);
+    }
 
     if (user && curChapter?.id && indices.length > 0) {
-      const accuracyPct = Math.round((score / indices.length) * 100);
       const attempt = {
         lessonId: curChapter.id,
         lessonTitle: curChapter.title || "",
@@ -1492,6 +1597,115 @@ export default function Home() {
     setQuickReviewMode(true);
     openLesson(nextLesson.book, nextLesson.chapter);
   };
+  const spinDailyWheel = async () => {
+    if (!user) return;
+    const today = getLocalDateKey();
+    if (lastSpinDate === today) {
+      setSaveStatus("Daily spin already used today.");
+      setTimeout(() => setSaveStatus(""), 1600);
+      return;
+    }
+    const rewards = [
+      { label: "+30 XP", xp: 30, freeze: 0 },
+      { label: "+50 XP", xp: 50, freeze: 0 },
+      { label: "+80 XP", xp: 80, freeze: 0 },
+      { label: "1 Freeze Token 🧊", xp: 0, freeze: 1 },
+    ];
+    const pick = rewards[Math.floor(Math.random() * rewards.length)];
+    const userRef = doc(db, "users", user.uid);
+    try {
+      const snap = await getDoc(userRef);
+      const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
+      const currentFreezes = snap.exists() ? (snap.data().streakFreezes || 0) : 0;
+      const nextXP = currentXP + pick.xp;
+      const nextFreezes = currentFreezes + pick.freeze;
+      await setDoc(userRef, { xp: nextXP, streakFreezes: nextFreezes, lastSpinDate: today, spinReward: pick.label }, { merge: true });
+      setLastSpinDate(today);
+      setSpinReward(pick.label);
+      setSaveStatus(`Daily spin reward: ${pick.label}`);
+      playVictoryTone();
+      fetchLeaderboard();
+      setTimeout(() => setSaveStatus(""), 2000);
+    } catch {
+      setSaveStatus("Daily spin failed");
+      setTimeout(() => setSaveStatus(""), 1600);
+    }
+  };
+  const openMysteryBox = async () => {
+    if (!user || !mysteryReady) return;
+    const rewards = [
+      { label: "+120 XP", xp: 120, freeze: 0 },
+      { label: "+200 XP", xp: 200, freeze: 0 },
+      { label: "2 Freeze Tokens 🧊", xp: 0, freeze: 2 },
+    ];
+    const pick = rewards[Math.floor(Math.random() * rewards.length)];
+    const userRef = doc(db, "users", user.uid);
+    try {
+      const snap = await getDoc(userRef);
+      const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
+      const currentFreezes = snap.exists() ? (snap.data().streakFreezes || 0) : 0;
+      await setDoc(userRef, {
+        xp: currentXP + pick.xp,
+        streakFreezes: currentFreezes + pick.freeze,
+        mysteryReady: false,
+        masteriesSinceMystery: 0
+      }, { merge: true });
+      setMysteryReady(false);
+      setMasteriesSinceMystery(0);
+      setSaveStatus(`Mystery reward: ${pick.label}`);
+      playVictoryTone();
+      fetchLeaderboard();
+      setTimeout(() => setSaveStatus(""), 2200);
+    } catch {
+      setSaveStatus("Mystery box failed");
+      setTimeout(() => setSaveStatus(""), 1600);
+    }
+  };
+  const useFiftyFiftyPowerUp = () => {
+    const quiz = normalizeQuiz(curChapter);
+    const q = quiz[quizQuestionOrder[currentQuizPos] ?? 0];
+    const qIndex = quizQuestionOrder[currentQuizPos] ?? 0;
+    if (!q || q.type !== "mcq" || usedFiftyFifty[qIndex]) return;
+    const wrong = (q.options || [])
+      .map((_: string, idx: number) => idx)
+      .filter((idx: number) => idx !== q.correctIndex)
+      .slice(0, 2);
+    setHiddenOptionsByQuestion((prev) => ({ ...prev, [qIndex]: wrong }));
+    setUsedFiftyFifty((prev) => ({ ...prev, [qIndex]: true }));
+  };
+  const useHintPowerUp = () => {
+    const qIndex = quizQuestionOrder[currentQuizPos] ?? 0;
+    setUsedHint((prev) => ({ ...prev, [qIndex]: true }));
+  };
+  const useSkipPowerUp = async () => {
+    if (!user) return;
+    const qIndex = quizQuestionOrder[currentQuizPos] ?? 0;
+    if (usedSkip[qIndex]) return;
+    const cost = 20;
+    if (userXP < cost) {
+      setSaveStatus("Need 20 XP to skip");
+      setTimeout(() => setSaveStatus(""), 1500);
+      return;
+    }
+    const quiz = normalizeQuiz(curChapter);
+    const q = quiz[qIndex];
+    if (!q) return;
+    try {
+      await setDoc(doc(db, "users", user.uid), { xp: Math.max(0, userXP - cost) }, { merge: true });
+      if (q.type === "mcq") {
+        setQuizAnswers((prev) => ({ ...prev, [qIndex]: q.correctIndex }));
+      } else {
+        const bestAnswer = `${q.answer || ""}`.split("|")[0]?.trim() || "";
+        setQuizAnswers((prev) => ({ ...prev, [qIndex]: bestAnswer }));
+      }
+      setUsedSkip((prev) => ({ ...prev, [qIndex]: true }));
+      setSaveStatus("Skipped this question (-20 XP)");
+      setTimeout(() => setSaveStatus(""), 1500);
+    } catch {
+      setSaveStatus("Skip failed");
+      setTimeout(() => setSaveStatus(""), 1500);
+    }
+  };
 
   const persistLessonNote = async (chapterId: string, text: string, touchedAt: string) => {
     if (!user) return;
@@ -1713,9 +1927,25 @@ export default function Home() {
 
   useEffect(() => {
     if (!achievementToast) return;
+    playVictoryTone();
     const timer = setTimeout(() => setAchievementToast(""), 3500);
     return () => clearTimeout(timer);
   }, [achievementToast]);
+  useEffect(() => {
+    if (!masteryConfetti) return;
+    const timer = setTimeout(() => setMasteryConfetti(false), 1700);
+    return () => clearTimeout(timer);
+  }, [masteryConfetti]);
+  useEffect(() => {
+    if (!fireworksMode) return;
+    const timer = setTimeout(() => setFireworksMode(false), 1800);
+    return () => clearTimeout(timer);
+  }, [fireworksMode]);
+  useEffect(() => {
+    if (!themeUnlockShowcase) return;
+    const timer = setTimeout(() => setThemeUnlockShowcase(null), 2800);
+    return () => clearTimeout(timer);
+  }, [themeUnlockShowcase]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1903,6 +2133,8 @@ export default function Home() {
 
   const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
   const userLevel = Math.floor(userXP / 500) + 1;
+  const petStage = userXP >= 10000 ? "🦅" : userXP >= 5000 ? "🦊" : userXP >= 2500 ? "🐯" : userXP >= 1200 ? "🐣" : "🐤";
+  const petTitle = userXP >= 10000 ? "Legend Pet" : userXP >= 5000 ? "Elite Pet" : userXP >= 2500 ? "Rising Pet" : userXP >= 1200 ? "Starter Pet" : "Baby Pet";
 
   const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
   const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
@@ -1957,6 +2189,7 @@ export default function Home() {
     { key: "ocean", label: "Ocean", accent: "#0ea5e9", bg: "linear-gradient(135deg,#e0f2fe,#cffafe)", source: "builtIn" },
     { key: "sunset", label: "Sunset", accent: "#f97316", bg: "linear-gradient(135deg,#fff3ec,#ffe4e6)", source: "builtIn" },
     { key: "cyber", label: "Cyber", accent: "#22d3ee", bg: "linear-gradient(135deg,#0f172a,#1e293b)", source: "builtIn" },
+    { key: "emoji", label: "Emoji Party 🎉", accent: "#f59e0b", bg: "linear-gradient(135deg,#fff7ed,#ffedd5)", source: "builtIn" },
     { key: "nebula", label: "Nebula", accent: "#a78bfa", bg: "linear-gradient(135deg,#1b1038,#2f1f69)", source: "builtIn" },
     { key: "emerald", label: "Emerald", accent: "#22c55e", bg: "linear-gradient(135deg,#022c22,#14532d)", source: "builtIn" },
     { key: "arctic", label: "Arctic", accent: "#38bdf8", bg: "linear-gradient(135deg,#dbeafe,#ecfeff)", source: "builtIn" },
@@ -1994,6 +2227,8 @@ export default function Home() {
               ? "theme-sunset"
               : uiTheme === "cyber"
                 ? "theme-cyber"
+                : uiTheme === "emoji"
+                  ? "theme-emoji"
                 : uiTheme === "nebula"
                   ? "theme-nebula"
                   : uiTheme === "emerald"
@@ -2336,6 +2571,19 @@ export default function Home() {
           --danger: #fb7185;
           --danger-rgb: 251, 113, 133;
         }
+        .theme-emoji {
+          --accent: #f59e0b;
+          --accent-rgb: 245, 158, 11;
+          --accent-soft: rgba(245, 158, 11, 0.18);
+          --accent-soft-strong: rgba(245, 158, 11, 0.32);
+          --accent-grad: linear-gradient(90deg, #f59e0b, #fb7185);
+          --brand-gradient: linear-gradient(130deg, #f97316, #f59e0b 45%, #fb7185 100%);
+          --card-shadow: 0 12px 34px rgba(124, 45, 18, 0.2);
+          --info: #f59e0b;
+          --warning: #f97316;
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
+        }
         .theme-nebula {
           --accent: #a78bfa;
           --accent-rgb: 167, 139, 250;
@@ -2456,6 +2704,15 @@ export default function Home() {
           --border: rgba(34, 211, 238, 0.24);
           --input-bg: #17213f;
         }
+        .theme-emoji.dark {
+          --bg: #2b1204;
+          --side: #3a1707;
+          --card: #4a220d;
+          --text: #fff7ed;
+          --muted: #fdba74;
+          --border: rgba(253, 186, 116, 0.24);
+          --input-bg: #5a2d14;
+        }
         .theme-nebula.dark {
           --bg: #090618;
           --side: #140e2f;
@@ -2546,6 +2803,15 @@ export default function Home() {
           --border: rgba(34, 211, 238, 0.22);
           --input-bg: #e0f7ff;
         }
+        .theme-emoji.light {
+          --bg: #fff7ed;
+          --side: #fffaf5;
+          --card: #ffffff;
+          --text: #7c2d12;
+          --muted: #c2410c;
+          --border: rgba(194, 65, 12, 0.18);
+          --input-bg: #ffedd5;
+        }
         .theme-nebula.light {
           --bg: #f5f3ff;
           --side: #faf7ff;
@@ -2611,6 +2877,11 @@ export default function Home() {
           background-image:
             radial-gradient(circle at 0% 0%, rgba(34, 211, 238, 0.16), transparent 34%),
             radial-gradient(circle at 100% 100%, rgba(163, 230, 53, 0.12), transparent 42%);
+        }
+        .theme-emoji .app-container, .theme-emoji.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(251, 146, 60, 0.2), transparent 34%),
+            radial-gradient(circle at 100% 100%, rgba(244, 114, 182, 0.14), transparent 42%);
         }
         .theme-nebula .app-container, .theme-nebula.app-container {
           background-image:
@@ -2684,7 +2955,7 @@ export default function Home() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg, .theme-nebula .nav-btn.active svg, .theme-emerald .nav-btn.active svg, .theme-arctic .nav-btn.active svg {
+        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg, .theme-nebula .nav-btn.active svg, .theme-emerald .nav-btn.active svg, .theme-arctic .nav-btn.active svg, .theme-emoji .nav-btn.active svg {
           background: rgba(var(--accent-rgb), 0.22);
           border-radius: 8px;
           padding: 2px;
@@ -2706,9 +2977,52 @@ export default function Home() {
         .xp-badge { background: var(--accent-soft); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(var(--accent-rgb), 0.2); }
         .mobile-header { display: none; }
         .quiz-question-card { animation: fadeSlideIn 0.2s ease; }
+        .streak-flame {
+          display: inline-block;
+          margin-left: 8px;
+          margin-right: 6px;
+          transform-origin: bottom center;
+          animation: streakPulse 1s ease-in-out infinite;
+        }
+        .achievement-confetti {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1202;
+          overflow: hidden;
+        }
+        .confetti-piece {
+          position: absolute;
+          top: -10%;
+          font-size: 18px;
+          animation: confettiFall 1.6s linear forwards;
+        }
+        .firework-burst {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 1203;
+          display: grid;
+          place-items: center;
+          font-size: 64px;
+          animation: fireworkPulse 1.6s ease-out forwards;
+        }
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes streakPulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          50% { transform: scale(1.18) rotate(-8deg); }
+        }
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 0.95; }
+          100% { transform: translateY(115vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes fireworkPulse {
+          0% { transform: scale(0.2); opacity: 0; }
+          30% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1.6); opacity: 0; }
         }
         
         @media (max-width: 768px) {
@@ -2781,10 +3095,10 @@ export default function Home() {
         </div>
 
         <nav style={{flex: 1, display: "flex", flexDirection: "inherit", gap: "4px"}}>
-          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home</span></button>
-          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library</span></button>
-          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings</span></button>
-          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><IconSettings /> <span>Settings</span></button>
+          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home 🏠</span></button>
+          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library 📚</span></button>
+          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings 🏆</span></button>
+          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><IconSettings /> <span>Settings ⚙️</span></button>
         </nav>
         
         <div className="sidebar-extras" style={{marginTop: "auto"}} />
@@ -2796,7 +3110,7 @@ export default function Home() {
             <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
                 <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent)", color: "white", padding: "4px 10px", borderRadius: "20px"}}>{userXP} XP</div>
                 {mobileQuickSettings && (
-                  <button onClick={() => setView("settings")} style={{background: "var(--input-bg)", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "800", color: "var(--accent)", padding: "4px 8px", borderRadius: "14px"}}>Settings</button>
+                  <button onClick={() => setView("settings")} style={{background: "var(--input-bg)", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "800", color: "var(--accent)", padding: "4px 8px", borderRadius: "14px"}}>Settings ⚙️</button>
                 )}
             </div>
         </div>
@@ -2820,14 +3134,39 @@ export default function Home() {
               </div>
               <div className="card stat-card" style={{borderLeftColor: "var(--warning)"}}>
                   <p className="stat-label">Streak</p>
-                  <h3 className="stat-value" style={{color: "var(--warning)"}}>{streakCount} <span style={{fontSize: "16px", opacity: 0.5}}>Days</span></h3>
+                  <h3 className="stat-value" style={{color: "var(--warning)"}}>
+                    {streakCount}
+                    {streakCount > 0 && <span className="streak-flame">🔥</span>}
+                    <span style={{fontSize: "16px", opacity: 0.5}}>Days</span>
+                  </h3>
                   <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{lastStudyDate ? `Last study: ${lastStudyDate}` : "Start your streak today"}</p>
               </div>
             </div>
+            <div className="card" style={{marginBottom: "16px", display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "12px", alignItems: "center"}}>
+              <div>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Emoji Pet</p>
+                <p style={{fontSize: "24px", fontWeight: "900", marginTop: "4px"}}>{petStage} {petTitle}</p>
+                <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "4px"}}>Levels up with XP</p>
+              </div>
+              <div>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Daily Spin 🎡</p>
+                <button onClick={spinDailyWheel} className="btn btn-secondary" style={{marginTop: "8px"}}>
+                  {lastSpinDate === todayKey ? "Used Today" : "Spin Now"}
+                </button>
+                {spinReward && <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "6px"}}>Last: {spinReward}</p>}
+              </div>
+              <div>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Mystery Box 🎁</p>
+                <button onClick={openMysteryBox} className="btn btn-secondary" style={{marginTop: "8px", background: mysteryReady ? "var(--accent-soft)" : "var(--input-bg)"}} disabled={!mysteryReady}>
+                  {mysteryReady ? "Open Box" : `${masteriesSinceMystery}/3 Masteries`}
+                </button>
+                <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "6px"}}>Streak Freezes: {streakFreezes} 🧊</p>
+              </div>
+            </div>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap"}}>
-              <h2 className="section-title">Continue Learning</h2>
+              <h2 className="section-title">Continue Learning 📚</h2>
               <button onClick={startQuickReview} className="btn btn-secondary">
-                {quickReviewMode ? "Quick Review Active" : "Start Quick Review"}
+                {quickReviewMode ? "Quick Review Active ⚡" : "Start Quick Review ⚡"}
               </button>
             </div>
             <div className="card" style={{marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap"}}>
@@ -2888,7 +3227,7 @@ export default function Home() {
               ))}
               {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", padding: "40px", opacity: 0.6}}>You've mastered everything! </div>}
             </div>
-            <h2 style={{fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800"}}>Achievements</h2>
+            <h2 style={{fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800"}}>Achievements 🏅</h2>
             <div className="card" style={{padding: "20px"}}>
               <p style={{fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px"}}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
               <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px"}}>
@@ -3026,14 +3365,16 @@ export default function Home() {
 
         {view === "leaderboard" && (
           <div style={{maxWidth: "600px", margin: "0 auto"}}>
-            <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners</h1>
+            <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners 🌟</h1>
             <div style={{display: "flex", justifyContent: "center", gap: "8px", marginBottom: "14px"}}>
               <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "var(--accent-soft)" : "var(--input-bg)"}}>All Time</button>
               <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "var(--accent-soft)" : "var(--input-bg)"}}>Weekly</button>
             </div>
             {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
               <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", padding: "16px 20px", borderColor: p.id === user.uid ? "var(--accent)" : "var(--border)", background: p.id === user.uid ? "var(--accent-soft)" : "var(--card)"}}>
-                <span style={{width: "40px", fontWeight: "900", fontSize: "18px", color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "var(--muted)"}}>#{i+1}</span>
+                <span style={{width: "56px", fontWeight: "900", fontSize: "18px", color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "var(--muted)"}}>
+                  {i === 0 ? "👑 #1" : i === 1 ? "🥈 #2" : i === 2 ? "🥉 #3" : `#${i + 1}`}
+                </span>
                 <div style={{flex: 1}}>
                     <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
                     {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "var(--accent)", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
@@ -3047,7 +3388,7 @@ export default function Home() {
         {view === "settings" && (
           <div className="page-shell" style={{maxWidth: "760px"}}>
             <div className="page-header">
-              <h1 className="page-title">Settings</h1>
+              <h1 className="page-title">Settings ⚙️</h1>
             </div>
             <div className="card" style={{marginBottom: "14px"}}>
               <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>App Theme</p>
@@ -3190,15 +3531,16 @@ export default function Home() {
               <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
                 <button onClick={() => setReduceMotion((v) => !v)} className="btn btn-secondary" style={{background: reduceMotion ? "var(--accent-soft)" : "var(--input-bg)", color: reduceMotion ? "var(--accent)" : "var(--text)"}}>Reduce Motion: {reduceMotion ? "On" : "Off"}</button>
                 <button onClick={() => setHighContrast((v) => !v)} className="btn btn-secondary" style={{background: highContrast ? "var(--accent-soft)" : "var(--input-bg)", color: highContrast ? "var(--accent)" : "var(--text)"}}>High Contrast: {highContrast ? "On" : "Off"}</button>
-                <button onClick={() => setMobileQuickSettings((v) => !v)} className="btn btn-secondary" style={{background: mobileQuickSettings ? "var(--accent-soft)" : "var(--input-bg)", color: mobileQuickSettings ? "var(--accent)" : "var(--text)"}}>Mobile Quick Settings: {mobileQuickSettings ? "On" : "Off"}</button>
+                <button onClick={() => setMobileQuickSettings((v) => !v)} className="btn btn-secondary" style={{background: mobileQuickSettings ? "var(--accent-soft)" : "var(--input-bg)", color: mobileQuickSettings ? "var(--accent)" : "var(--text)"}}>Mobile Quick Settings 📱: {mobileQuickSettings ? "On" : "Off"}</button>
+                <button onClick={() => setSoundEnabled((v) => !v)} className="btn btn-secondary" style={{background: soundEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: soundEnabled ? "var(--accent)" : "var(--text)"}}>Victory Sound 🔊: {soundEnabled ? "On" : "Off"}</button>
               </div>
             </div>
 
             <div className="card">
               <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Account</p>
               <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                <button onClick={resetAllSettings} className="btn btn-secondary">Reset To Defaults</button>
-                <button onClick={() => signOut(auth)} className="btn btn-danger">Sign Out</button>
+                <button onClick={resetAllSettings} className="btn btn-secondary">Reset To Defaults ♻️</button>
+                <button onClick={() => signOut(auth)} className="btn btn-danger">Sign Out 👋</button>
               </div>
             </div>
           </div>
@@ -3207,7 +3549,7 @@ export default function Home() {
         {view === "library" && (
           <div className="page-shell">
             <div className="page-header">
-              <h1 className="page-title">Library</h1>
+              <h1 className="page-title">Library 📚</h1>
               {isOwner && <button className="btn btn-primary" onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}}>+ New Book</button>}
             </div>
             <div className="card library-tools" style={{display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "12px", padding: "14px", marginBottom: "20px"}}>
@@ -3269,7 +3611,7 @@ export default function Home() {
 
         {view === "chapters" && curBook && (
           <div className="page-shell" style={{maxWidth: "880px"}}>
-            <button onClick={() => setView("library")} className="btn-link" style={{marginBottom: "16px"}}>← Library</button>
+            <button onClick={() => setView("library")} className="btn-link" style={{marginBottom: "16px"}}>← Library 📚</button>
             <div className="page-header">
                 <h1 className="page-title">{curBook.title}</h1>
                 {isOwner && <button onClick={addLesson} className="btn btn-primary">+ Add Lesson</button>}
@@ -3352,6 +3694,11 @@ export default function Home() {
                         <strong style={{color: "var(--text)"}}>Keyboard:</strong> Left/Right = navigate, Enter = submit, R = restart, ? = toggle this panel
                       </div>
                     )}
+                    <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                      <button onClick={useFiftyFiftyPowerUp} disabled={q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]} className="btn btn-secondary" style={{opacity: (q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]) ? 0.55 : 1}}>50:50 ✂️</button>
+                      <button onClick={useHintPowerUp} disabled={!!usedHint[activeQuestionIndex]} className="btn btn-secondary" style={{opacity: usedHint[activeQuestionIndex] ? 0.55 : 1}}>Hint 💡</button>
+                      <button onClick={useSkipPowerUp} disabled={!!usedSkip[activeQuestionIndex]} className="btn btn-secondary" style={{opacity: usedSkip[activeQuestionIndex] ? 0.55 : 1}}>Skip (-20 XP) ⏭️</button>
+                    </div>
                     <div className="card" style={{padding: "12px 14px"}}>
                       <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px"}}>
                         <span style={{fontSize: "12px", fontWeight: "800", color: "var(--muted)"}}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
@@ -3438,7 +3785,7 @@ export default function Home() {
                             {((quizOptionOrder[activeQuestionIndex] && quizOptionOrder[activeQuestionIndex].length > 0)
                               ? quizOptionOrder[activeQuestionIndex]
                               : (q.options || []).map((_: string, opIndex: number) => opIndex).filter((opIndex: number) => `${(q.options || [])[opIndex] || ""}`.trim())
-                            ).map((originalIndex: number) => {
+                            ).filter((originalIndex: number) => !(hiddenOptionsByQuestion[activeQuestionIndex] || []).includes(originalIndex)).map((originalIndex: number) => {
                               const op = (q.options || [])[originalIndex] || "";
                               const selected = quizAnswers[activeQuestionIndex] === originalIndex;
                               const isCorrectOption = originalIndex === q.correctIndex;
@@ -3482,6 +3829,13 @@ export default function Home() {
                             }}
                             style={{padding: "12px"}}
                           />
+                        )}
+                        {usedHint[activeQuestionIndex] && (
+                          <div style={{marginTop: "8px", fontSize: "12px", color: "var(--muted)", fontWeight: "700"}}>
+                            Hint: {q.type === "mcq"
+                              ? `Correct option is ${String.fromCharCode(65 + q.correctIndex)}`
+                              : `Starts with "${`${q.answer || ""}`.trim().charAt(0) || ""}"`}
+                          </div>
                         )}
                         {quizSubmitted && review && (
                           <div style={{marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: review.isCorrect ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--danger-rgb),0.35)", background: review.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.12)", fontSize: "13px"}}>
@@ -3779,10 +4133,55 @@ export default function Home() {
             {saveStatus}
           </div>
         )}
-        {achievementToast && (
-          <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)"}}>
-            🏆 {achievementToast}
+        {fireworksMode && (
+          <div className="firework-burst">🎆🎇</div>
+        )}
+        {themeUnlockShowcase && (
+          <div style={{position: "fixed", inset: 0, zIndex: 1204, background: "rgba(2,6,23,0.55)", display: "grid", placeItems: "center"}}>
+            <div className="card" style={{maxWidth: "360px", textAlign: "center", padding: "22px"}}>
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Theme Unlocked</p>
+              <h3 style={{fontSize: "24px", marginTop: "8px", marginBottom: "8px", color: "var(--accent)"}}>✨ {themeUnlockShowcase.label}</h3>
+              <p style={{fontSize: "13px", color: "var(--muted)"}}>You earned a new theme through achievements.</p>
+              <button className="btn btn-primary" style={{marginTop: "12px"}} onClick={() => setThemeUnlockShowcase(null)}>Awesome</button>
+            </div>
           </div>
+        )}
+        {masteryConfetti && (
+          <div className="achievement-confetti">
+            {["🎉", "✨", "📚", "✅", "🔥", "💯", "🏆", "🥳", "🎊", "⭐", "🚀", "🧠"].map((icon, idx) => (
+              <span
+                key={`mastery-confetti-${idx}`}
+                className="confetti-piece"
+                style={{
+                  left: `${(idx * 8) + 2}%`,
+                  animationDelay: `${(idx % 6) * 0.06}s`,
+                }}
+              >
+                {icon}
+              </span>
+            ))}
+          </div>
+        )}
+        {achievementToast && (
+          <>
+            <div className="achievement-confetti">
+              {["🎉", "✨", "🏅", "🎊", "🌟", "🔥", "📚", "💯", "🥳", "🏆", "🎈", "⭐"].map((icon, idx) => (
+                <span
+                  key={`confetti-${idx}`}
+                  className="confetti-piece"
+                  style={{
+                    left: `${(idx * 8) + 2}%`,
+                    animationDelay: `${(idx % 6) * 0.07}s`,
+                  }}
+                >
+                  {icon}
+                </span>
+              ))}
+            </div>
+            <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)"}}>
+              🏆 {achievementToast}
+            </div>
+          </>
         )}
       </div>
     </div>
