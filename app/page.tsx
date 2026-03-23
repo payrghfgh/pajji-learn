@@ -2365,11 +2365,11 @@ export default function Home() {
         .theme-default {
           --accent: #10b981;
           --accent-rgb: 16, 185, 129;
-          --accent-soft: rgba(16, 185, 129, 0.15);
-          --accent-soft-strong: rgba(16, 185, 129, 0.25);
-          --accent-grad: linear-gradient(90deg, #10b981, #34d399);
-          --brand-gradient: linear-gradient(135deg, #059669, #10b981);
-          --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          --accent-soft: rgba(16, 185, 129, 0.2);
+          --accent-soft-strong: rgba(16, 185, 129, 0.32);
+          --accent-grad: linear-gradient(90deg, #059669, #10b981 55%, #34d399);
+          --brand-gradient: linear-gradient(130deg, #047857 0%, #10b981 60%, #34d399 115%);
+          --card-shadow: 0 12px 30px rgba(2, 44, 34, 0.16);
           --info: #3b82f6;
           --warning: #f59e0b;
           --danger: #ef4444;
@@ -2527,6 +2527,15 @@ export default function Home() {
           --border: rgba(255, 255, 255, 0.08); 
           --input-bg: rgba(0, 0, 0, 0.2); 
         }
+        .theme-default.dark {
+          --bg: #04140f;
+          --side: #072017;
+          --card: #0a2a1f;
+          --text: #eafff7;
+          --muted: #9adbc6;
+          --border: rgba(52, 211, 153, 0.2);
+          --input-bg: #0f3327;
+        }
         .light { 
           --bg: #f8fafc; 
           --side: #ffffff; 
@@ -2535,6 +2544,15 @@ export default function Home() {
           --muted: #64748b; 
           --border: rgba(0, 0, 0, 0.05); 
           --input-bg: #f1f5f9; 
+        }
+        .theme-default.light {
+          --bg: #effcf6;
+          --side: #f7fffb;
+          --card: #ffffff;
+          --text: #063026;
+          --muted: #2b6b57;
+          --border: rgba(16, 185, 129, 0.16);
+          --input-bg: #e6f8ef;
         }
         .theme-f1.dark {
           --bg: #090909;
@@ -2754,6 +2772,11 @@ export default function Home() {
         }
         .theme-amoled .app-container, .theme-amoled.app-container {
           background-image: radial-gradient(circle at 100% 0%, rgba(41, 242, 163, 0.08), transparent 30%);
+        }
+        .theme-default .app-container, .theme-default.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.17), transparent 36%),
+            radial-gradient(circle at 100% 100%, rgba(52, 211, 153, 0.11), transparent 42%);
         }
         .theme-paper .app-container, .theme-paper.app-container {
           background-image: radial-gradient(circle at 10% 0%, rgba(143, 112, 74, 0.11), transparent 35%);
