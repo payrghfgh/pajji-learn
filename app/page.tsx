@@ -151,11 +151,6 @@ export default function Home() {
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [flashcardReveal, setFlashcardReveal] = useState(false);
   const [lastStudyTabByLesson, setLastStudyTabByLesson] = useState<Record<string, string>>({});
-  const [streakFreezes, setStreakFreezes] = useState(0);
-  const [masteriesSinceMystery, setMasteriesSinceMystery] = useState(0);
-  const [mysteryReady, setMysteryReady] = useState(false);
-  const [lastSpinDate, setLastSpinDate] = useState<string | null>(null);
-  const [spinReward, setSpinReward] = useState("");
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [usedFiftyFifty, setUsedFiftyFifty] = useState<Record<number, boolean>>({});
   const [hiddenOptionsByQuestion, setHiddenOptionsByQuestion] = useState<Record<number, number[]>>({});
@@ -230,11 +225,6 @@ export default function Home() {
         setFlashcardIndex(0);
         setFlashcardReveal(false);
         setLastStudyTabByLesson({});
-        setStreakFreezes(0);
-        setMasteriesSinceMystery(0);
-        setMysteryReady(false);
-        setLastSpinDate(null);
-        setSpinReward("");
         setSoundEnabled(true);
         setUsedFiftyFifty({});
         setHiddenOptionsByQuestion({});
@@ -349,11 +339,6 @@ export default function Home() {
         setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
         setLastStudyTabByLesson((data.lastStudyTabByLesson && typeof data.lastStudyTabByLesson === "object") ? data.lastStudyTabByLesson : {});
         setGiftedThemes(Array.isArray(data.giftedThemes) ? data.giftedThemes : []);
-        setStreakFreezes(data.streakFreezes || 0);
-        setMasteriesSinceMystery(data.masteriesSinceMystery || 0);
-        setMysteryReady(!!data.mysteryReady);
-        setLastSpinDate(data.lastSpinDate || null);
-        setSpinReward(data.spinReward || "");
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
         if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
@@ -385,11 +370,6 @@ export default function Home() {
           pinnedKeyPoints: [],
           noteTags: {},
           giftedThemes: [],
-          streakFreezes: 0,
-          masteriesSinceMystery: 0,
-          mysteryReady: false,
-          lastSpinDate: null,
-          spinReward: "",
           isAdmin: ADMIN_EMAILS.has(toCanonicalEmail(user.email || "")),
           lastStudyTabByLesson: {},
           uiSettings: {
@@ -419,11 +399,6 @@ export default function Home() {
         setPinnedKeyPoints([]);
         setNoteTags({});
         setLastStudyTabByLesson({});
-        setStreakFreezes(0);
-        setMasteriesSinceMystery(0);
-        setMysteryReady(false);
-        setLastSpinDate(null);
-        setSpinReward("");
       }
       settingsHydratedRef.current = true;
       setDataLoading(false);
@@ -584,18 +559,10 @@ export default function Home() {
       const currentDailyCompleted = snap.exists() ? (snap.data().dailyCompleted || 0) : 0;
       const currentDailyDate = snap.exists() ? (snap.data().dailyProgressDate || null) : null;
       const currentDailyGoalHits = snap.exists() ? (snap.data().dailyGoalHits || 0) : 0;
-      const currentStreakFreezes = snap.exists() ? (snap.data().streakFreezes || 0) : 0;
-      const currentMasteriesSinceMystery = snap.exists() ? (snap.data().masteriesSinceMystery || 0) : 0;
-
       const today = getLocalDateKey();
       let nextStreak = 1;
-      let nextStreakFreezes = currentStreakFreezes;
       if (previousStudyDate === today) nextStreak = currentStreak || 1;
       else if (previousStudyDate && getDayDiff(previousStudyDate, today) === 1) nextStreak = currentStreak + 1;
-      else if (previousStudyDate && getDayDiff(previousStudyDate, today) > 1 && currentStreak > 0 && currentStreakFreezes > 0) {
-        nextStreak = currentStreak + 1;
-        nextStreakFreezes = Math.max(0, currentStreakFreezes - 1);
-      }
 
       let nextDailyCompleted = 1;
       if (currentDailyDate === today) nextDailyCompleted = currentDailyCompleted + 1;
@@ -603,9 +570,6 @@ export default function Home() {
       const nextDailyGoalHits = currentDailyGoalHits + (goalReachedNow ? 1 : 0);
 
       const nextCompletedCount = currentCompleted.includes(lessonId) ? currentCompleted.length : currentCompleted.length + 1;
-      const nextMasteriesSinceMysteryRaw = currentMasteriesSinceMystery + 1;
-      const nextMysteryReady = nextMasteriesSinceMysteryRaw >= 3;
-      const nextMasteriesSinceMystery = nextMysteryReady ? 0 : nextMasteriesSinceMysteryRaw;
       const nextXP = currentXP + 100;
       const activeWeekKey = getWeekKey();
       const baseWeekly = currentWeeklyKey === activeWeekKey ? currentWeeklyXP : 0;
@@ -624,13 +588,10 @@ export default function Home() {
         email: user.email || "guest",
         lastStudyDate: today,
         streakCount: nextStreak,
-        streakFreezes: nextStreakFreezes,
         achievements: mergedAchievements,
         dailyProgressDate: today,
         dailyCompleted: nextDailyCompleted,
-        dailyGoalHits: nextDailyGoalHits,
-        masteriesSinceMystery: nextMasteriesSinceMystery,
-        mysteryReady: nextMysteryReady
+        dailyGoalHits: nextDailyGoalHits
       }, { merge: true });
       setMasteryConfetti(true);
       playVictoryTone();
@@ -1597,70 +1558,6 @@ export default function Home() {
     setQuickReviewMode(true);
     openLesson(nextLesson.book, nextLesson.chapter);
   };
-  const spinDailyWheel = async () => {
-    if (!user) return;
-    const today = getLocalDateKey();
-    if (lastSpinDate === today) {
-      setSaveStatus("Daily spin already used today.");
-      setTimeout(() => setSaveStatus(""), 1600);
-      return;
-    }
-    const rewards = [
-      { label: "+30 XP", xp: 30, freeze: 0 },
-      { label: "+50 XP", xp: 50, freeze: 0 },
-      { label: "+80 XP", xp: 80, freeze: 0 },
-      { label: "1 Freeze Token 🧊", xp: 0, freeze: 1 },
-    ];
-    const pick = rewards[Math.floor(Math.random() * rewards.length)];
-    const userRef = doc(db, "users", user.uid);
-    try {
-      const snap = await getDoc(userRef);
-      const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      const currentFreezes = snap.exists() ? (snap.data().streakFreezes || 0) : 0;
-      const nextXP = currentXP + pick.xp;
-      const nextFreezes = currentFreezes + pick.freeze;
-      await setDoc(userRef, { xp: nextXP, streakFreezes: nextFreezes, lastSpinDate: today, spinReward: pick.label }, { merge: true });
-      setLastSpinDate(today);
-      setSpinReward(pick.label);
-      setSaveStatus(`Daily spin reward: ${pick.label}`);
-      playVictoryTone();
-      fetchLeaderboard();
-      setTimeout(() => setSaveStatus(""), 2000);
-    } catch {
-      setSaveStatus("Daily spin failed");
-      setTimeout(() => setSaveStatus(""), 1600);
-    }
-  };
-  const openMysteryBox = async () => {
-    if (!user || !mysteryReady) return;
-    const rewards = [
-      { label: "+120 XP", xp: 120, freeze: 0 },
-      { label: "+200 XP", xp: 200, freeze: 0 },
-      { label: "2 Freeze Tokens 🧊", xp: 0, freeze: 2 },
-    ];
-    const pick = rewards[Math.floor(Math.random() * rewards.length)];
-    const userRef = doc(db, "users", user.uid);
-    try {
-      const snap = await getDoc(userRef);
-      const currentXP = snap.exists() ? (snap.data().xp || 0) : 0;
-      const currentFreezes = snap.exists() ? (snap.data().streakFreezes || 0) : 0;
-      await setDoc(userRef, {
-        xp: currentXP + pick.xp,
-        streakFreezes: currentFreezes + pick.freeze,
-        mysteryReady: false,
-        masteriesSinceMystery: 0
-      }, { merge: true });
-      setMysteryReady(false);
-      setMasteriesSinceMystery(0);
-      setSaveStatus(`Mystery reward: ${pick.label}`);
-      playVictoryTone();
-      fetchLeaderboard();
-      setTimeout(() => setSaveStatus(""), 2200);
-    } catch {
-      setSaveStatus("Mystery box failed");
-      setTimeout(() => setSaveStatus(""), 1600);
-    }
-  };
   const useFiftyFiftyPowerUp = () => {
     const quiz = normalizeQuiz(curChapter);
     const q = quiz[quizQuestionOrder[currentQuizPos] ?? 0];
@@ -2133,8 +2030,6 @@ export default function Home() {
 
   const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
   const userLevel = Math.floor(userXP / 500) + 1;
-  const petStage = userXP >= 10000 ? "🦅" : userXP >= 5000 ? "🦊" : userXP >= 2500 ? "🐯" : userXP >= 1200 ? "🐣" : "🐤";
-  const petTitle = userXP >= 10000 ? "Legend Pet" : userXP >= 5000 ? "Elite Pet" : userXP >= 2500 ? "Rising Pet" : userXP >= 1200 ? "Starter Pet" : "Baby Pet";
 
   const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
   const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
@@ -2977,13 +2872,6 @@ export default function Home() {
         .xp-badge { background: var(--accent-soft); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 700; border: 1px solid rgba(var(--accent-rgb), 0.2); }
         .mobile-header { display: none; }
         .quiz-question-card { animation: fadeSlideIn 0.2s ease; }
-        .streak-flame {
-          display: inline-block;
-          margin-left: 8px;
-          margin-right: 6px;
-          transform-origin: bottom center;
-          animation: streakPulse 1s ease-in-out infinite;
-        }
         .achievement-confetti {
           position: fixed;
           inset: 0;
@@ -3010,10 +2898,6 @@ export default function Home() {
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes streakPulse {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          50% { transform: scale(1.18) rotate(-8deg); }
         }
         @keyframes confettiFall {
           0% { transform: translateY(0) rotate(0deg); opacity: 0.95; }
@@ -3136,31 +3020,9 @@ export default function Home() {
                   <p className="stat-label">Streak</p>
                   <h3 className="stat-value" style={{color: "var(--warning)"}}>
                     {streakCount}
-                    {streakCount > 0 && <span className="streak-flame">🔥</span>}
                     <span style={{fontSize: "16px", opacity: 0.5}}>Days</span>
                   </h3>
                   <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{lastStudyDate ? `Last study: ${lastStudyDate}` : "Start your streak today"}</p>
-              </div>
-            </div>
-            <div className="card" style={{marginBottom: "16px", display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: "12px", alignItems: "center"}}>
-              <div>
-                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Emoji Pet</p>
-                <p style={{fontSize: "24px", fontWeight: "900", marginTop: "4px"}}>{petStage} {petTitle}</p>
-                <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "4px"}}>Levels up with XP</p>
-              </div>
-              <div>
-                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Daily Spin 🎡</p>
-                <button onClick={spinDailyWheel} className="btn btn-secondary" style={{marginTop: "8px"}}>
-                  {lastSpinDate === todayKey ? "Used Today" : "Spin Now"}
-                </button>
-                {spinReward && <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "6px"}}>Last: {spinReward}</p>}
-              </div>
-              <div>
-                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Mystery Box 🎁</p>
-                <button onClick={openMysteryBox} className="btn btn-secondary" style={{marginTop: "8px", background: mysteryReady ? "var(--accent-soft)" : "var(--input-bg)"}} disabled={!mysteryReady}>
-                  {mysteryReady ? "Open Box" : `${masteriesSinceMystery}/3 Masteries`}
-                </button>
-                <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "6px"}}>Streak Freezes: {streakFreezes} 🧊</p>
               </div>
             </div>
             <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap"}}>
