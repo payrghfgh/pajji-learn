@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     // --- LOCAL KNOWLEDGE BASE (Alexa-style instant answers) ---
     const lowerQ = question.toLowerCase();
-    
+
     const localAnswers = [
       {
         keywords: ["hi", "hello", "hey", "greetings", "wassup", "sup"],
@@ -94,10 +94,10 @@ export async function POST(req: Request) {
       });
 
       if (matchedSentences.length > 0) {
-        return NextResponse.json({ 
-          result: "Based on the material in this chapter:\n\n" + 
-                  matchedSentences.slice(0, 3).join(". ").trim() + "." +
-                  "\n\n(Found instantly in chapter material 📚)" 
+        return NextResponse.json({
+          result: "Based on the material in this chapter:\n\n" +
+            matchedSentences.slice(0, 3).join(". ").trim() + "." +
+            "\n\n(Found instantly in chapter material 📚)"
         });
       }
     }
@@ -108,20 +108,20 @@ export async function POST(req: Request) {
     const stopWords = ["what", "is", "the", "who", "why", "how", "when", "where", "a", "an", "of", "to", "in", "for", "with", "on", "do", "does", "are", "tell", "me", "about", "describe", "explain"];
     const questionWords = lowerQ.replace(/[?!.]/g, "").split(" ");
     const searchTerms = questionWords.filter(w => !stopWords.includes(w) && w.length > 2);
-    
+
     if (searchTerms.length > 0) {
       const searchQuery = searchTerms.join(" ");
       try {
         const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&srlimit=1`);
         const wikiData = await wikiRes.json();
-        
+
         if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
           const firstResult = wikiData.query.search[0];
           // Wikipedia returns snippets with HTML tags, we strip them.
           const cleanSnippet = firstResult.snippet.replace(/<[^>]*>?/gm, '');
-          
-          return NextResponse.json({ 
-            result: `Here is what I found about "${firstResult.title}":\n\n${cleanSnippet}...\n\n(Generated instantly via World Knowledge 🌍)` 
+
+          return NextResponse.json({
+            result: `Here is what I found about "${firstResult.title}":\n\n${cleanSnippet}...\n\n(Generated instantly via World Knowledge 🌍)`
           });
         }
       } catch (e) {
@@ -138,8 +138,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ result: "This sounds like a factual question! Scan your chapter summary for capital letters (names/places) or check the 'Spellings' tab for definitions." });
     }
 
-    return NextResponse.json({ 
-      result: "I'm not quite sure about that specific question! Try to phrase it differently, or explore the 'Summary' tab for clues. \n\n(Pajji Local Help 🤖)" 
+    return NextResponse.json({
+      result: "I'm not quite sure about that specific question! Try to phrase it differently, or explore the 'Summary' tab for clues. \n\n(Pajji Local Help 🤖)"
     });
 
   } catch (error: any) {
