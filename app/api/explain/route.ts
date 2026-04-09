@@ -88,9 +88,9 @@ export async function POST(req: Request) {
     // --- SMART CONTEXT MATCHER (Chapter Specific) ---
     if (context) {
       const sentences = context.split(/[.!?]/);
-      const matchedSentences = sentences.filter(s => {
-        const words = lowerQ.split(" ").filter(w => w.length > 3);
-        return words.some(w => s.toLowerCase().includes(w));
+      const matchedSentences = sentences.filter((s: string) => {
+        const words = lowerQ.split(" ").filter((w: string) => w.length > 3);
+        return words.some((w: string) => s.toLowerCase().includes(w));
       });
 
       if (matchedSentences.length > 0) {
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
     // Extract main keywords from the question by removing common stop words
     const stopWords = ["what", "is", "the", "who", "why", "how", "when", "where", "a", "an", "of", "to", "in", "for", "with", "on", "do", "does", "are", "tell", "me", "about", "describe", "explain"];
     const questionWords = lowerQ.replace(/[?!.]/g, "").split(" ");
-    const searchTerms = questionWords.filter(w => !stopWords.includes(w) && w.length > 2);
+    const searchTerms = questionWords.filter((w: string) => !stopWords.includes(w) && w.length > 2);
 
     if (searchTerms.length > 0) {
       const searchQuery = searchTerms.join(" ");
