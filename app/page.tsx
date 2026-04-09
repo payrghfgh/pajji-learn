@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { initializeApp, getApps } from "firebase/app";
@@ -124,6 +124,31 @@ export default function Home() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizReview, setQuizReview] = useState<Record<number, { isCorrect: boolean; submitted: string; expected: string }>>({});
   const [aiParsingQuiz, setAiParsingQuiz] = useState(false);
+  const [aiExplainQuestion, setAiExplainQuestion] = useState("");
+  const [aiExplainAnswer, setAiExplainAnswer] = useState("");
+  const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  
+  const askAiExplanation = async () => {
+    if (!aiExplainQuestion.trim() || !curChapter) return;
+    setAiExplainLoading(true);
+    setAiExplainAnswer("");
+    try {
+      const context = `Summary: ${curChapter.summary}\nSpellings: ${curChapter.spellings}`;
+      const res = await fetch("/api/explain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: aiExplainQuestion, context })
+      });
+      const data = await res.json();
+      if (data.result) setAiExplainAnswer(data.result);
+      else setAiExplainAnswer("Failed to get answer. " + (data.error || ""));
+    } catch (e: any) {
+      setAiExplainAnswer("Error: " + e.message);
+    } finally {
+      setAiExplainLoading(false);
+      setAiExplainQuestion("");
+    }
+  };
   const [quizShuffleEnabled, setQuizShuffleEnabled] = useState(true);
   const [quizActiveIndices, setQuizActiveIndices] = useState<number[] | null>(null);
   const [quizQuestionOrder, setQuizQuestionOrder] = useState<number[]>([]);
@@ -824,7 +849,7 @@ export default function Home() {
   const addLesson = async () => {
     const title = prompt("Lesson Title?");
     if (!title || !curBook) return;
-    const newLesson = { id: Date.now().toString(), title, summary: "", spellings: "", video: "", slides: "", bookPdf: "", infographic: "", mindMap: "", quiz: [] };
+    const newLesson = { id: Date.now().toString(), title, summary: "", spellings: "", video: "", slides: "", bookPdf: "", audioBook: "", infographic: "", mindMap: "", quiz: [] };
     const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...(b.chapters || []), newLesson] } : b );
     await setDoc(doc(db, "data", "pajji_database"), { books: updatedBooks });
   };
@@ -3536,12 +3561,38 @@ export default function Home() {
             </div>
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
-                {["Summary", "Spellings", "Quiz", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
+                {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
             <div className="card" style={{minHeight: "500px", padding: "32px"}}>
                {["Summary", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
+               {activeTab === "AI Explanation" && (
+                 <div style={{display: "flex", flexDirection: "column", gap: "16px"}}>
+                   <div style={{background: "rgba(15,23,42,0.08)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)"}}>
+                     <h3 style={{fontWeight: "800", marginBottom: "8px", color: "var(--accent)"}}>Ask AI about this lesson</h3>
+                     <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                       <input 
+                         type="text" 
+                         value={aiExplainQuestion} 
+                         onChange={(e) => setAiExplainQuestion(e.target.value)} 
+                         placeholder="E.g. What is the main theme of this summary?" 
+                         style={{flex: 1, padding: "12px", minWidth: "200px"}} 
+                         onKeyDown={(e) => { if(e.key === "Enter") askAiExplanation(); }}
+                       />
+                       <button onClick={askAiExplanation} className="btn btn-primary" disabled={aiExplainLoading}>
+                         {aiExplainLoading ? "Thinking..." : "Ask"}
+                       </button>
+                     </div>
+                   </div>
+                   {aiExplainAnswer && (
+                     <div style={{background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", WebkitUserSelect: "text", userSelect: "text"}}>
+                       <h4 style={{fontWeight: "800", color: "var(--accent)"}}>AI Explanation</h4>
+                       <div style={{marginTop: "8px", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "15px"}}>{aiExplainAnswer}</div>
+                     </div>
+                   )}
+                 </div>
+               )}
                {activeTab === "Quiz" && (() => {
                  const quiz = normalizeQuiz(curChapter);
                  if (quiz.length === 0) {
@@ -3880,7 +3931,21 @@ export default function Home() {
                {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => { 
                  let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", ""); 
                  let link = curChapter[k]; 
-                 return link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{border: "none", borderRadius: "20px"}} /> : <div style={{textAlign: "center", padding: "100px", opacity: 0.5}}>This resource hasn't been linked yet.</div>; 
+                 return (
+                   <div style={{display: "flex", flexDirection: "column", gap: "20px"}}>
+                     {link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{border: "none", borderRadius: "20px"}} /> : <div style={{textAlign: "center", padding: "100px", opacity: 0.5}}>This resource hasn't been linked yet.</div>}
+                     {activeTab === "Book PDF" && curChapter.audioBook && (
+                        <div style={{padding: "20px", background: "var(--input-bg)", borderRadius: "20px", display: "flex", flexDirection: "column", gap: "10px"}}>
+                          <h3 style={{fontSize: "16px", fontWeight: "800"}}>Audiobook Resource</h3>
+                          {curChapter.audioBook.includes("drive.google.com") ? (
+                            <iframe src={curChapter.audioBook.replace("/view", "/preview")} width="100%" height="150" style={{border: "none", borderRadius: "10px"}} />
+                          ) : (
+                            <audio controls src={curChapter.audioBook} style={{width: "100%", outline: "none"}} />
+                          )}
+                        </div>
+                     )}
+                   </div>
+                 );
                })()}
             </div>
           </div>
@@ -4005,7 +4070,7 @@ export default function Home() {
                     </div>
                 </div>
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
-                    {["video", "slides", "bookPdf", "infographic", "mindMap"].map(f => (
+                    {["video", "slides", "bookPdf", "audioBook", "infographic", "mindMap"].map(f => (
                         <div key={f}><p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
                     ))}
                 </div>

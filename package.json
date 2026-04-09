@@ -12,6 +12,7 @@
     "@genkit-ai/ai": "^1.28.0",
     "@genkit-ai/firebase": "^1.28.0",
     "@genkit-ai/googleai": "^1.28.0",
+    "@google/generative-ai": "^0.24.1",
     "firebase": "^12.9.0",
     "next": "16.1.6",
     "react": "19.2.3",
