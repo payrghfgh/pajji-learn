@@ -139,6 +139,9 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: aiExplainQuestion, context })
       });
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
       const data = await res.json();
       if (data.result) setAiExplainAnswer(data.result);
       else setAiExplainAnswer("Failed to get answer. " + (data.error || ""));

@@ -113,6 +113,7 @@ export async function POST(req: Request) {
       const searchQuery = searchTerms.join(" ");
       try {
         const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&srlimit=1`);
+        if (!wikiRes.ok) throw new Error("Wiki Unreachable");
         const wikiData = await wikiRes.json();
 
         if (wikiData.query && wikiData.query.search && wikiData.query.search.length > 0) {
