@@ -13,10 +13,16 @@
     "@genkit-ai/firebase": "^1.28.0",
     "@genkit-ai/googleai": "^1.28.0",
     "@google/generative-ai": "^0.24.1",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
     "firebase": "^12.9.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -1,12 +1,6 @@
 "use client";
-import { useEffect, useState, useRef, useMemo } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { 
-  Trophy, BookOpen, Zap, Settings, Flame, 
-  ChevronRight, Search, Plus, Star, Map,
-  Clock, CheckCircle2, AlertCircle, FileText,
-  MessageSquare, LayoutDashboard, LogOut, User, Volume2
-} from "lucide-react";
+
+import { useEffect, useState, useRef } from "react";
 import { initializeApp, getApps } from "firebase/app";
 import { 
   getFirestore, doc, onSnapshot, setDoc, getDoc, 
@@ -2289,12 +2283,10 @@ export default function Home() {
           "--text": text,
           "--muted": muted,
           "--accent": accent,
-          "--accent-rgb": accentRgb,
-          "--accent-soft": `rgba(${accentRgb}, 0.15)`,
-          "--accent-grad": `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 80%, white))`,
-          "--brand-gradient": `linear-gradient(135deg, ${primary}, ${accent})`,
-          "--border": `rgba(${accentRgb}, 0.12)`,
-          "--input-bg": `rgba(${accentRgb}, 0.06)`,
+          "--accent-grad": `linear-gradient(90deg, ${accent}, ${accent})`,
+          "--accent-soft": hexToRgba(accent, text === "#0f172a" ? 0.2 : 0.18),
+          "--border": hexToRgba(text === "#0f172a" ? "#0f172a" : "#f8fafc", text === "#0f172a" ? 0.12 : 0.14),
+          "--input-bg": hexToRgba(text === "#0f172a" ? "#0f172a" : "#f8fafc", text === "#0f172a" ? 0.06 : 0.08),
           "--danger": "#ef4444",
           "--danger-rgb": "239,68,68",
           "--warning": "#f59e0b",
@@ -2468,17 +2460,17 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", fontFamily: "sans-serif"}}>
-        <div style={{background: "var(--card)", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)"}}>
-          <h1 style={{color: "var(--accent)", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
+      <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#020617" : "#f1f5f9", fontFamily: "sans-serif"}}>
+        <div style={{background: theme === 'dark' ? "#1e293b" : "#ffffff", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)"}}>
+          <h1 style={{color: "#10b981", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
           <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "16px"}}>
-            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)"}} />
-            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)"}} />
-            <button type="submit" className="btn btn-primary" style={{padding: "14px", fontWeight: "700", cursor: "pointer"}}>{isRegistering ? "Register" : "Sign In"}</button>
+            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "rgba(0,0,0,0.2)" : "#f1f5f9", border: "1px solid rgba(255,255,255,0.1)", color: theme === 'dark' ? "white" : "#0f172a"}} />
+            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "rgba(0,0,0,0.2)" : "#f1f5f9", border: "1px solid rgba(255,255,255,0.1)", color: theme === 'dark' ? "white" : "#0f172a"}} />
+            <button type="submit" style={{padding: "14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)"}}>{isRegistering ? "Register" : "Sign In"}</button>
           </form>
           <div style={{display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px"}}>
-            <button onClick={handleGuestLogin} style={{background: "none", border: "1px solid var(--accent)", color: "var(--accent)", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>Continue as Guest 👤</button>
-            <button onClick={() => setIsRegistering(!isRegistering)} style={{background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "14px"}}>{isRegistering ? "Back to Login" : "Create Account"}</button>
+            <button onClick={handleGuestLogin} style={{background: "none", border: "1px solid #10b981", color: "#10b981", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>Continue as Guest 👤</button>
+            <button onClick={() => setIsRegistering(!isRegistering)} style={{background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "14px"}}>{isRegistering ? "Back to Login" : "Create Account"}</button>
           </div>
         </div>
       </div>
@@ -2486,122 +2478,132 @@ export default function Home() {
   }
 
   return (
-    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass} min-h-screen font-sans`} style={customThemeVars as any}>
+    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass}`} style={customThemeVars as any}>
       <style>{`
         :root {
           --accent: #10b981;
           --accent-rgb: 16, 185, 129;
           --accent-soft: rgba(16, 185, 129, 0.15);
-          --accent-grad: linear-gradient(135deg, #10b981, #34d399);
-          --card: rgba(18, 18, 20, 0.6);
-          --border: rgba(255, 255, 255, 0.1);
+          --accent-soft-strong: rgba(16, 185, 129, 0.25);
+          --accent-grad: linear-gradient(90deg, #10b981, #34d399);
+          --brand-gradient: linear-gradient(135deg, #059669, #10b981);
+          --card-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+          --info: #3b82f6;
+          --warning: #f59e0b;
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
         }
-
-        .app-container {
-          background: transparent;
-          color: white;
+        .theme-default {
+          --accent: #10b981;
+          --accent-rgb: 16, 185, 129;
+          --accent-soft: rgba(16, 185, 129, 0.2);
+          --accent-soft-strong: rgba(16, 185, 129, 0.32);
+          --accent-grad: linear-gradient(90deg, #059669, #10b981 55%, #34d399);
+          --brand-gradient: linear-gradient(130deg, #047857 0%, #10b981 60%, #34d399 115%);
+          --card-shadow: 0 12px 30px rgba(2, 44, 34, 0.16);
+          --info: #3b82f6;
+          --warning: #f59e0b;
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
         }
-
-        .sidebar {
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(20px);
-          border-right: 1px solid var(--border);
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          position: fixed;
-          left: 0;
-          top: 0;
-          width: 280px;
-          z-index: 50;
+        .theme-f1 {
+          --accent: #e10600;
+          --accent-rgb: 225, 6, 0;
+          --accent-soft: rgba(225, 6, 0, 0.14);
+          --accent-soft-strong: rgba(225, 6, 0, 0.28);
+          --accent-grad: linear-gradient(90deg, #e10600, #ff4a43);
+          --brand-gradient: linear-gradient(130deg, #0b0b0c 0%, #1f1f22 48%, #e10600 128%);
+          --card-shadow: 0 12px 34px rgba(0, 0, 0, 0.32);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ff6b6b;
+          --danger-rgb: 255, 107, 107;
         }
-
-        .main-content {
-          margin-left: 280px;
-          padding: 40px;
-          min-height: 100vh;
-          max-width: 1400px;
+        .theme-liquid {
+          --accent: #45b7ff;
+          --accent-rgb: 69, 183, 255;
+          --accent-soft: rgba(69, 183, 255, 0.18);
+          --accent-soft-strong: rgba(69, 183, 255, 0.3);
+          --accent-grad: linear-gradient(90deg, #5ed0ff, #67b7ff);
+          --brand-gradient: linear-gradient(130deg, rgba(87, 198, 255, 0.9), rgba(115, 167, 255, 0.75));
+          --card-shadow: 0 16px 34px rgba(22, 48, 90, 0.16);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ff6b88;
+          --danger-rgb: 255, 107, 136;
         }
-
-        .card {
-          background: var(--card);
-          backdrop-filter: blur(12px);
-          border: 1px solid var(--border);
-          border-radius: 24px;
-          padding: 24px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .theme-amoled {
+          --accent: #29f2a3;
+          --accent-rgb: 41, 242, 163;
+          --accent-soft: rgba(41, 242, 163, 0.16);
+          --accent-soft-strong: rgba(41, 242, 163, 0.28);
+          --accent-grad: linear-gradient(90deg, #12d98e, #29f2a3);
+          --brand-gradient: linear-gradient(120deg, #020202, #0f0f10 55%, #19a873 130%);
+          --card-shadow: 0 10px 28px rgba(0, 0, 0, 0.52);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #ff5f5f;
+          --danger-rgb: 255, 95, 95;
         }
-
-        .card:hover {
-          border-color: rgba(255, 255, 255, 0.2);
-          transform: translateY(-4px);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        .theme-paper {
+          --accent: #5f4b32;
+          --accent-rgb: 95, 75, 50;
+          --accent-soft: rgba(95, 75, 50, 0.15);
+          --accent-soft-strong: rgba(95, 75, 50, 0.25);
+          --accent-grad: linear-gradient(90deg, #6e5435, #8b6a42);
+          --brand-gradient: linear-gradient(120deg, #c9b08b, #efe2c9);
+          --card-shadow: 0 6px 22px rgba(88, 66, 38, 0.12);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #c65a3a;
+          --danger-rgb: 198, 90, 58;
         }
-
-        .nav-btn {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          border-radius: 14px;
-          color: rgba(255, 255, 255, 0.6);
-          transition: all 0.2s;
-          font-weight: 600;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          width: 100%;
-          text-align: left;
+        .theme-ocean {
+          --accent: #0ea5e9;
+          --accent-rgb: 14, 165, 233;
+          --accent-soft: rgba(14, 165, 233, 0.15);
+          --accent-soft-strong: rgba(14, 165, 233, 0.3);
+          --accent-grad: linear-gradient(90deg, #0ea5e9, #06b6d4);
+          --brand-gradient: linear-gradient(130deg, #0b3f6f, #0ea5e9 80%, #67e8f9 140%);
+          --card-shadow: 0 10px 30px rgba(7, 48, 86, 0.24);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #fb7185;
+          --danger-rgb: 251, 113, 133;
         }
-
-        .nav-btn:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: white;
+        .theme-sunset {
+          --accent: #f97316;
+          --accent-rgb: 249, 115, 22;
+          --accent-soft: rgba(249, 115, 22, 0.16);
+          --accent-soft-strong: rgba(249, 115, 22, 0.3);
+          --accent-grad: linear-gradient(90deg, #f97316, #ef4444);
+          --brand-gradient: linear-gradient(130deg, #7c2d12, #fb7185 70%, #f59e0b 135%);
+          --card-shadow: 0 10px 30px rgba(124, 45, 18, 0.22);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #dc2626;
+          --danger-rgb: 220, 38, 38;
         }
-
-        .nav-btn.active {
-          background: var(--accent-soft);
-          color: var(--accent);
-          box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.2);
-        }
-
-        .stat-value {
-          font-family: var(--font-syne);
-          font-size: 32px;
-          font-weight: 800;
-          letter-spacing: -1px;
-        }
-
-        .page-title {
-          font-family: var(--font-syne);
-          font-size: 40px;
-          font-weight: 800;
-          letter-spacing: -1.5px;
-          margin-bottom: 8px;
-        }
-
-        .bento-grid {
-          display: grid;
-          grid-template-columns: repeat(12, 1fr);
-          grid-auto-rows: minmax(100px, auto);
-          gap: 20px;
-        }
-
-        @media (max-width: 1024px) {
-          .sidebar { width: 80px; padding: 16px; align-items: center; }
-          .sidebar h1, .sidebar span, .profile-card p, .profile-card h3, .sidebar-extras h1 { display: none; }
-          .main-content { margin-left: 80px; padding: 24px; }
-          .nav-btn { justify-content: center; padding: 12px; }
-          .nav-btn svg { width: 24px; height: 24px; }
+        .theme-cyber {
+          --accent: #22d3ee;
+          --accent-rgb: 34, 211, 238;
+          --accent-soft: rgba(34, 211, 238, 0.15);
+          --accent-soft-strong: rgba(34, 211, 238, 0.3);
+          --accent-grad: linear-gradient(90deg, #22d3ee, #a3e635);
+          --brand-gradient: linear-gradient(130deg, #0a0f1f, #1e293b 58%, #22d3ee 125%);
+          --card-shadow: 0 12px 32px rgba(8, 13, 28, 0.4);
+          --info: var(--accent);
+          --warning: var(--accent);
+          --danger: #fb7185;
+          --danger-rgb: 251, 113, 133;
         }
         .theme-emoji {
           --accent: #f59e0b;
           --accent-rgb: 245, 158, 11;
           --accent-soft: rgba(245, 158, 11, 0.18);
           --accent-soft-strong: rgba(245, 158, 11, 0.32);
-          --accent-grad: linear-gradient(135deg, #f59e0b, #fb923c);
-          --brand-gradient: linear-gradient(135deg, #f97316, #f59e0b);
+          --accent-grad: linear-gradient(90deg, #f59e0b, #fb7185);
+          --brand-gradient: linear-gradient(130deg, #f97316, #f59e0b 45%, #fb7185 100%);
           --card-shadow: 0 12px 34px rgba(124, 45, 18, 0.2);
           --info: #f59e0b;
           --warning: #f97316;
@@ -2613,8 +2615,8 @@ export default function Home() {
           --accent-rgb: 167, 139, 250;
           --accent-soft: rgba(167, 139, 250, 0.17);
           --accent-soft-strong: rgba(167, 139, 250, 0.3);
-          --accent-grad: linear-gradient(135deg, #8b5cf6, #c084fc);
-          --brand-gradient: linear-gradient(135deg, #2f1f69, #8b5cf6);
+          --accent-grad: linear-gradient(90deg, #8b5cf6, #a78bfa);
+          --brand-gradient: linear-gradient(130deg, #120b2f, #2f1f69 62%, #6d28d9 128%);
           --card-shadow: 0 12px 34px rgba(20, 12, 44, 0.36);
           --info: var(--accent);
           --warning: var(--accent);
@@ -2626,8 +2628,8 @@ export default function Home() {
           --accent-rgb: 34, 197, 94;
           --accent-soft: rgba(34, 197, 94, 0.16);
           --accent-soft-strong: rgba(34, 197, 94, 0.3);
-          --accent-grad: linear-gradient(135deg, #16a34a, #4ade80);
-          --brand-gradient: linear-gradient(135deg, #14532d, #16a34a);
+          --accent-grad: linear-gradient(90deg, #16a34a, #22c55e);
+          --brand-gradient: linear-gradient(130deg, #022c22, #14532d 65%, #16a34a 130%);
           --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.3);
           --info: var(--accent);
           --warning: var(--accent);
@@ -2639,8 +2641,7 @@ export default function Home() {
           --accent-rgb: 56, 189, 248;
           --accent-soft: rgba(56, 189, 248, 0.18);
           --accent-soft-strong: rgba(56, 189, 248, 0.3);
-          --accent-grad: linear-gradient(135deg, #0ea5e9, #7dd3fc);
-          --brand-gradient: linear-gradient(135deg, #075985, #0ea5e9);
+          --accent-grad: linear-gradient(90deg, #0ea5e9, #38bdf8);
           --brand-gradient: linear-gradient(130deg, #cffafe, #dbeafe 62%, #7dd3fc 128%);
           --card-shadow: 0 10px 28px rgba(30, 64, 175, 0.14);
           --info: var(--accent);
@@ -2991,7 +2992,6 @@ export default function Home() {
         .stat-label { font-size: 11px; font-weight: 800; opacity: 0.65; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
         .stat-value { font-size: 32px; margin-top: 8px; margin-bottom: 0; font-weight: 900; }
         
-        .sidebar-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; }
         .nav-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 14px; cursor: pointer; font-weight: 600; text-align: left; margin-bottom: 6px; background: transparent; color: var(--muted); display: flex; align-items: center; gap: 12px; font-size: 15px; transition: 0.2s; }
         .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
@@ -3068,72 +3068,47 @@ export default function Home() {
           .sidebar {
             position: fixed;
             top: auto;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
             left: 50%;
             transform: translateX(-50%);
-            width: calc(100% - 32px);
-            max-width: 480px;
-            height: 74px;
-            padding: 0 8px;
+            width: 90%;
+            max-width: 450px;
+            height: 70px;
+            padding: 0 10px;
             flex-direction: row;
-            justify-content: space-around;
+            justify-content: space-around; /* PLACES ICONS SIDE BY SIDE EVENLY */
             align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 24px;
-            background: rgba(var(--accent-rgb), 0.1);
-            backdrop-filter: blur(28px) saturate(1.8);
-            -webkit-backdrop-filter: blur(28px) saturate(1.8);
-            box-shadow: 0 12px 40px -12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            background: var(--side);
             z-index: 1000;
             box-sizing: border-box;
           }
           
-          .sidebar-extras, .sidebar h1, .sidebar-footer { display: none !important; }
-          
-          .sidebar-nav {
-            flex-direction: row !important;
-            justify-content: space-around !important;
-            width: 100%;
-            height: 100%;
-            gap: 0 !important;
-            display: flex !important;
-          }
+          .sidebar-extras, .sidebar h1 { display: none; }
           
           .nav-btn { 
-            width: 64px;
-            height: 56px;
+            width: auto;
             margin-bottom: 0;
             flex-direction: column; 
-            gap: 4px; 
+            gap: 2px; 
             font-size: 10px; 
-            font-weight: 700;
             justify-content: center; 
             align-items: center;
             text-align: center; 
-            padding: 4px 0; 
+            padding: 0; 
+            flex: 1; /* ENSURES THEY SHARE WIDTH EQUALLY */
             background: transparent !important;
             box-shadow: none !important;
             color: var(--muted);
             outline: none;
             -webkit-tap-highlight-color: transparent;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
           }
-          .nav-btn svg { width: 22px; height: 22px; margin-bottom: 0; transition: transform 0.3s; opacity: 0.7; }
+          .nav-btn svg { width: 22px; height: 22px; margin-bottom: 2px; }
           .nav-btn.active { color: var(--accent); }
-          .nav-btn.active svg { transform: translateY(-2px) scale(1.1); opacity: 1; }
-          .nav-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
-          }
+          .nav-btn.active svg { opacity: 1; stroke-width: 2.5px; }
           
-          .main-content { padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); overflow-x: hidden; margin-left: 0 !important; }
+          .main-content { padding: 20px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 110px); overflow-x: hidden; }
           .page-shell { max-width: 100%; }
           .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); }
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
@@ -3144,199 +3119,130 @@ export default function Home() {
         }
       `}</style>
 
-      <motion.div 
-        className="sidebar"
-      >
-        <div className="sidebar-extras" style={{ marginBottom: "40px" }}>
-            <motion.h1 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              style={{fontSize: "24px", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)"}}
-            >
-              PAJJI <span style={{color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)"}}>LEARN</span>
-            </motion.h1>
-            
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              className="card" 
-              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "var(--accent-grad)", display: "grid", placeItems: "center" }}>
-                  <User size={20} color="white" />
-                </div>
-                <div>
-                  <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.5, textTransform: "uppercase"}}>Lvl {userLevel}</p>
-                  <h3 style={{fontSize: "14px", fontWeight: "700"}}>{getUserName(user)}</h3>
-                </div>
+      <div className="sidebar">
+        <div className="sidebar-extras">
+            <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
+            <div className="profile-card">
+              <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.8, marginBottom: "4px"}}>LEVEL {userLevel}</p>
+              <h3 style={{fontSize: "15px", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>{getUserName(user)}</h3>
+              <div style={{height: "6px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", overflow: "hidden"}}>
+                <div style={{width: `${(userXP % 500) / 5}%`, height: "100%", background: "#fff"}}></div>
               </div>
-              <div style={{height: "4px", background: "var(--border)", borderRadius: "10px", overflow: "hidden"}}>
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(userXP % 500) / 5}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  style={{ height: "100%", background: "var(--accent-grad)" }}
-                />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
-                <p style={{fontSize: "10px", fontWeight: "700", opacity: 0.7}}>{userXP} XP</p>
-                <p style={{fontSize: "10px", fontWeight: "700", color: "var(--accent)"}}>Next: 500 XP</p>
-              </div>
-            </motion.div>
+              <p style={{fontSize: "11px", marginTop: "8px", fontWeight: "700"}}>{userXP} XP</p>
+            </div>
         </div>
 
-        <nav className="sidebar-nav">
-          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
-            <LayoutDashboard size={20} />
-            <span>Dashboard</span>
-          </button>
-          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}>
-            <BookOpen size={20} />
-            <span>Library</span>
-          </button>
-          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}>
-            <Trophy size={20} />
-            <span>Leaderboard</span>
-          </button>
-          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}>
-            <Settings size={20} />
-            <span>Settings</span>
-          </button>
+        <nav style={{flex: 1, display: "flex", flexDirection: "inherit", gap: "4px"}}>
+          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}><IconHome /> <span>Home 🏠</span></button>
+          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}><IconBook /> <span>Library 📚</span></button>
+          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}><IconTrophy /> <span>Rankings 🏆</span></button>
+          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}><IconSettings /> <span>Settings ⚙️</span></button>
         </nav>
         
-        <div className="sidebar-extras" style={{marginTop: "auto"}}>
-          <button 
-            onClick={() => signOut(auth)}
-            className="nav-btn" 
-            style={{ color: "#ef4444" }}
-          >
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </motion.div>
+        <div className="sidebar-extras" style={{marginTop: "auto"}} />
+      </div>
 
       <div className="main-content">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mobile-header"
-        >
-            <h1 style={{fontSize: "18px", fontWeight: "900", fontFamily: "var(--font-syne)"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
+        <div className="mobile-header">
+            <h1 style={{fontSize: "18px", fontWeight: "900", marginLeft: "4px"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
             <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
-                <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)"}}>{userXP} XP</div>
+                <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent)", color: "white", padding: "4px 10px", borderRadius: "20px"}}>{userXP} XP</div>
                 {mobileQuickSettings && (
-                  <button onClick={() => setView("settings")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px" }}>
-                    <Settings size={18} />
-                  </button>
+                  <button onClick={() => setView("settings")} style={{background: "var(--input-bg)", border: "1px solid var(--border)", fontSize: "11px", fontWeight: "800", color: "var(--accent)", padding: "4px 8px", borderRadius: "14px"}}>Settings ⚙️</button>
                 )}
             </div>
-        </motion.div>
+        </div>
 
-        <AnimatePresence mode="wait">
         {view === "dashboard" && (
-          <motion.div 
-            key="dashboard"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="page-shell"
-          >
-            <header style={{marginBottom: "40px"}}>
-              <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
-                Welcome back, {getUserName(user).split(' ')[0]}! ⚡
-              </motion.h1>
-              <p style={{ color: "var(--muted)", fontWeight: "500" }}>Your learning empire is waiting. What&apos;s the move today?</p>
+          <div className="page-shell">
+            <header className="page-header" style={{marginBottom: "28px"}}>
+              <div>
+                <h1 className="page-title">Hello, {getUserName(user)}!</h1>
+                <p className="page-subtitle">You&apos;re doing great. Keep learning!</p>
+              </div>
             </header>
-
-            <div className="bento-grid" style={{ marginBottom: "40px" }}>
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: "-10%", right: "-10%", opacity: 0.1 }}><Star size={120} fill="var(--accent)" color="var(--accent)" /></div>
-                <p style={{fontSize: "13px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px"}}>Level {userLevel}</p>
-                <h3 className="stat-value" style={{ marginTop: "12px", fontSize: "48px" }}>{userXP}</h3>
-                <p style={{fontSize: "14px", opacity: 0.5, fontWeight: "600"}}>Experience Points</p>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}>
-                <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(59, 130, 246, 0.1)", display: "grid", placeItems: "center", color: "#3b82f6" }}><BookOpen size={28} /></div>
-                <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{completedLessons.length}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Mastered</p></div>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}>
-                <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(245, 158, 11, 0.1)", display: "grid", placeItems: "center", color: "#f59e0b" }}><Flame size={28} /></div>
-                <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Streak</p></div>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 8" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Daily Goal</h3>
-                <div style={{ position: "relative", height: "8px", background: "var(--input-bg)", borderRadius: "20px", overflow: "hidden" }}>
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${goalProgressPct}%` }} style={{ height: "100%", background: "var(--accent-grad)" }} />
-                </div>
-              </motion.div>
+            <div className="dashboard-grid" style={{display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px", marginBottom: "40px"}}>
+              <div className="card stat-card" style={{borderLeftColor: "var(--accent)"}}>
+                  <p className="stat-label">Learning Points</p>
+                  <h3 className="stat-value" style={{color: "var(--accent)"}}>{dataLoading ? "..." : userXP} <span style={{fontSize: "16px", opacity: 0.5}}>XP</span></h3>
+              </div>
+              <div className="card stat-card" style={{borderLeftColor: "var(--info)"}}>
+                  <p className="stat-label">Mastered</p>
+                  <h3 className="stat-value" style={{color: "var(--info)"}}>{completedLessons.length} <span style={{fontSize: "16px", opacity: 0.5}}>Lessons</span></h3>
+              </div>
+              <div className="card stat-card" style={{borderLeftColor: "var(--warning)"}}>
+                  <p className="stat-label">Streak</p>
+                  <h3 className="stat-value" style={{color: "var(--warning)"}}>
+                    {streakCount}
+                    <span style={{fontSize: "16px", opacity: 0.5}}>Days</span>
+                  </h3>
+                  <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{lastStudyDate ? `Last study: ${lastStudyDate}` : "Start your streak today"}</p>
+              </div>
             </div>
-
-            {resumeLesson && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.01 }}
-                className="card" 
-                style={{ marginBottom: "32px", borderLeft: "4px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.05)" }}
+            <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "10px", flexWrap: "wrap"}}>
+              <h2 className="section-title">Continue Learning 📚</h2>
+              <button onClick={startQuickReview} className="btn btn-secondary">
+                {quickReviewMode ? "Quick Review Active ⚡" : "Start Quick Review ⚡"}
+              </button>
+            </div>
+            <div className="card" style={{marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap"}}>
+              <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
+                <div style={{width: "68px", height: "68px", borderRadius: "999px", display: "grid", placeItems: "center", background: `conic-gradient(var(--accent) ${goalProgressPct * 3.6}deg, rgba(148, 163, 184, 0.25) 0deg)`, padding: "6px"}}>
+                  <div style={{width: "100%", height: "100%", borderRadius: "999px", display: "grid", placeItems: "center", background: "var(--bg)", fontSize: "12px", fontWeight: "900"}}>{goalProgressPct}%</div>
+                </div>
+                <div>
+                  <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900", letterSpacing: "0.8px"}}>Today Goal</p>
+                  <p style={{fontSize: "17px", fontWeight: "800", marginTop: "3px"}}>{todayCompletedCount}/{dailyGoal} lessons</p>
+                </div>
+              </div>
+              <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
+                <button onClick={() => updateDailyGoal(dailyGoal - 1)} style={{width: "32px", height: "32px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "900", cursor: "pointer"}}>-</button>
+                <span style={{fontWeight: "800", minWidth: "28px", textAlign: "center"}}>{dailyGoal}</span>
+                <button onClick={() => updateDailyGoal(dailyGoal + 1)} style={{width: "32px", height: "32px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "900", cursor: "pointer"}}>+</button>
+              </div>
+            </div>
+            <div className="card" style={{marginBottom: "16px", display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap"}}>
+              <div>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800"}}>Study Reminder</p>
+                <p style={{fontSize: "13px", color: "var(--muted)", marginTop: "4px"}}>Get one browser reminder in the evening if your daily goal is incomplete.</p>
+              </div>
+              <button
+                className="btn btn-secondary"
+                onClick={async () => {
+                  if (!reminderEnabled && typeof Notification !== "undefined" && Notification.permission !== "granted") {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== "granted") {
+                      setSaveStatus("Notification permission blocked");
+                      setTimeout(() => setSaveStatus(""), 1800);
+                      return;
+                    }
+                  }
+                  setReminderEnabled((prev) => !prev);
+                }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <p style={{fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "4px"}}>Resume Journey</p>
-                    <h3 style={{fontSize: "22px", fontWeight: "800"}}>{resumeLesson.chapter.title}</h3>
-                  </div>
-                  <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} style={{ background: "var(--accent-grad)", border: "none", borderRadius: "12px", color: "white", padding: "12px 24px", fontWeight: "800", cursor: "pointer" }}>
-                    Continue
-                  </button>
-                </div>
-              </motion.div>
+                Reminder: {reminderEnabled ? "On" : "Off"}
+              </button>
+            </div>
+            {resumeLesson && (
+              <div className="card" style={{marginBottom: "16px", borderLeft: "4px solid var(--warning)"}}>
+                <p style={{fontSize: "11px", fontWeight: "900", color: "var(--warning)", textTransform: "uppercase", marginBottom: "6px"}}>Resume Last Lesson</p>
+                <h3 style={{fontSize: "18px", fontWeight: "800", marginBottom: "4px"}}>{resumeLesson.chapter.title}</h3>
+                <p style={{fontSize: "13px", color: "var(--muted)", marginBottom: "14px"}}>{resumeLesson.book.title}</p>
+                <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} className="btn btn-warning">Resume</button>
+              </div>
             )}
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-              <h2 className="section-title" style={{ fontFamily: "var(--font-syne)", fontSize: "24px", fontWeight: "800" }}>Challenges 🚀</h2>
-            </div>
-
-            <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px"}}>
-              {getUnmastered().slice(0, 4).map((ch, idx) => (
-                <motion.div 
-                  key={ch.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px"}}
-                >
-                  <div style={{ flex: 1 }}>
-                      <p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px"}}>{ch.bookTitle}</p>
-                      <h3 style={{fontSize: "17px", fontWeight: "800"}}>{ch.title}</h3>
+            <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
+              {getUnmastered().slice(0, 5).map(ch => (
+                <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px"}}>
+                  <div>
+                      <p style={{fontSize: "10px", color: "var(--accent)", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
+                      <h3 style={{fontSize: "16px", marginTop: "4px", fontWeight: "700"}}>{ch.title}</h3>
                   </div>
-                  <button 
-                    onClick={() => openLesson(ch.parentBook, ch)} 
-                    style={{
-                      width: "48px", 
-                      height: "48px", 
-                      borderRadius: "14px", 
-                      background: "rgba(255,255,255,0.05)", 
-                      display: "grid", 
-                      placeItems: "center", 
-                      border: "1px solid transparent", 
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      color: "white"
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.color = "white"; }}
-                  >
-                    <ChevronRight size={24} />
-                  </button>
-                </motion.div>
+                  <button onClick={() => openLesson(ch.parentBook, ch)} style={{padding: "10px 20px", background: "var(--accent)", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 4px 10px rgba(var(--accent-rgb), 0.28)"}}>Start</button>
+                </div>
               ))}
-              {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", gridColumn: "1/-1", padding: "60px", opacity: 0.5}}>You&apos;ve mastered everything! Time for a boss level? 🏆</div>}
+              {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", padding: "40px", opacity: 0.6}}>You've mastered everything! </div>}
             </div>
-            
             <h2 style={{fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800"}}>Achievements 🏅</h2>
             <div className="card" style={{padding: "20px"}}>
               <p style={{fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px"}}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
@@ -3470,148 +3376,254 @@ export default function Home() {
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-
-        {view === "library" && (
-          <motion.div 
-            key="library"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="page-shell"
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-              <h1 className="page-title">The Vault 📚</h1>
-              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}} className="btn btn-primary">+ New Book</button>}
-            </div>
-            
-            <div className="card" style={{ display: "flex", gap: "16px", padding: "16px", marginBottom: "32px" }}>
-              <input type="text" placeholder="Search the library..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{ flex: 1, padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)" }} />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
-              {sortedFilteredBooks.map(b => (
-                <motion.div 
-                  key={b.id}
-                  whileHover={{ y: -5, borderColor: "var(--accent)" }}
-                  onClick={() => {setCurBook(b); setView("chapters");}}
-                  className="card" style={{ cursor: "pointer", textAlign: "center", transition: "all 0.3s ease" }}
-                >
-                  <div style={{ height: "120px", background: "var(--input-bg)", borderRadius: "16px", marginBottom: "16px", display: "grid", placeItems: "center", fontSize: "40px" }}>📖</div>
-                  <h3 style={{ fontWeight: "800" }}>{b.title}</h3>
-                  <p style={{ fontSize: "12px", opacity: 0.5 }}>{b.chapters?.length || 0} Lessons</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+          </div>
         )}
 
         {view === "leaderboard" && (
-          <motion.div 
-            key="leaderboard"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            style={{ maxWidth: "700px", margin: "0 auto" }}
-          >
-            <h1 className="page-title" style={{ textAlign: "center", marginBottom: "32px" }}>Hall of Fame 🏆</h1>
-            <div style={{display: "flex", justifyContent: "center", gap: "12px", marginBottom: "32px"}}>
-               <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "var(--accent-soft)" : "var(--input-bg)", color: leaderboardMode === "all" ? "var(--accent)" : "var(--text)"}}>All Time</button>
-               <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "var(--accent-soft)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "var(--accent)" : "var(--text)"}}>Weekly Grind</button>
+          <div style={{maxWidth: "600px", margin: "0 auto"}}>
+            <h1 style={{textAlign: "center", marginBottom: "32px", fontSize: "28px", fontWeight: "900"}}>Top Learners 🌟</h1>
+            <div style={{display: "flex", justifyContent: "center", gap: "8px", marginBottom: "14px"}}>
+              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "var(--accent-soft)" : "var(--input-bg)"}}>All Time</button>
+              <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "var(--accent-soft)" : "var(--input-bg)"}}>Weekly</button>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
-                <motion.div 
-                  key={p.id} 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="card" style={{ display: "flex", alignItems: "center", padding: "16px 24px", background: p.id === user.uid ? "rgba(var(--accent-rgb), 0.15)" : "var(--card)", border: p.id === user.uid ? "1px solid var(--accent)" : "1px solid var(--border)" }}
-                >
-                  <span style={{ width: "40px", fontWeight: "900", color: i < 3 ? "var(--accent)" : "var(--muted)", fontSize: i < 3 ? "20px" : "16px" }}>#{i + 1}</span>
-                  <span style={{ flex: 1, fontWeight: "700" }}>{p.email?.split('@')[0]}</span>
-                  <span className="xp-badge" style={{ padding: "8px 16px" }}>{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+            {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
+              <div key={p.id} className="card" style={{display: "flex", alignItems: "center", marginBottom: "12px", padding: "16px 20px", borderColor: p.id === user.uid ? "var(--accent)" : "var(--border)", background: p.id === user.uid ? "var(--accent-soft)" : "var(--card)"}}>
+                <span style={{width: "56px", fontWeight: "900", fontSize: "18px", color: i === 0 ? "#fbbf24" : i === 1 ? "#94a3b8" : i === 2 ? "#b45309" : "var(--muted)"}}>
+                  {i === 0 ? "👑 #1" : i === 1 ? "🥈 #2" : i === 2 ? "🥉 #3" : `#${i + 1}`}
+                </span>
+                <div style={{flex: 1}}>
+                    <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
+                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "var(--accent)", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
+                </div>
+                <span className="xp-badge">{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
+              </div>
+            ))}
+          </div>
         )}
 
         {view === "settings" && (
-          <motion.div 
-            key="settings"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            className="page-shell" style={{ maxWidth: "600px" }}
-          >
-            <h1 className="page-title" style={{ marginBottom: "32px" }}>Preferences ⚙️</h1>
-            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-               <button onClick={() => setReduceMotion(!reduceMotion)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Zap size={20} />
-                    <span>Reduce Motion</span>
-                  </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{reduceMotion ? "ON" : "OFF"}</span>
-               </button>
-               <button onClick={() => setSoundEnabled(!soundEnabled)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Volume2 size={20} />
-                    <span>Victory Sounds</span>
-                  </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
-               </button>
-               <div style={{ height: "1px", background: "var(--border)", margin: "12px 0" }} />
-               <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
-                  <LogOut size={20} />
-                  <span>Terminate Session</span>
-               </button>
+          <div className="page-shell" style={{maxWidth: "760px"}}>
+            <div className="page-header">
+              <h1 className="page-title">Settings ⚙️</h1>
             </div>
-
-            <div className="card" style={{ marginTop: "24px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Theme Selection</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+            <div className="card" style={{marginBottom: "14px"}}>
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>App Theme</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => applyThemePreset("study")} className="btn btn-secondary">Preset: Study</button>
+                <button onClick={() => applyThemePreset("night")} className="btn btn-secondary">Preset: Night</button>
+                <button onClick={() => applyThemePreset("focus")} className="btn btn-secondary">Preset: Focus</button>
+              </div>
+              <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px"}}>
                 {visibleThemePreviewCards.map((item) => {
                   const selected = item.key === uiTheme;
                   const allowed = hasThemeAccess(item.key);
+                  const showAdminTag = !!item.isAdminOnly;
+                  const requiredAchievementId = getThemeAchievementRequirement(item.key);
+                  const showAchievementTag = !!requiredAchievementId;
+                  const achievementUnlocked = !requiredAchievementId || allUnlockedAchievementIds.includes(requiredAchievementId) || isOwner;
                   return (
-                    <motion.button
-                      key={item.key}
-                      whileHover={allowed ? { y: -2 } : {}}
-                      onClick={() => allowed && setUiTheme(item.key)}
-                      style={{ 
-                        padding: "8px", 
-                        borderRadius: "12px", 
-                        background: selected ? "rgba(var(--accent-rgb), 0.1)" : "var(--input-bg)", 
-                        border: selected ? "2px solid var(--accent)" : "1px solid var(--border)",
-                        cursor: allowed ? "pointer" : "not-allowed",
-                        opacity: allowed ? 1 : 0.5,
-                        textAlign: "left"
-                      }}
-                    >
-                      <div style={{ height: "40px", borderRadius: "8px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative" }}>
-                         <div style={{ position: "absolute", top: "8px", left: "8px", width: "16px", height: "4px", borderRadius: "4px", background: item.accent }} />
-                      </div>
-                      <p style={{ fontSize: "11px", fontWeight: "800", color: selected ? "var(--text)" : "var(--muted)" }}>{item.label}</p>
-                    </motion.button>
+                    <div key={`preview-${item.key}`} style={{border: selected ? "2px solid var(--accent)" : "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--card)", opacity: allowed ? 1 : 0.6}}>
+                      <button
+                        onClick={() => {
+                          if (!allowed) return;
+                          setUiTheme(item.key);
+                        }}
+                        className="btn btn-secondary"
+                        style={{textAlign: "left", border: "1px solid var(--border)", background: "transparent", padding: "8px", width: "100%", cursor: allowed ? "pointer" : "not-allowed"}}
+                        disabled={!allowed}
+                      >
+                        <div style={{height: "62px", borderRadius: "10px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative", overflow: "hidden"}}>
+                          <div style={{position: "absolute", left: "10px", top: "10px", width: "32px", height: "5px", borderRadius: "999px", background: item.accent}} />
+                          <div style={{position: "absolute", left: "10px", top: "22px", width: "54px", height: "4px", borderRadius: "999px", background: "rgba(255,255,255,0.7)"}} />
+                        </div>
+                        <span style={{fontWeight: "800", color: selected ? "var(--accent)" : "var(--text)", fontSize: "12px"}}>
+                          {item.label}{showAdminTag ? " (ADMIN)" : ""}{showAchievementTag ? " (ACHIEVEMENT)" : ""}
+                        </span>
+                        {!allowed && (
+                          <span style={{display: "block", fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>
+                            {requiredAchievementId && !achievementUnlocked
+                              ? `Unlock: ${getAchievementTitleById(requiredAchievementId)}`
+                              : "Locked"}
+                          </span>
+                        )}
+                      </button>
+                      {isOwner && (
+                        <label style={{display: "flex", alignItems: "center", gap: "6px", marginTop: "8px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                          <input
+                            type="checkbox"
+                            checked={!!item.isAdminOnly}
+                            onChange={(e) => toggleThemeAdminOnly(item.key, e.target.checked)}
+                          />
+                          Admin only
+                        </label>
+                      )}
+                    </div>
                   );
                 })}
               </div>
+              <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "8px"}}>Current: <strong style={{color: "var(--text)"}}>{uiThemeLabel}</strong></p>
+              {!isOwner && (
+                <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "6px"}}>
+                  Admin-only themes are hidden unless granted. Achievement themes unlock as you earn badges.
+                </p>
+              )}
             </div>
 
             {isOwner && (
-              <div className="card" style={{ marginTop: "24px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
-                <div style={{ display: "flex", gap: "8px" }}>
-                   <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
-                   <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
+              <div className="card" style={{marginBottom: "14px"}}>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Create Custom Theme</p>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px"}}>
+                  <input type="text" placeholder="Theme name" value={newThemeName} onChange={(e) => setNewThemeName(e.target.value)} />
+                  <div />
+                  <label style={{display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                    Background
+                    <input type="text" placeholder="#0f172a" value={newThemeBackground} onChange={(e) => setNewThemeBackground(e.target.value)} />
+                  </label>
+                  <label style={{display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                    Primary
+                    <input type="text" placeholder="#1e293b" value={newThemePrimary} onChange={(e) => setNewThemePrimary(e.target.value)} />
+                  </label>
+                  <label style={{display: "flex", flexDirection: "column", gap: "4px", fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                    Accent
+                    <input type="text" placeholder="#10b981" value={newThemeAccent} onChange={(e) => setNewThemeAccent(e.target.value)} />
+                  </label>
+                  <label style={{display: "flex", alignItems: "center", gap: "6px", marginTop: "20px", fontSize: "12px", color: "var(--muted)", fontWeight: "700"}}>
+                    <input type="checkbox" checked={newThemeAdminOnly} onChange={(e) => setNewThemeAdminOnly(e.target.checked)} />
+                    Admin only
+                  </label>
+                </div>
+                <div style={{display: "flex", gap: "8px", marginTop: "10px"}}>
+                  <button onClick={createCustomTheme} className="btn btn-primary">Create Theme</button>
                 </div>
               </div>
             )}
-          </motion.div>
+
+            {isOwner && (
+              <div className="card" style={{marginBottom: "14px"}}>
+                <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Gift Admin Themes</p>
+                <div style={{display: "grid", gridTemplateColumns: "1fr auto", gap: "8px", marginBottom: "8px"}}>
+                  <input type="text" placeholder="Search user by email..." value={giftUserSearch} onChange={(e) => setGiftUserSearch(e.target.value)} />
+                  <button onClick={searchUsersForThemeGift} className="btn btn-secondary">Search</button>
+                </div>
+                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px", alignItems: "center"}}>
+                  <select value={giftTargetUserId} onChange={(e) => setGiftTargetUserId(e.target.value)} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px"}}>
+                    <option value="">Select user</option>
+                    {giftUserResults.map((u) => (
+                      <option key={`gift-user-${u.id}`} value={u.id}>{u.email}</option>
+                    ))}
+                  </select>
+                  <select value={giftThemeId} onChange={(e) => setGiftThemeId(e.target.value)} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px"}}>
+                    <option value="">Select admin theme</option>
+                    {themePreviewCards.filter((t) => t.isAdminOnly).map((t) => (
+                      <option key={`gift-theme-${t.key}`} value={t.key}>{t.label} (ADMIN)</option>
+                    ))}
+                  </select>
+                  <button onClick={giftThemeToUser} className="btn btn-primary" disabled={!giftTargetUserId || !giftThemeId}>Gift</button>
+                </div>
+              </div>
+            )}
+
+            <div className="card" style={{marginBottom: "14px"}}>
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Display</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => setTheme("light")} className="btn btn-secondary" style={{background: theme === "light" ? "var(--accent-soft)" : "var(--input-bg)", color: theme === "light" ? "var(--accent)" : "var(--text)"}}>Light</button>
+                <button onClick={() => setTheme("dark")} className="btn btn-secondary" style={{background: theme === "dark" ? "var(--accent-soft)" : "var(--input-bg)", color: theme === "dark" ? "var(--accent)" : "var(--text)"}}>Dark</button>
+              </div>
+
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Typography Size</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => setTextSize("compact")} className="btn btn-secondary" style={{background: textSize === "compact" ? "var(--accent-soft)" : "var(--input-bg)", color: textSize === "compact" ? "var(--accent)" : "var(--text)"}}>Compact</button>
+                <button onClick={() => setTextSize("default")} className="btn btn-secondary" style={{background: textSize === "default" ? "var(--accent-soft)" : "var(--input-bg)", color: textSize === "default" ? "var(--accent)" : "var(--text)"}}>Default</button>
+                <button onClick={() => setTextSize("large")} className="btn btn-secondary" style={{background: textSize === "large" ? "var(--accent-soft)" : "var(--input-bg)", color: textSize === "large" ? "var(--accent)" : "var(--text)"}}>Large</button>
+              </div>
+
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Layout</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "10px"}}>
+                <button onClick={() => setSidebarDensity("comfortable")} className="btn btn-secondary" style={{background: sidebarDensity === "comfortable" ? "var(--accent-soft)" : "var(--input-bg)", color: sidebarDensity === "comfortable" ? "var(--accent)" : "var(--text)"}}>Sidebar Comfortable</button>
+                <button onClick={() => setSidebarDensity("compact")} className="btn btn-secondary" style={{background: sidebarDensity === "compact" ? "var(--accent-soft)" : "var(--input-bg)", color: sidebarDensity === "compact" ? "var(--accent)" : "var(--text)"}}>Sidebar Compact</button>
+              </div>
+
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Accessibility</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                <button onClick={() => setReduceMotion((v) => !v)} className="btn btn-secondary" style={{background: reduceMotion ? "var(--accent-soft)" : "var(--input-bg)", color: reduceMotion ? "var(--accent)" : "var(--text)"}}>Reduce Motion: {reduceMotion ? "On" : "Off"}</button>
+                <button onClick={() => setHighContrast((v) => !v)} className="btn btn-secondary" style={{background: highContrast ? "var(--accent-soft)" : "var(--input-bg)", color: highContrast ? "var(--accent)" : "var(--text)"}}>High Contrast: {highContrast ? "On" : "Off"}</button>
+                <button onClick={() => setMobileQuickSettings((v) => !v)} className="btn btn-secondary" style={{background: mobileQuickSettings ? "var(--accent-soft)" : "var(--input-bg)", color: mobileQuickSettings ? "var(--accent)" : "var(--text)"}}>Mobile Quick Settings 📱: {mobileQuickSettings ? "On" : "Off"}</button>
+                <button onClick={() => setSoundEnabled((v) => !v)} className="btn btn-secondary" style={{background: soundEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: soundEnabled ? "var(--accent)" : "var(--text)"}}>Victory Sound 🔊: {soundEnabled ? "On" : "Off"}</button>
+              </div>
+            </div>
+
+            <div className="card">
+              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "800", marginBottom: "8px"}}>Account</p>
+              <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
+                <button onClick={resetAllSettings} className="btn btn-secondary">Reset To Defaults ♻️</button>
+                <button onClick={() => signOut(auth)} className="btn btn-danger">Sign Out 👋</button>
+              </div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
+
+        {view === "library" && (
+          <div className="page-shell">
+            <div className="page-header">
+              <h1 className="page-title">Library 📚</h1>
+              {isOwner && <button className="btn btn-primary" onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}}>+ New Book</button>}
+            </div>
+            <div className="card library-tools" style={{display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "12px", padding: "14px", marginBottom: "20px"}}>
+              <input type="text" placeholder="Search books or lessons..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{padding: "12px"}} />
+              <select value={libraryFilter} onChange={(e) => setLibraryFilter(e.target.value as "all" | "notStarted" | "inProgress" | "mastered")} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "14px", padding: "12px"}}>
+                <option value="all">All Books</option>
+                <option value="notStarted">Not Started</option>
+                <option value="inProgress">In Progress</option>
+                <option value="mastered">Mastered</option>
+              </select>
+              <select value={librarySort} onChange={(e) => setLibrarySort(e.target.value as "default" | "lastEdited")} style={{background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "14px", padding: "12px"}}>
+                <option value="default">Sort: Default</option>
+                <option value="lastEdited">Sort: Last Edited</option>
+              </select>
+            </div>
+            <div className="library-grid" style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px"}}>
+              {sortedFilteredBooks.map(b => {
+                const progress = getBookProgress(b);
+                const insights = getBookAttemptInsights(b);
+                const bookLastEditedAt = getBookLastEditedAt(b);
+                return (
+                <div key={b.id} className="card" style={{textAlign: "center", transition: "0.2s", cursor: "pointer"}} onClick={() => {setCurBook(b); setView("chapters");}}>
+                  <div style={{height: "120px", background: "var(--input-bg)", borderRadius: "18px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", marginBottom: "16px"}}>📖</div>
+                  <h3 style={{fontWeight: "800", fontSize: "18px", marginBottom: "4px"}}>{b.title}</h3>
+                  <p style={{fontSize: "12px", opacity: 0.5, fontWeight: "600"}}>{b.chapters?.length || 0} Lessons</p>
+                  <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginTop: "10px", marginBottom: "6px"}}>{progress.masteredLessons}/{progress.totalLessons} mastered</p>
+                  <div style={{height: "7px", background: "var(--input-bg)", borderRadius: "12px", overflow: "hidden", border: "1px solid var(--border)"}}>
+                    <div style={{height: "100%", width: `${progress.progressPercent}%`, background: "var(--accent-grad)"}} />
+                  </div>
+                  <div style={{marginTop: "10px", borderTop: "1px dashed var(--border)", paddingTop: "10px"}}>
+                    <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
+                      Attempts: {insights.attemptsCount} • Avg: {insights.avgAccuracy === null ? "--" : `${insights.avgAccuracy}%`}
+                    </p>
+                    <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{formatNoteEdited(bookLastEditedAt)}</p>
+                    {insights.trend.length > 0 && (
+                      <div style={{display: "flex", gap: "4px", marginTop: "6px", alignItems: "flex-end", justifyContent: "center", height: "28px"}}>
+                        {insights.trend.map((v: number, idx: number) => (
+                          <div key={`trend-${b.id}-${idx}`} title={`${v}%`} style={{width: "8px", height: `${Math.max(4, Math.round((v / 100) * 28))}px`, borderRadius: "4px", background: v >= 70 ? "var(--accent)" : "var(--danger)"}} />
+                        ))}
+                      </div>
+                    )}
+                    {insights.weakCount > 0 && (
+                      <p style={{fontSize: "10px", color: "var(--danger)", fontWeight: "800", marginTop: "6px"}}>
+                        Weak tags: {insights.weakCount}
+                      </p>
+                    )}
+                  </div>
+                  {isOwner && <button className="del-btn" style={{marginTop: "16px", width: "100%", background: "rgba(var(--danger-rgb), 0.1)", border: "none", color: "var(--danger)", padding: "8px", borderRadius: "10px", fontWeight: "bold", fontSize: "11px"}} onClick={(e) => {e.stopPropagation(); deleteItem('book', b.id)}}>Delete</button>}
+                </div>
+              )})}
+            </div>
+            {filteredBooks.length === 0 && (
+              <div className="card" style={{textAlign: "center", marginTop: "20px", padding: "28px", color: "var(--muted)"}}>
+                No books match this search/filter.
+              </div>
+            )}
+          </div>
+        )}
 
         {view === "chapters" && curBook && (
           <div className="page-shell" style={{maxWidth: "880px"}}>
@@ -3655,7 +3667,7 @@ export default function Home() {
             </div>
             <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
-                {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
+                {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Audiobook", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
                 ))}
             </div>
@@ -3663,7 +3675,7 @@ export default function Home() {
                {["Summary", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
                {activeTab === "AI Explanation" && (
                  <div style={{display: "flex", flexDirection: "column", gap: "16px"}}>
-                   <div style={{background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)"}}>
+                   <div style={{background: "rgba(15,23,42,0.08)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)"}}>
                      <h3 style={{fontWeight: "800", marginBottom: "8px", color: "var(--accent)"}}>Ask AI about this lesson</h3>
                      <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
                        <input 
@@ -3769,7 +3781,7 @@ export default function Home() {
                         </div>
 
                         {q.type === "caseStudy" && q.caseText && (
-                          <div style={{padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", background: "var(--input-bg)", marginBottom: "10px", whiteSpace: "pre-wrap", fontSize: "14px"}}>
+                          <div style={{padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", background: "rgba(15,23,42,0.08)", marginBottom: "10px", whiteSpace: "pre-wrap", fontSize: "14px"}}>
                             {q.caseText}
                           </div>
                         )}
@@ -3787,14 +3799,14 @@ export default function Home() {
                                   <iframe
                                     src={formatDrivePreviewLink(q.imageUrl)}
                                     title={`question-img-${activeQuestionIndex + 1}`}
-                                    style={{width: "100%", height: "260px", borderRadius: "14px", border: "1px solid var(--border)", background: "var(--bg)"}}
+                                    style={{width: "100%", height: "260px", borderRadius: "14px", border: "1px solid var(--border)", background: "#fff"}}
                                   />
                                 ) : (
                                   <img
                                     src={formatImageLink(q.imageUrl)}
                                     alt={`question-${activeQuestionIndex + 1}`}
                                     onError={() => setQuizImageErrors(prev => ({ ...prev, [activeQuestionIndex]: true }))}
-                                    style={{maxWidth: "100%", maxHeight: "260px", width: "100%", borderRadius: "14px", border: "1px solid var(--border)", objectFit: "contain", background: "var(--bg)"}}
+                                    style={{maxWidth: "100%", maxHeight: "260px", width: "100%", borderRadius: "14px", border: "1px solid var(--border)", objectFit: "contain", background: "#fff"}}
                                   />
                                 )}
                                 {quizImageErrors[activeQuestionIndex] && (
@@ -3835,7 +3847,7 @@ export default function Home() {
                                     padding: "10px 12px",
                                     borderRadius: "12px",
                                     border: showWrongSelected ? "1px solid var(--danger)" : showCorrectOption ? "1px solid var(--accent)" : selected ? "1px solid var(--accent)" : "1px solid var(--border)",
-                                    background: showWrongSelected ? "rgba(var(--danger-rgb),0.14)" : showCorrectOption ? "var(--accent-soft)" : selected ? "var(--accent-soft)" : "var(--input-bg)",
+                                    background: showWrongSelected ? "rgba(var(--danger-rgb),0.14)" : showCorrectOption ? "var(--accent-soft)" : selected ? "var(--accent-soft)" : "rgba(15,23,42,0.08)",
                                     color: "var(--text)",
                                     cursor: "pointer",
                                     fontWeight: selected ? "700" : "500"
@@ -3879,7 +3891,7 @@ export default function Home() {
                           </div>
                         )}
                         {quizSubmitted && q.explanation && (
-                          <div style={{marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", fontSize: "13px"}}>
+                          <div style={{marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "rgba(59,130,246,0.08)", fontSize: "13px"}}>
                             <span style={{fontWeight: "800", color: "#3b82f6"}}>Explanation:</span> {q.explanation}
                           </div>
                         )}
@@ -4029,12 +4041,15 @@ export default function Home() {
                    <div style={{display: "flex", flexDirection: "column", gap: "20px"}}>
                      {link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{border: "none", borderRadius: "20px"}} /> : <div style={{textAlign: "center", padding: "100px", opacity: 0.5}}>This resource hasn't been linked yet.</div>}
                      {activeTab === "Book PDF" && curChapter.audioBook && (
-                        <div style={{padding: "20px", background: "var(--input-bg)", borderRadius: "20px", display: "flex", flexDirection: "column", gap: "10px"}}>
-                          <h3 style={{fontSize: "16px", fontWeight: "800"}}>Audiobook Resource</h3>
+                        <div style={{padding: "24px", background: "var(--accent-soft)", borderRadius: "24px", display: "flex", flexDirection: "column", gap: "14px", border: "1px solid rgba(var(--accent-rgb), 0.2)"}}>
+                          <div style={{display: "flex", alignItems: "center", gap: "10px"}}>
+                            <span style={{fontSize: "20px"}}>🎧</span>
+                            <h3 style={{fontSize: "17px", fontWeight: "900", color: "var(--accent)"}}>Audiobook Companion</h3>
+                          </div>
                           {curChapter.audioBook.includes("drive.google.com") ? (
-                            <iframe src={curChapter.audioBook.replace("/view", "/preview")} width="100%" height="150" style={{border: "none", borderRadius: "10px"}} />
+                            <iframe src={curChapter.audioBook.replace("/view", "/preview")} width="100%" height="150" style={{border: "none", borderRadius: "16px", background: "white"}} />
                           ) : (
-                            <audio controls src={curChapter.audioBook} style={{width: "100%", outline: "none"}} />
+                            <audio controls src={curChapter.audioBook} style={{width: "100%", borderRadius: "10px", outline: "none"}} />
                           )}
                         </div>
                      )}
@@ -4061,7 +4076,7 @@ export default function Home() {
                     </div>
                     <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
                       {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
-                        <div key={`edit-quiz-${qIndex}`} style={{border: "1px solid var(--border)", borderRadius: "14px", padding: "12px", background: "var(--card)"}}>
+                        <div key={`edit-quiz-${qIndex}`} style={{border: "1px solid var(--border)", borderRadius: "14px", padding: "12px", background: "rgba(15,23,42,0.08)"}}>
                           <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px"}}>
                             <p style={{fontWeight: "800", fontSize: "12px"}}>Question {qIndex + 1}</p>
                             <button onClick={() => removeQuizQuestion(qIndex)} style={{background: "rgba(var(--danger-rgb),0.14)", color: "var(--danger)", border: "1px solid rgba(var(--danger-rgb),0.3)", borderRadius: "8px", padding: "4px 8px", cursor: "pointer", fontWeight: "700"}}>Remove</button>
@@ -4165,7 +4180,7 @@ export default function Home() {
                 </div>
                 <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
                     {["video", "slides", "bookPdf", "audioBook", "infographic", "mindMap"].map(f => (
-                        <div key={f}><p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
+                        <div key={f}><p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f === "audioBook" ? "Audiobook URL" : f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
                     ))}
                 </div>
             </div>

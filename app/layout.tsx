@@ -1,8 +1,22 @@
 // app/layout.tsx
 
+import { Inter, Syne } from "next/font/google";
+import "./globals.css";
+import { PremiumBackground } from "./components/PremiumBackground";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+});
+
 export const metadata = {
-  title: "Pajji Learn", // This changes the text on the tab
-  description: "Pajji's Learning Empire", // This is for Google search results
+  title: "Pajji Learn | Master Your Future",
+  description: "A premium, high-octane learning dashboard for the next generation of scholars.",
 };
 
 export default function RootLayout({
@@ -11,8 +25,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className={`${inter.variable} ${syne.variable}`}>
+      <body className="font-sans antialiased text-white selection:bg-purple-500/30">
+        <PremiumBackground />
+        <main className="relative z-0 min-h-screen">
+          {children}
+        </main>
+      </body>
     </html>
   )
 }
