@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useMemo } from "react";
-import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring } from "framer-motion";
 import { 
   Trophy, BookOpen, Zap, Settings, Flame, 
   ChevronRight, Search, Plus, Star, Map,
@@ -133,6 +133,225 @@ export default function Home() {
   const [aiExplainQuestion, setAiExplainQuestion] = useState("");
   const [aiExplainAnswer, setAiExplainAnswer] = useState("");
   const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  const [debouncedLibraryQuery, setDebouncedLibraryQuery] = useState("");
+  const [sessionXP, setSessionXP] = useState(0);
+  const [sessionStartTime] = useState(Date.now());
+  const [sessionTime, setSessionTime] = useState(0);
+  const [isZenMode, setIsZenMode] = useState(false);
+  const [zenTime, setZenTime] = useState(25 * 60);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [spotlightQuery, setSpotlightQuery] = useState("");
+  const [activeAudio, setActiveAudio] = useState<string | null>(null);
+  const [isSpeedReadOpen, setIsSpeedReadOpen] = useState(false);
+  const [speedReadIndex, setSpeedReadIndex] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [profilePic, setProfilePic] = useState<string>("");
+  const [customAccent, setCustomAccent] = useState<string>("");
+  const [prevLevel, setPrevLevel] = useState<number | null>(null);
+  const [konamiProgress, setKonamiProgress] = useState<string[]>([]);
+  const [godMode, setGodMode] = useState(false);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // Memoized stable heatmap data
+  const heatmapData = useMemo(() => {
+    return [...Array(52)].map(() => [...Array(7)].map(() => Math.random() > 0.8));
+  }, []);
+
+  // Zen Mode Timer
+  useEffect(() => {
+    let timer: any;
+    if (isZenMode && zenTime > 0) {
+      timer = setInterval(() => setZenTime(t => t - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isZenMode, zenTime]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // Keyboard Easter Eggs + Zen
+  useEffect(() => {
+    const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+    const handler = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      
+      if (e.key.toLowerCase() === "z") setIsZenMode(!isZenMode);
+      if (e.key.toLowerCase() === "c") { setMasteryConfetti(true); setTimeout(() => setMasteryConfetti(false), 3000); }
+      if (e.key.toLowerCase() === "f") setFireworksMode(!fireworksMode);
+      if (e.key.toLowerCase() === "q") window.location.reload(); 
+      if (e.key.toLowerCase() === "g") setGodMode(!godMode);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setIsSpotlightOpen(true); }
+      if (e.key === "Escape") { setIsSpotlightOpen(false); setIsSpeedReadOpen(false); }
+      
+      setKonamiProgress(prev => {
+        const next = [...prev, e.key].slice(-10);
+        if (JSON.stringify(next) === JSON.stringify(konamiCode)) {
+          setTheme("nebula");
+          setMasteryConfetti(true);
+          setGodMode(true);
+          return [];
+        }
+        return next;
+      });
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [fireworksMode, godMode, isZenMode]);
+
+  // Cursor Trail
+  const CursorTrail = () => {
+    const mouse = { x: useMotionValue(0), y: useMotionValue(0) };
+    useEffect(() => {
+      const move = (e: MouseEvent) => { mouse.x.set(e.clientX); mouse.y.set(e.clientY); };
+      window.addEventListener("mousemove", move);
+      return () => window.removeEventListener("mousemove", move);
+    }, []);
+    return (
+      <motion.div 
+        style={{ 
+          position: "fixed", top: -20, left: -20, width: 40, height: 40, 
+          borderRadius: "50%", background: "var(--accent)", opacity: 0.15, 
+          filter: "blur(20px)", pointerEvents: "none", zIndex: 9999,
+          x: useSpring(mouse.x, { damping: 20, stiffness: 200 }),
+          y: useSpring(mouse.y, { damping: 20, stiffness: 200 })
+        }}
+      />
+    );
+  };
+
+  // Update session time
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSessionTime(Math.floor((Date.now() - sessionStartTime) / 60000));
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [sessionStartTime]);
+
+  // Track session XP
+  useEffect(() => {
+    if (userXP > 0) {
+      setSessionXP(prev => prev + 5); // Fallback: just track progress
+    }
+  }, [userXP]);
+
+  // Motivational Quotes
+  const quotes = [
+    "Focus on progress, not perfection. 🚀",
+    "Small steps every day lead to big results. 📈",
+    "You're becoming a master of your craft. 🧠",
+    "Don't stop until you're proud. ✨",
+    "Consistency is the cheat code to success. 🔥",
+    "The secret of getting ahead is getting started. 💎"
+  ];
+  const [quote] = useState(() => quotes[Math.floor(Math.random() * quotes.length)]);
+
+  // Level Up Detection
+  useEffect(() => {
+    if (userXP === undefined) return;
+    const currentLvl = Math.floor(userXP / 500) + 1;
+    if (prevLevel !== null && currentLvl > prevLevel) {
+      setMasteryConfetti(true);
+      setTimeout(() => setMasteryConfetti(false), 3000);
+    }
+    setPrevLevel(currentLvl);
+  }, [userXP, prevLevel]);
+
+  // Components for animations
+  const AnimatedCounter = ({ value }: { value: number }) => {
+    const [displayValue, setDisplayValue] = useState(value);
+    useEffect(() => {
+      let start = displayValue;
+      const end = value;
+      if (start === end) return;
+      const duration = 1000;
+      let timer: any;
+      const step = () => {
+        const diff = end - start;
+        if (Math.abs(diff) < 1) {
+          setDisplayValue(end);
+          return;
+        }
+        start += diff * 0.1;
+        setDisplayValue(Math.round(start));
+        timer = requestAnimationFrame(step);
+      };
+      timer = requestAnimationFrame(step);
+      return () => cancelAnimationFrame(timer);
+    }, [value]);
+    return <span>{displayValue}</span>;
+  };
+
+  const FloatingParticles = () => (
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+      {[...Array(12)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ 
+            x: Math.random() * 100 + "%", 
+            y: Math.random() * 100 + "%", 
+            opacity: 0.1 
+          }}
+          animate={{
+            y: [null, "-20%", "120%"],
+            x: [null, `${Math.random() * 100}%`],
+            opacity: [0.1, 0.3, 0.1]
+          }}
+          transition={{
+            duration: 20 + Math.random() * 20,
+            repeat: Infinity,
+            ease: "linear",
+            delay: i * -5
+          }}
+          style={{
+            position: "absolute",
+            width: Math.random() * 300 + 100 + "px",
+            height: Math.random() * 300 + 100 + "px",
+            background: "radial-gradient(circle, var(--accent-soft) 0%, transparent 70%)",
+            borderRadius: "50%",
+            filter: "blur(40px)"
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  // Time-based greeting
+  const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 5) return { text: "Burning the midnight oil", emoji: "🌙" };
+    if (h < 12) return { text: "Good morning", emoji: "☀️" };
+    if (h < 17) return { text: "Good afternoon", emoji: "🌤️" };
+    if (h < 21) return { text: "Good evening", emoji: "🌅" };
+    return { text: "Late night grind", emoji: "🔥" };
+  };
+  const greeting = getGreeting();
+
+  // Scroll to top on view change
+  useEffect(() => {
+    mainContentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [view]);
+
+  // Keyboard shortcuts: 1-4 for nav
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      if (e.key === "1") setView("dashboard");
+      if (e.key === "2") setView("library");
+      if (e.key === "3") { setView("leaderboard"); fetchLeaderboard?.(); }
+      if (e.key === "4") setView("settings");
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // Debounced library search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedLibraryQuery(libraryQuery), 250);
+    return () => clearTimeout(timer);
+  }, [libraryQuery]);
   
   const askAiExplanation = async () => {
     if (!aiExplainQuestion.trim() || !curChapter) return;
@@ -414,10 +633,12 @@ export default function Home() {
         highContrast,
         sidebarDensity,
         mobileQuickSettings,
-        soundEnabled
+        soundEnabled,
+        profilePic,
+        customAccent
       }
     }, { merge: true }).catch(() => {});
-  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled]);
+  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled, profilePic, customAccent]);
 
   useEffect(() => {
     if (!user) return;
@@ -485,6 +706,8 @@ export default function Home() {
         if (prefs.sidebarDensity && (prefs.sidebarDensity === "comfortable" || prefs.sidebarDensity === "compact")) setSidebarDensity(prefs.sidebarDensity);
         if (typeof prefs.mobileQuickSettings === "boolean") setMobileQuickSettings(prefs.mobileQuickSettings);
         if (typeof prefs.soundEnabled === "boolean") setSoundEnabled(prefs.soundEnabled);
+        if (typeof prefs.profilePic === "string") setProfilePic(prefs.profilePic);
+        if (typeof prefs.customAccent === "string") setCustomAccent(prefs.customAccent);
       } else {
         setDoc(doc(db, "users", user.uid), { 
           completed: [], 
@@ -517,7 +740,9 @@ export default function Home() {
             highContrast,
             sidebarDensity,
             mobileQuickSettings,
-            soundEnabled
+            soundEnabled,
+            profilePic: "",
+            customAccent: ""
           }
         }, { merge: true });
         setUserXP(0);
@@ -613,21 +838,15 @@ export default function Home() {
   };
 
   const achievementCatalog = [
-    { id: "first_mastery", title: "Kickoff", description: "Master your first lesson.", metric: "completed", target: 1 },
-    { id: "five_masteries", title: "Builder", description: "Master 5 lessons.", metric: "completed", target: 5 },
-    { id: "twenty_masteries", title: "Deep Learner", description: "Master 20 lessons.", metric: "completed", target: 20 },
-    { id: "fifty_masteries", title: "Ace Scholar", description: "Master 50 lessons.", metric: "completed", target: 50 },
-    { id: "hundred_masteries", title: "Century Scholar", description: "Master 100 lessons.", metric: "completed", target: 100 },
-    { id: "streak_3", title: "Momentum", description: "Keep a 3-day learning streak.", metric: "streak", target: 3 },
-    { id: "streak_7", title: "Streak Engine", description: "Keep a 7-day learning streak.", metric: "streak", target: 7 },
-    { id: "streak_14", title: "Iron Routine", description: "Keep a 14-day learning streak.", metric: "streak", target: 14 },
-    { id: "streak_21", title: "Marathon Mind", description: "Keep a 21-day learning streak.", metric: "streak", target: 21 },
-    { id: "xp_1000", title: "XP Starter", description: "Reach 1,000 XP.", metric: "xp", target: 1000 },
-    { id: "xp_5000", title: "XP Engine", description: "Reach 5,000 XP.", metric: "xp", target: 5000 },
-    { id: "xp_10000", title: "XP Mythic", description: "Reach 10,000 XP.", metric: "xp", target: 10000 },
-    { id: "daily_goal_3", title: "Consistency", description: "Hit your daily goal on 3 days.", metric: "dailyGoalHits", target: 3 },
-    { id: "daily_goal_10", title: "Locked In", description: "Hit your daily goal on 10 days.", metric: "dailyGoalHits", target: 10 },
-    { id: "daily_goal_25", title: "Habit Architect", description: "Hit your daily goal on 25 days.", metric: "dailyGoalHits", target: 25 },
+    { id: "first_mastery", title: "Kickoff", description: "Master your first lesson.", metric: "completed", target: 1, rarity: "common" },
+    { id: "five_masteries", title: "Builder", description: "Master 5 lessons.", metric: "completed", target: 5, rarity: "rare"  },
+    { id: "twenty_masteries", title: "Deep Learner", description: "Master 20 lessons.", metric: "completed", target: 20, rarity: "epic"  },
+    { id: "fifty_masteries", title: "Ace Scholar", description: "Master 50 lessons.", metric: "completed", target: 50, rarity: "diamond"  },
+    { id: "streak_3", title: "Momentum", description: "Keep a 3-day learning streak.", metric: "streak", target: 3, rarity: "common"  },
+    { id: "streak_7", title: "Streak Engine", description: "Keep a 7-day learning streak.", metric: "streak", target: 7, rarity: "rare"  },
+    { id: "streak_21", title: "Marathon Mind", description: "Keep a 21-day learning streak.", metric: "streak", target: 21, rarity: "diamond"  },
+    { id: "xp_1000", title: "XP Starter", description: "Reach 1,000 XP.", metric: "xp", target: 1000, rarity: "rare"  },
+    { id: "xp_10000", title: "XP Mythic", description: "Reach 10,000 XP.", metric: "xp", target: 10000, rarity: "diamond"  },
   ];
 
   const getAchievementProgress = (
@@ -2275,33 +2494,36 @@ export default function Home() {
   const contrastClass = highContrast ? "contrast-high" : "contrast-normal";
   const densityClass = sidebarDensity === "compact" ? "density-compact" : "density-comfortable";
   const activeCustomTheme = customThemes.find((t) => t.id === uiTheme);
-  const customThemeVars = activeCustomTheme
-    ? (() => {
-        const bg = isHexColor(activeCustomTheme.background) ? activeCustomTheme.background : "#0f172a";
-        const primary = isHexColor(activeCustomTheme.primary) ? activeCustomTheme.primary : "#1e293b";
-        const accent = isHexColor(activeCustomTheme.accent) ? activeCustomTheme.accent : "#10b981";
-        const text = getContrastText(primary);
-        const muted = text === "#0f172a" ? "#475569" : "#94a3b8";
-        return {
-          "--bg": bg,
-          "--side": bg,
-          "--card": primary,
-          "--text": text,
-          "--muted": muted,
-          "--accent": accent,
-          "--accent-rgb": accentRgb,
-          "--accent-soft": `rgba(${accentRgb}, 0.15)`,
-          "--accent-grad": `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 80%, white))`,
-          "--brand-gradient": `linear-gradient(135deg, ${primary}, ${accent})`,
-          "--border": `rgba(${accentRgb}, 0.12)`,
-          "--input-bg": `rgba(${accentRgb}, 0.06)`,
-          "--danger": "#ef4444",
-          "--danger-rgb": "239,68,68",
-          "--warning": "#f59e0b",
-          "--info": accent,
-        } as Record<string, string>;
-      })()
-    : undefined;
+  const customThemeVars = useMemo(() => {
+    let baseVars: any = {};
+    if (activeCustomTheme) {
+       const bg = isHexColor(activeCustomTheme.background) ? activeCustomTheme.background : "#0f172a";
+       const primary = isHexColor(activeCustomTheme.primary) ? activeCustomTheme.primary : "#1e293b";
+       const accent = (customAccent && isHexColor(customAccent)) ? customAccent : (isHexColor(activeCustomTheme.accent) ? activeCustomTheme.accent : "#10b981");
+       const text = getContrastText(primary);
+       const muted = text === "#0f172a" ? "#475569" : "#94a3b8";
+       const accentRgb = hexToRgb(accent) || "16, 185, 129";
+       baseVars = {
+         "--bg": bg, "--side": bg, "--card": primary, "--text": text, "--muted": muted,
+         "--accent": accent, "--accent-rgb": accentRgb, "--accent-soft": `rgba(${accentRgb}, 0.15)`,
+         "--accent-grad": `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 80%, white))`,
+         "--brand-gradient": `linear-gradient(135deg, ${primary}, ${accent})`,
+         "--border": `rgba(${accentRgb}, 0.12)`, "--input-bg": `rgba(${accentRgb}, 0.06)`,
+         "--danger": "#ef4444", "--danger-rgb": "239,68,68", "--warning": "#f59e0b", "--info": accent,
+       };
+    } else if (customAccent && isHexColor(customAccent)) {
+       const accentRgb = hexToRgb(customAccent) || "16, 185, 129";
+       baseVars = {
+         "--accent": customAccent,
+         "--accent-rgb": accentRgb,
+         "--accent-soft": `rgba(${accentRgb}, 0.15)`,
+         "--accent-grad": `linear-gradient(135deg, ${customAccent}, color-mix(in oklab, ${customAccent} 80%, white))`,
+         "--border": `rgba(${accentRgb}, 0.12)`,
+         "--input-bg": `rgba(${accentRgb}, 0.06)`,
+       };
+    }
+    return baseVars;
+  }, [activeCustomTheme, customAccent]);
   useEffect(() => {
     if (!uiTheme) return;
     if (!hasThemeAccess(uiTheme)) {
@@ -2464,7 +2686,27 @@ export default function Home() {
     }
   };
 
-  if (loading) return <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#0f172a" : "#f8fafc", color: "var(--accent)", fontWeight: "900"}}>PAJJI LEARN...</div>;
+  if (loading) return (
+    <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#04140f", flexDirection: "column", gap: "24px"}}>
+      <motion.div
+        animate={{ opacity: [0.4, 1, 0.4] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{ fontSize: "28px", fontWeight: "900", letterSpacing: "-1px", fontFamily: "var(--font-syne)" }}
+      >
+        <span style={{ color: "#f8fafc" }}>PAJJI </span><span style={{ color: "#10b981" }}>LEARN</span>
+      </motion.div>
+      <div style={{ display: "flex", gap: "8px" }}>
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
+            style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   if (!user) {
     return (
@@ -2487,6 +2729,69 @@ export default function Home() {
 
   return (
     <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass} min-h-screen font-sans`} style={customThemeVars as any}>
+      <FloatingParticles />
+      <CursorTrail />
+
+      <AnimatePresence>
+        {isSpotlightOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 100000, display: "flex", justifyContent: "center", paddingTop: "100px" }}>
+            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} style={{ width: "90%", maxWidth: "600px", background: "var(--card)", borderRadius: "24px", border: "1px solid var(--border)", height: "fit-content", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
+                <Search size={20} color="var(--accent)" />
+                <input autoFocus placeholder="Jump to command, book or setting..." style={{ flex: 1, background: "transparent", border: "none", color: "white", fontSize: "16px", outline: "none" }} value={spotlightQuery} onChange={(e) => setSpotlightQuery(e.target.value)} />
+              </div>
+              <div style={{ maxHeight: "400px", overflowY: "auto", padding: "12px" }}>
+                {(() => {
+                  const items = books.flatMap(b => (b.chapters || []).map((c: any) => ({ ...c, bookTitle: b.title, bookId: b.id })));
+                  const filtered = items.filter(c => `${c.title} ${c.bookTitle}`.toLowerCase().includes(spotlightQuery.toLowerCase())).slice(0, 8);
+                  return filtered.map(c => (
+                    <div 
+                      key={c.id} 
+                      onClick={() => { openLesson(books.find((b: any) => b.id === c.bookId), c); setIsSpotlightOpen(false); }} 
+                      style={{ padding: "12px 16px", borderRadius: "12px", cursor: "pointer", display: "flex", justifyContent: "space-between" }} 
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--input-bg)"} 
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      <div>
+                        <div style={{ fontWeight: "700" }}>{c.title}</div>
+                        <div style={{ fontSize: "11px", color: "var(--muted)" }}>{c.bookTitle}</div>
+                      </div>
+                      <ChevronRight size={18} color="var(--muted)" />
+                    </div>
+                  ));
+                })()}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      <AnimatePresence>
+        {isZenMode && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "#04140f", zIndex: 99999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+          >
+            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="text-center">
+              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "white", letterSpacing: "-5px", fontFamily: "var(--font-syne)" }}>{formatTime(zenTime)}</h1>
+              <p style={{ color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "4px" }}>Focus Mode Active</p>
+              <button onClick={() => setIsZenMode(false)} className="btn btn-secondary" style={{ marginTop: "40px", padding: "12px 32px" }}>Exit Zen Mode (Z)</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.button 
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => { setView("dashboard"); }} // Or open AI directly
+        style={{ position: "fixed", bottom: "100px", right: "24px", width: "60px", height: "60px", borderRadius: "50%", background: "var(--accent-grad)", border: "none", zIndex: 1000, color: "white", display: "grid", placeItems: "center", boxShadow: "0 8px 32px rgba(var(--accent-rgb), 0.4)", cursor: "pointer" }}
+      >
+        <Zap size={28} />
+      </motion.button>
+
       <style>{`
         :root {
           --accent: #10b981;
@@ -2533,10 +2838,83 @@ export default function Home() {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .card:hover {
-          border-color: rgba(255, 255, 255, 0.2);
-          transform: translateY(-4px);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        .holographic-shine {
+          background: linear-gradient(135deg, 
+            transparent 0%, 
+            rgba(255,255,255,0.05) 45%, 
+            rgba(var(--accent-rgb), 0.2) 50%, 
+            rgba(255,255,255,0.05) 55%, 
+            transparent 100%);
+          background-size: 200% 200%;
+          animation: shine 4s linear infinite;
+        }
+        @keyframes shine {
+          0% { background-position: -200% -200%; }
+          100% { background-position: 200% 200%; }
+        }
+
+        .tilt-card {
+          transform-style: preserve-3d;
+          perspective: 1000px;
+        }
+
+        .power-up-card {
+          border: 1px solid var(--accent) !important;
+          box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
+          animation: power-up-glow 3s infinite alternate;
+        }
+
+        @keyframes power-up-glow {
+          from { box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1); }
+          to { box-shadow: 0 0 25px rgba(var(--accent-rgb), 0.35); }
+        }
+
+        @keyframes pulse {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.8); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+
+        .diamond-glow {
+          box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+          border: 1px solid rgba(0, 255, 255, 0.6) !important;
+          background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)) !important;
+        }
+        .epic-glow {
+          box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+          border: 1px solid rgba(168, 85, 247, 0.6) !important;
+        }
+        .common-glow { border: 1px solid var(--border) !important; }
+        .rare-glow { border: 1px solid var(--accent) !important; }
+
+        .diamond-glow {
+          box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+          border: 1px solid rgba(0, 255, 255, 0.6) !important;
+          background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0,0,0,0)) !important;
+        }
+        .epic-glow {
+          box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+          border: 1px solid rgba(168, 85, 247, 0.6) !important;
+        }
+
+        .streak-aura {
+          position: relative;
+        }
+        .streak-aura::after {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          background: var(--accent);
+          opacity: 0.4;
+          filter: blur(8px);
+          animation: aura-pulse 2s infinite;
+          z-index: -1;
+        }
+        @keyframes aura-pulse {
+          0% { transform: scale(1); opacity: 0.4; }
+          50% { transform: scale(1.3); opacity: 0.1; }
+          100% { transform: scale(1); opacity: 0.4; }
         }
 
         .nav-btn {
@@ -2594,6 +2972,19 @@ export default function Home() {
           .main-content { margin-left: 80px; padding: 24px; }
           .nav-btn { justify-content: center; padding: 12px; }
           .nav-btn svg { width: 24px; height: 24px; }
+        }
+        .theme-default {
+          --accent: #10b981;
+          --accent-rgb: 16, 185, 129;
+          --accent-soft: rgba(16, 185, 129, 0.15);
+          --accent-soft-strong: rgba(16, 185, 129, 0.3);
+          --accent-grad: linear-gradient(135deg, #10b981, #34d399);
+          --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
+          --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.25);
+          --info: #10b981;
+          --warning: #f59e0b;
+          --danger: #ef4444;
+          --danger-rgb: 239, 68, 68;
         }
         .theme-emoji {
           --accent: #f59e0b;
@@ -3160,28 +3551,32 @@ export default function Home() {
             <motion.div 
               whileHover={{ scale: 1.02 }}
               className="card" 
-              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)" }}
+              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "var(--accent-grad)", display: "grid", placeItems: "center" }}>
-                  <User size={20} color="white" />
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                <div className={streakCount >= 7 ? "streak-aura" : ""} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
+                  {profilePic ? (
+                    <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <User size={24} color="white" />
+                  )}
                 </div>
                 <div>
-                  <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.5, textTransform: "uppercase"}}>Lvl {userLevel}</p>
-                  <h3 style={{fontSize: "14px", fontWeight: "700"}}>{getUserName(user)}</h3>
+                  <p style={{fontSize: "10px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px"}}>Rank: {userLevel >= 10 ? "ELITE" : "NOVICE"}</p>
+                  <h3 style={{fontSize: "15px", fontWeight: "800"}}>{getUserName(user).split(' ')[0]}</h3>
                 </div>
               </div>
-              <div style={{height: "4px", background: "var(--border)", borderRadius: "10px", overflow: "hidden"}}>
+              <div style={{height: "6px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", position: "relative"}}>
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: `${(userXP % 500) / 5}%` }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                  style={{ height: "100%", background: "var(--accent-grad)" }}
+                  animate={{ width: `${(userXP % 1000) / 10}%` }}
+                  transition={{ duration: 1.5, type: "spring" }}
+                  style={{ height: "100%", background: "var(--accent-grad)", borderRadius: "10px" }}
                 />
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px" }}>
-                <p style={{fontSize: "10px", fontWeight: "700", opacity: 0.7}}>{userXP} XP</p>
-                <p style={{fontSize: "10px", fontWeight: "700", color: "var(--accent)"}}>Next: 500 XP</p>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
+                <p style={{fontSize: "11px", fontWeight: "800", opacity: 0.6}}>{userXP} XP</p>
+                <p style={{fontSize: "11px", fontWeight: "800", color: "var(--accent)"}}>Lvl {userLevel + 1}</p>
               </div>
             </motion.div>
         </div>
@@ -3217,7 +3612,47 @@ export default function Home() {
         </div>
       </motion.div>
 
-      <div className="main-content">
+      <div className="main-content" ref={mainContentRef}>
+        <div style={{ position: "fixed", top: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 1000, pointerEvents: "none" }}>
+          <motion.div 
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            style={{ 
+              background: "rgba(0,0,0,0.4)", 
+              backdropFilter: "blur(16px)", 
+              padding: "8px 20px", 
+              borderRadius: "100px", 
+              border: "1px solid var(--border)",
+              display: "flex",
+              gap: "24px",
+              alignItems: "center",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800" }}>
+              <Zap size={14} color="var(--accent)" />
+              <span style={{ color: "var(--accent)" }}>{sessionXP} XP SESSION</span>
+            </div>
+            <div style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800", color: "white" }}>
+              <Clock size={14} />
+              <span>{sessionTime} MINS STUDYING</span>
+            </div>
+            <div style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+               {[
+                 { id: "lofi", icon: <Volume2 size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+                 { id: "rain", icon: <Map size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
+               ].map(track => (
+                 <button key={track.id} onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)} style={{ background: "transparent", border: "none", color: activeAudio === track.url ? "var(--accent)" : "white", cursor: "pointer", display: "grid", placeItems: "center" }}>
+                   {track.icon}
+                 </button>
+               ))}
+            </div>
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 10px var(--accent)", animation: "pulse 2s infinite" }} />
+          </motion.div>
+          {activeAudio && <audio src={activeAudio} autoPlay loop style={{ display: "none" }} />}
+        </div>
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -3238,43 +3673,130 @@ export default function Home() {
         {view === "dashboard" && (
           <motion.div 
             key="dashboard"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="page-shell"
           >
             <header style={{marginBottom: "40px"}}>
-              <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="page-title">
-                Welcome back, {getUserName(user).split(' ')[0]}! ⚡
-              </motion.h1>
-              <p style={{ color: "var(--muted)", fontWeight: "500" }}>Your learning empire is waiting. What&apos;s the move today?</p>
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                <h1 className="page-title" style={{ marginBottom: "4px" }}>
+                  {greeting.text}, {getUserName(user).split(' ')[0]}! {greeting.emoji}
+                </h1>
+                <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8 }}>{quote}</p>
+              </motion.div>
             </header>
 
-            <div className="bento-grid" style={{ marginBottom: "40px" }}>
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+            <motion.div 
+              initial="hidden"
+              animate="show"
+              variants={{
+                show: { transition: { staggerChildren: 0.08 } }
+              }}
+              className="bento-grid" 
+              style={{ marginBottom: "40px" }}
+            >
+              <motion.div 
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                whileHover={{ y: -5 }} 
+                className="card" 
+                style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}
+              >
                 <div style={{ position: "absolute", top: "-10%", right: "-10%", opacity: 0.1 }}><Star size={120} fill="var(--accent)" color="var(--accent)" /></div>
                 <p style={{fontSize: "13px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px"}}>Level {userLevel}</p>
-                <h3 className="stat-value" style={{ marginTop: "12px", fontSize: "48px" }}>{userXP}</h3>
-                <p style={{fontSize: "14px", opacity: 0.5, fontWeight: "600"}}>Experience Points</p>
+                <h3 className="stat-value" style={{ marginTop: "12px", fontSize: "48px" }}>
+                  <AnimatedCounter value={userXP} />
+                </h3>
+                <div style={{height: "8px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", marginTop: "16px", marginBottom: "8px"}}>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(userXP % 1000) / 10}%` }}
+                      transition={{ duration: 1.5, type: "spring" }}
+                      style={{ height: "100%", background: "var(--accent-grad)" }}
+                    />
+                </div>
+                <p style={{fontSize: "12px", opacity: 0.5, fontWeight: "800"}}>{Math.max(0, 1000 - (userXP % 1000))} XP to Level {userLevel + 1}</p>
               </motion.div>
 
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}>
+              <motion.div 
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                whileHover={{ y: -5 }} 
+                className="card" 
+                style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
+              >
                 <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(59, 130, 246, 0.1)", display: "grid", placeItems: "center", color: "#3b82f6" }}><BookOpen size={28} /></div>
                 <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{completedLessons.length}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Mastered</p></div>
               </motion.div>
 
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}>
-                <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(245, 158, 11, 0.1)", display: "grid", placeItems: "center", color: "#f59e0b" }}><Flame size={28} /></div>
-                <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Streak</p></div>
+              <motion.div 
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                whileHover={{ y: -5 }} 
+                className="card" 
+                style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
+              >
+                <motion.div 
+                  animate={streakCount > 0 ? { scale: [1, 1.15, 1], filter: ["brightness(1)", "brightness(1.4)", "brightness(1)"] } : {}}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(245, 158, 11, 0.1)", display: "grid", placeItems: "center", color: "#f59e0b" }}
+                >
+                  <Flame size={28} />
+                </motion.div>
+                <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Streak {streakCount > 0 ? "🔥" : ""}</p></div>
               </motion.div>
 
-              <motion.div whileHover={{ y: -5 }} className="card" style={{ gridColumn: "span 8" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "800", marginBottom: "16px" }}>Daily Goal</h3>
-                <div style={{ position: "relative", height: "8px", background: "var(--input-bg)", borderRadius: "20px", overflow: "hidden" }}>
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${goalProgressPct}%` }} style={{ height: "100%", background: "var(--accent-grad)" }} />
+              <motion.div 
+                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                whileHover={{ y: -5 }} 
+                className="card" 
+                style={{ gridColumn: "span 8", display: "flex", alignItems: "center", gap: "32px", padding: "32px" }}
+              >
+                <div style={{ position: "relative", width: "80px", height: "80px", flexShrink: 0 }}>
+                  <svg style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
+                    <circle cx="40" cy="40" r="34" stroke="var(--input-bg)" strokeWidth="8" fill="transparent" />
+                    <motion.circle 
+                      cx="40" cy="40" r="34" stroke="var(--accent)" strokeWidth="8" fill="transparent" 
+                      strokeDasharray="213.6"
+                      initial={{ strokeDashoffset: 213.6 }}
+                      animate={{ strokeDashoffset: 213.6 * (1 - Math.min(1, goalProgressPct / 100)) }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", color: "var(--accent)" }}>
+                    {Math.round(goalProgressPct)}%
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Daily Goal</h3>
+                  <p style={{ color: "var(--muted)", fontSize: "14px", fontWeight: "500" }}>
+                    You&apos;ve completed {dailyCompleted} of {dailyGoal} lessons today. {goalProgressPct >= 100 ? "Goal smashed! 🏆" : "Keep pushing!"}
+                  </p>
                 </div>
               </motion.div>
-            </div>
+
+              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="card" style={{ gridColumn: "span 12" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  Consistency Grind <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "500" }}>Study activity over the last year</span>
+                </h3>
+                <div style={{ display: "flex", gap: "4px", overflowX: "auto", paddingBottom: "8px" }}>
+                  {heatmapData.map((week, weekIdx) => (
+                    <div key={weekIdx} style={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: "4px" }}>
+                      {week.map((active, dayIdx) => (
+                        <div 
+                          key={dayIdx} 
+                          style={{ 
+                            width: "12px", height: "12px", borderRadius: "2px", 
+                            background: active ? "var(--accent)" : "rgba(255,255,255,0.03)",
+                            opacity: active ? 1 : 1
+                          }} 
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
 
             {resumeLesson && (
               <motion.div 
@@ -3301,40 +3823,77 @@ export default function Home() {
             </div>
 
             <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px"}}>
-              {getUnmastered().slice(0, 4).map((ch, idx) => (
+              {recentPinnedPoints.length > 0 && (
                 <motion.div 
-                  key={ch.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px"}}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="card" style={{ border: "1px dashed var(--accent)", background: "var(--accent-soft)", display: "flex", flexDirection: "column", gap: "12px" }}
                 >
-                  <div style={{ flex: 1 }}>
-                      <p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px"}}>{ch.bookTitle}</p>
-                      <h3 style={{fontSize: "17px", fontWeight: "800"}}>{ch.title}</h3>
-                  </div>
-                  <button 
-                    onClick={() => openLesson(ch.parentBook, ch)} 
-                    style={{
-                      width: "48px", 
-                      height: "48px", 
-                      borderRadius: "14px", 
-                      background: "rgba(255,255,255,0.05)", 
-                      display: "grid", 
-                      placeItems: "center", 
-                      border: "1px solid transparent", 
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                      color: "white"
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.color = "var(--accent)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.color = "white"; }}
-                  >
-                    <ChevronRight size={24} />
-                  </button>
+                  <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase" }}>Memory Recall Pulse 🧠</p>
+                  <p style={{ fontSize: "14px", fontWeight: "700", lineStroke: "1.4" }}>&quot;{recentPinnedPoints[0].note.slice(0, 100)}...&quot;</p>
+                  <p style={{ fontSize: "12px", color: "var(--muted)" }}>Do you remember the core concepts of this? Try to explain it out loud.</p>
                 </motion.div>
-              ))}
-              {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", gridColumn: "1/-1", padding: "60px", opacity: 0.5}}>You&apos;ve mastered everything! Time for a boss level? 🏆</div>}
+              )}
+              {getUnmastered().slice(0, 4).map((ch, idx) => {
+                const isMastered = completedLessons.some(cl => cl.chapterId === ch.id);
+                return (
+                  <motion.div 
+                    key={ch.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    whileHover={{ scale: 1.02, rotateX: 5, rotateY: 5, z: 10 }}
+                    className={`card tilt-card ${isMastered ? "holographic-shine" : ""} ${idx === 0 ? "power-up-card" : ""}`} 
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center", 
+                      padding: "20px",
+                      position: "relative",
+                      overflow: "hidden"
+                    }}
+                  >
+                    {idx === 0 && (
+                      <div style={{ position: "absolute", top: "10px", right: "10px", background: "var(--accent-grad)", fontSize: "9px", fontWeight: "900", padding: "2px 6px", borderRadius: "4px", color: "white", zIndex: 10 }}>2X XP</div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                        <p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px"}}>{ch.bookTitle || "NEW LESSON"}</p>
+                        <h3 style={{fontSize: "17px", fontWeight: "800"}}>{ch.title}</h3>
+                    </div>
+                    <button 
+                      onClick={() => openLesson(ch.parentBook, ch)} 
+                      style={{
+                        width: "48px", 
+                        height: "48px", 
+                        borderRadius: "14px", 
+                        background: isMastered ? "var(--accent-grad)" : "rgba(255,255,255,0.05)", 
+                        display: "grid", 
+                        placeItems: "center", 
+                        border: "1px solid transparent", 
+                        cursor: "pointer",
+                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        color: "white"
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = "transparent"; }}
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </motion.div>
+                );
+              })}
+              {getUnmastered().length === 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="card" style={{textAlign: "center", gridColumn: "1/-1", padding: "60px"}}
+                >
+                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏆</div>
+                  <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "8px" }}>You&apos;ve mastered everything!</h3>
+                  <p style={{ color: "var(--muted)", fontSize: "14px" }}>All lessons conquered. Time for a boss level? 😎</p>
+                </motion.div>
+              )}
             </div>
             
             <h2 style={{fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800"}}>Achievements 🏅</h2>
@@ -3342,9 +3901,11 @@ export default function Home() {
               <p style={{fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px"}}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
               <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px"}}>
                 {achievementProgressList.map(a => (
-                  <div key={a.id} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
+                  <div key={a.id} className={a.unlocked ? `${a.rarity}-glow` : ""} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
                     <p style={{fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px"}}>
-                      <span>{a.title}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {a.rarity === "diamond" ? "💎" : a.rarity === "epic" ? "🔮" : "🏅"} {a.title}
+                      </span>
                       <span style={{fontSize: "10px", color: a.unlocked ? "var(--accent)" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
                     </p>
                     <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{a.description}</p>
@@ -3358,7 +3919,10 @@ export default function Home() {
                 ))}
               </div>
               {allUnlockedAchievementIds.length === 0 && (
-                <p style={{fontSize: "13px", color: "var(--muted)", marginTop: "10px"}}>No badges unlocked yet. Complete a lesson to get your first one.</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
+                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎯</div>
+                  <p style={{fontSize: "13px", color: "var(--muted)"}}>No badges unlocked yet. Complete a lesson to earn your first one!</p>
+                </motion.div>
               )}
               {nextAchievement && (
                 <div style={{marginTop: "16px", padding: "12px", border: "1px dashed var(--border)", borderRadius: "12px"}}>
@@ -3375,7 +3939,10 @@ export default function Home() {
                 <div style={{fontSize: "13px", color: "var(--muted)"}}>Weak lessons: <strong style={{color: "var(--text)"}}>{weakLessonIds.length}</strong></div>
               </div>
               {recentQuizAttempts.length === 0 ? (
-                <p style={{fontSize: "13px", color: "var(--muted)"}}>No attempts yet. Submit a quiz to start tracking.</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
+                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>📝</div>
+                  <p style={{fontSize: "13px", color: "var(--muted)"}}>No attempts yet. Submit a quiz to start tracking your progress!</p>
+                </motion.div>
               ) : (
                 <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
                   {recentQuizAttempts.map((a: any, idx: number) => (
@@ -3393,7 +3960,10 @@ export default function Home() {
             <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>Pinned Key Points</h2>
             <div className="card" style={{padding: "18px"}}>
               {recentPinnedPoints.length === 0 ? (
-                <p style={{fontSize: "13px", color: "var(--muted)"}}>No pinned points yet. Add them from lesson notes.</p>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
+                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>📌</div>
+                  <p style={{fontSize: "13px", color: "var(--muted)"}}>No pinned points yet. Pin key concepts from your lesson notes!</p>
+                </motion.div>
               ) : (
                 <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
                   {recentPinnedPoints.map((point) => {
@@ -3476,9 +4046,10 @@ export default function Home() {
         {view === "library" && (
           <motion.div 
             key="library"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: 30, scale: 0.98 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -20, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="page-shell"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
@@ -3510,9 +4081,10 @@ export default function Home() {
         {view === "leaderboard" && (
           <motion.div 
             key="leaderboard"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 30, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             style={{ maxWidth: "700px", margin: "0 auto" }}
           >
             <h1 className="page-title" style={{ textAlign: "center", marginBottom: "32px" }}>Hall of Fame 🏆</h1>
@@ -3541,33 +4113,54 @@ export default function Home() {
         {view === "settings" && (
           <motion.div 
             key="settings"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="page-shell" style={{ maxWidth: "600px" }}
           >
             <h1 className="page-title" style={{ marginBottom: "32px" }}>Preferences ⚙️</h1>
-            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-               <button onClick={() => setReduceMotion(!reduceMotion)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Zap size={20} />
-                    <span>Reduce Motion</span>
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <p style={{fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px"}}>Custom Profile</p>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <div style={{ width: "50px", height: "50px", borderRadius: "12px", background: "var(--accent-grad)", flexShrink: 0, overflow: "hidden" }}>
+                      {profilePic ? <img src={profilePic} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={24} style={{ margin: "13px" }} />}
+                    </div>
+                    <input type="text" placeholder="Avatar URL (https://...)" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} style={{ padding: "12px" }} />
                   </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{reduceMotion ? "ON" : "OFF"}</span>
-               </button>
-               <button onClick={() => setSoundEnabled(!soundEnabled)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Volume2 size={20} />
-                    <span>Victory Sounds</span>
+                </div>
+
+                <div>
+                  <p style={{fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px"}}>Custom Accent</p>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input type="color" value={customAccent || "#10b981"} onChange={(e) => setCustomAccent(e.target.value)} style={{ width: "50px", height: "50px", border: "none", background: "transparent", cursor: "pointer" }} />
+                    <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px" }} />
                   </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
-               </button>
-               <div style={{ height: "1px", background: "var(--border)", margin: "12px 0" }} />
-               <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
-                  <LogOut size={20} />
-                  <span>Terminate Session</span>
-               </button>
-            </div>
+                </div>
+
+                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+
+                <button onClick={() => setReduceMotion(!reduceMotion)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
+                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                     <Zap size={20} />
+                     <span>Reduce Motion</span>
+                   </div>
+                   <span style={{ color: "var(--accent)", fontWeight: "800" }}>{reduceMotion ? "ON" : "OFF"}</span>
+                </button>
+                <button onClick={() => setSoundEnabled(!soundEnabled)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
+                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                     <Volume2 size={20} />
+                     <span>Victory Sounds</span>
+                   </div>
+                   <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
+                </button>
+                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+                <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
+                   <LogOut size={20} />
+                   <span>Terminate Session</span>
+                </button>
+             </div>
 
             <div className="card" style={{ marginTop: "24px" }}>
               <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Theme Selection</h3>
@@ -3653,7 +4246,35 @@ export default function Home() {
                 )}
               </div>
             </div>
-            <h1 style={{fontSize: "24px", fontWeight: "900", marginBottom: "24px"}}>{curChapter.title}</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h1 style={{fontSize: "24px", fontWeight: "900"}}>{curChapter.title}</h1>
+              <button onClick={() => setIsSpeedReadOpen(true)} className="btn btn-secondary" style={{ padding: "8px 16px", borderRadius: "100px", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <Zap size={14} /> Blaze Mode
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {isSpeedReadOpen && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 1000000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                   <div style={{ fontSize: "64px", fontWeight: "900", color: "white", marginBottom: "40px", fontFamily: "var(--font-syne)", textAlign: "center", maxWidth: "80%" }}>
+                     {curChapter.summary?.split(/\s+/)[speedReadIndex] || "READY?"}
+                   </div>
+                   <div style={{ display: "flex", gap: "24px" }}>
+                     <button onClick={() => setIsSpeedReadOpen(false)} className="btn btn-secondary">Exit</button>
+                     <button onClick={() => setSpeedReadIndex(0)} className="btn btn-secondary">Reset</button>
+                     <button onClick={() => {
+                        const words = curChapter.summary?.split(/\s+/) || [];
+                        const timer = setInterval(() => {
+                          setSpeedReadIndex(idx => {
+                            if (idx >= words.length - 1) { clearInterval(timer); return idx; }
+                            return idx + 1;
+                          });
+                        }, 200); // 300 WPM
+                     }} className="btn btn-primary">Start</button>
+                   </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
                 {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                     <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
