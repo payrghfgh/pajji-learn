@@ -189,7 +189,7 @@ export default function Home() {
       setKonamiProgress(prev => {
         const next = [...prev, e.key].slice(-10);
         if (JSON.stringify(next) === JSON.stringify(konamiCode)) {
-          setTheme("nebula");
+          setUiTheme("nebula");
           setMasteryConfetti(true);
           setGodMode(true);
           return [];
@@ -3831,12 +3831,12 @@ export default function Home() {
                   className="card" style={{ border: "1px dashed var(--accent)", background: "var(--accent-soft)", display: "flex", flexDirection: "column", gap: "12px" }}
                 >
                   <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase" }}>Memory Recall Pulse 🧠</p>
-                  <p style={{ fontSize: "14px", fontWeight: "700", lineStroke: "1.4" }}>&quot;{recentPinnedPoints[0].note.slice(0, 100)}...&quot;</p>
+                  <p style={{ fontSize: "14px", fontWeight: "700", lineHeight: "1.4" }}>&quot;{recentPinnedPoints[0].text.slice(0, 100)}...&quot;</p>
                   <p style={{ fontSize: "12px", color: "var(--muted)" }}>Do you remember the core concepts of this? Try to explain it out loud.</p>
                 </motion.div>
               )}
               {getUnmastered().slice(0, 4).map((ch, idx) => {
-                const isMastered = completedLessons.some(cl => cl.chapterId === ch.id);
+                const isMastered = completedLessons.includes(ch.id);
                 return (
                   <motion.div 
                     key={ch.id}
