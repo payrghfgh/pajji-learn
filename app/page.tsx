@@ -2562,6 +2562,30 @@ export default function Home() {
     }
     return baseVars;
   }, [activeCustomTheme, customAccent]);
+
+  // Apply theme classes and custom variables to root for global impact
+  useEffect(() => {
+    const root = document.documentElement;
+    // Remove old theme classes
+    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "default"];
+    themes.forEach(t => root.classList.remove(`theme-${t}`));
+    root.classList.remove("dark", "light");
+    
+    // Add current theme classes
+    root.classList.add(uiThemeClass);
+    root.classList.add(theme);
+    
+    // Apply custom variables if existing
+    Object.entries(customThemeVars).forEach(([key, value]) => {
+      root.style.setProperty(key, value as string);
+    });
+    
+    // Cleanup custom variables if not in a custom theme
+    if (!activeCustomTheme && !customAccent) {
+      const varsToClear = ["--bg", "--side", "--card", "--text", "--muted", "--accent", "--accent-rgb", "--accent-soft", "--accent-grad", "--brand-gradient", "--border", "--input-bg"];
+      varsToClear.forEach(v => root.style.removeProperty(v));
+    }
+  }, [uiThemeClass, theme, customThemeVars, activeCustomTheme, customAccent]);
   useEffect(() => {
     if (!uiTheme) return;
     if (!hasThemeAccess(uiTheme)) {
@@ -2731,7 +2755,7 @@ export default function Home() {
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         style={{ fontSize: "28px", fontWeight: "900", letterSpacing: "-1px", fontFamily: "var(--font-syne)" }}
       >
-        <span style={{ color: "#f8fafc" }}>PAJJI </span><span style={{ color: "#10b981" }}>LEARN</span>
+        <span style={{ color: "var(--text)" }}>PAJJI </span><span style={{ color: "var(--accent)" }}>LEARN</span>
       </motion.div>
       <div style={{ display: "flex", gap: "8px" }}>
         {[0, 1, 2].map(i => (
@@ -2739,7 +2763,7 @@ export default function Home() {
             key={i}
             animate={{ scale: [1, 1.4, 1], opacity: [0.3, 1, 0.3] }}
             transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
-            style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981" }}
+            style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)" }}
           />
         ))}
       </div>
@@ -3236,6 +3260,55 @@ export default function Home() {
           --border: rgba(16, 185, 129, 0.16);
           --input-bg: #e6f8ef;
         }
+        .theme-f1 {
+          --accent: #e10600;
+          --accent-rgb: 225, 6, 0;
+          --accent-soft: rgba(225, 6, 0, 0.15);
+          --accent-grad: linear-gradient(135deg, #e10600, #ff1a1a);
+          --brand-gradient: linear-gradient(135deg, #a80400, #e10600);
+        }
+        .theme-liquid {
+          --accent: #3b82f6;
+          --accent-rgb: 59, 130, 246;
+          --accent-soft: rgba(59, 130, 246, 0.15);
+          --accent-grad: linear-gradient(135deg, #3b82f6, #60a5fa);
+          --brand-gradient: linear-gradient(135deg, #1d4ed8, #3b82f6);
+        }
+        .theme-amoled {
+          --accent: #10b981;
+          --accent-rgb: 16, 185, 129;
+          --accent-soft: rgba(16, 185, 129, 0.15);
+          --accent-grad: linear-gradient(135deg, #10b981, #34d399);
+          --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
+        }
+        .theme-paper {
+          --accent: #8f704a;
+          --accent-rgb: 143, 112, 74;
+          --accent-soft: rgba(143, 112, 74, 0.15);
+          --accent-grad: linear-gradient(135deg, #8f704a, #b5956c);
+          --brand-gradient: linear-gradient(135deg, #5c482f, #8f704a);
+        }
+        .theme-ocean {
+          --accent: #0ea5e9;
+          --accent-rgb: 14, 165, 233;
+          --accent-soft: rgba(14, 165, 233, 0.15);
+          --accent-grad: linear-gradient(135deg, #0ea5e9, #38bdf8);
+          --brand-gradient: linear-gradient(135deg, #0369a1, #0ea5e9);
+        }
+        .theme-sunset {
+          --accent: #f97316;
+          --accent-rgb: 249, 115, 22;
+          --accent-soft: rgba(249, 115, 22, 0.15);
+          --accent-grad: linear-gradient(135deg, #f97316, #fb923c);
+          --brand-gradient: linear-gradient(135deg, #c2410c, #f97316);
+        }
+        .theme-cyber {
+          --accent: #22d3ee;
+          --accent-rgb: 34, 211, 238;
+          --accent-soft: rgba(34, 211, 238, 0.15);
+          --accent-grad: linear-gradient(135deg, #22d3ee, #67e8f9);
+          --brand-gradient: linear-gradient(135deg, #0891b2, #22d3ee);
+        }
         .theme-f1.dark {
           --bg: #090909;
           --side: #101012;
@@ -3435,7 +3508,7 @@ export default function Home() {
           --input-bg: #e0f2fe;
         }
         
-        .app-container { display: flex; height: 100dvh; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; transition: 0.3s; overflow-x: hidden; }
+        .app-container { display: flex; height: 100dvh; background: transparent; color: var(--text); font-family: system-ui, sans-serif; transition: 0.5s; overflow-x: hidden; }
         .text-size-default { --font-scale: 1; }
         .text-size-compact { --font-scale: 0.94; }
         .text-size-large { --font-scale: 1.08; }
@@ -4647,7 +4720,7 @@ export default function Home() {
                                         Image preview failed. Use the link below.
                                       </div>
                                     )}
-                                    <a href={formatImageLink(q.imageUrl)} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "6px", fontSize: "12px", color: "#10b981", fontWeight: "700" }}>
+                                    <a href={formatImageLink(q.imageUrl)} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "6px", fontSize: "12px", color: "var(--accent)", fontWeight: "700" }}>
                                       Open image in new tab
                                     </a>
                                   </>
