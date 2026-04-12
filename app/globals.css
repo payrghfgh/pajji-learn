@@ -2,13 +2,50 @@
 
 @layer base {
   :root {
+    /* ── Dark mode defaults ── */
     --bg: #0a0a0b;
-    --text: #ffffff;
-    --accent: #10b981;
+    --side: #0f0f10;
     --card: #121214;
-    --border: rgba(255, 255, 255, 0.1);
-    
+    --text: #ffffff;
+    --muted: #94a3b8;
+    --accent: #10b981;
+    --accent-rgb: 16, 185, 129;
+    --accent-soft: rgba(16, 185, 129, 0.15);
+    --accent-grad: linear-gradient(135deg, #10b981, #34d399);
+    --brand-gradient: linear-gradient(135deg, #121214, #10b981);
+    --border: rgba(255, 255, 255, 0.08);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --danger: #ef4444;
+    --danger-rgb: 239, 68, 68;
+    --warning: #f59e0b;
+    --info: #10b981;
+
     /* Mapping legacy names */
+    --background: var(--bg);
+    --foreground: var(--text);
+  }
+
+  /* ── Light mode overrides ── */
+  html.light {
+    --bg: #f0f4f8;
+    --side: #e8edf3;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #059669;
+    --accent-rgb: 5, 150, 105;
+    --accent-soft: rgba(5, 150, 105, 0.12);
+    --accent-grad: linear-gradient(135deg, #059669, #10b981);
+    --brand-gradient: linear-gradient(135deg, #e8edf3, #10b981);
+    --border: rgba(15, 23, 42, 0.2);
+    --input-bg: rgba(15, 23, 42, 0.08);
+    --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    --danger: #dc2626;
+    --danger-rgb: 220, 38, 38;
+    --warning: #d97706;
+    --info: #059669;
+
     --background: var(--bg);
     --foreground: var(--text);
   }
@@ -44,11 +81,22 @@
 
 @layer utilities {
   .glass {
-    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+    background: var(--input-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
   }
   
   .glass-card {
-    @apply bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl transition-all duration-300 hover:border-white/20;
+    background: var(--card);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.15);
   }
 
   .text-glow {

@@ -26,7 +26,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${syne.variable}`}>
-      <body className="font-sans antialiased text-white">
+      <body className="font-sans antialiased" style={{ color: "var(--text)", backgroundColor: "var(--bg)" }}>
         <PremiumBackground />
         <main className="relative z-0 min-h-screen">
           {children}

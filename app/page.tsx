@@ -2806,7 +2806,7 @@ function AppContent() {
   };
 
   if (loading) return (
-    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#04140f", flexDirection: "column", gap: "24px" }}>
+    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", flexDirection: "column", gap: "24px" }}>
       <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
@@ -2906,10 +2906,10 @@ function AppContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ position: "fixed", inset: 0, background: "#04140f", zIndex: 99999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+            style={{ position: "fixed", inset: 0, background: "var(--bg)", zIndex: 99999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
           >
             <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="text-center">
-              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "white", letterSpacing: "-5px", fontFamily: "var(--font-syne)" }}>{formatTime(zenTime)}</h1>
+              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "var(--text)", letterSpacing: "-5px", fontFamily: "var(--font-syne)" }}>{formatTime(zenTime)}</h1>
               <p style={{ color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "4px" }}>Focus Mode Active</p>
               <button onClick={() => setIsZenMode(false)} className="btn btn-secondary" style={{ marginTop: "40px", padding: "12px 32px" }}>Exit Zen Mode (Z)</button>
             </motion.div>
@@ -2928,13 +2928,6 @@ function AppContent() {
 
       <style>{`
         :root {
-          --accent: #10b981;
-          --accent-rgb: 16, 185, 129;
-          --accent-soft: rgba(16, 185, 129, 0.15);
-          --accent-grad: linear-gradient(135deg, #10b981, #34d399);
-          --card: rgba(18, 18, 20, 0.7);
-          --border: rgba(255, 255, 255, 0.08);
-          --side: rgba(10, 10, 12, 0.95);
           --font-main: 'Outfit', sans-serif;
           --font-heading: 'Syne', sans-serif;
         }
@@ -2942,7 +2935,7 @@ function AppContent() {
         body {
           font-family: var(--font-main);
           letter-spacing: -0.01em;
-          background: #050505;
+          background: var(--bg);
         }
 
         .syne-heading {
@@ -3076,7 +3069,7 @@ function AppContent() {
 
         .card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--accent-rgb), 0.2);
+          box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(var(--accent-rgb), 0.2);
           border-color: rgba(var(--accent-rgb), 0.4);
         }
 
@@ -3216,7 +3209,7 @@ function AppContent() {
           gap: 12px;
           padding: 12px 16px;
           border-radius: 14px;
-          color: rgba(255, 255, 255, 0.6);
+          color: var(--muted);
           transition: all 0.2s;
           font-weight: 600;
           border: none;
@@ -3227,8 +3220,8 @@ function AppContent() {
         }
 
         .nav-btn:hover {
-          background: rgba(255, 255, 255, 0.05);
-          color: white;
+          background: var(--input-bg);
+          color: var(--text);
         }
 
         .nav-btn.active {
@@ -4024,7 +4017,7 @@ function AppContent() {
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "800" }}>
               <div style={{ background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>LVL {userLevel}</div>
               {leaderboard.length > 0 && user && (
-                <div style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>
+                <div style={{ background: "var(--input-bg)", color: "var(--text)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>
                   #{leaderboard.sort((a, b) => (b.xp || 0) - (a.xp || 0)).findIndex(p => p.uid === user.uid) + 1}
                 </div>
               )}
@@ -4089,7 +4082,7 @@ function AppContent() {
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <div style={{ fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)" }}>{userXP} XP</div>
             {mobileQuickSettings && (
-              <button onClick={() => setView("settings")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px" }}>
+              <button onClick={() => setView("settings")} style={{ background: "var(--input-bg)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px", color: "var(--text)", cursor: "pointer" }}>
                 <Settings size={18} />
               </button>
             )}
@@ -4108,7 +4101,7 @@ function AppContent() {
             >
               <header style={{ marginBottom: "40px", textAlign: "left" }}>
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                  <h1 className="page-title syne-heading" style={{ marginBottom: "8px", fontSize: "min(36px, 8vw)", lineHeight: "1", color: "white" }}>
+                  <h1 className="page-title syne-heading" style={{ marginBottom: "8px", fontSize: "min(36px, 8vw)", lineHeight: "1", color: "var(--text)" }}>
                     {greeting.text},<br/>{getUserName(user).split(' ')[0]}! {greeting.emoji}
                   </h1>
                   <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8, maxWidth: "400px" }}>{quote}</p>
@@ -4216,7 +4209,7 @@ function AppContent() {
                             key={dayIdx}
                             style={{
                               width: "12px", height: "12px", borderRadius: "3.5px",
-                              background: count >= 4 ? "var(--accent)" : count >= 1 ? "rgba(var(--accent-rgb), 0.45)" : "rgba(255,255,255,0.04)",
+                              background: count >= 4 ? "var(--accent)" : count >= 3 ? `rgba(var(--accent-rgb), 0.6)` : count >= 2 ? `rgba(var(--accent-rgb), 0.4)` : count >= 1 ? `rgba(var(--accent-rgb), 0.25)` : "var(--border)",
                               transition: "all 0.3s ease",
                               boxShadow: count >= 4 ? "0 0 10px rgba(var(--accent-rgb), 0.3)" : "none"
                             }}
@@ -4297,13 +4290,13 @@ function AppContent() {
                           width: "48px",
                           height: "48px",
                           borderRadius: "14px",
-                          background: isMastered ? "var(--accent-grad)" : "rgba(255,255,255,0.05)",
+                          background: isMastered ? "var(--accent-grad)" : "var(--input-bg)",
                           display: "grid",
                           placeItems: "center",
                           border: "1px solid transparent",
                           cursor: "pointer",
                           transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                          color: "white"
+                          color: isMastered ? "white" : "var(--text)"
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = "transparent"; }}
@@ -4557,7 +4550,7 @@ function AppContent() {
                     <div style={{ width: "50px", height: "50px", borderRadius: "12px", background: "var(--accent-grad)", flexShrink: 0, overflow: "hidden" }}>
                       {profilePic ? <img src={profilePic} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={24} style={{ margin: "13px" }} />}
                     </div>
-                    <input type="text" placeholder="Avatar URL (https://...)" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} style={{ padding: "12px" }} />
+                    <input type="text" placeholder="Avatar URL (https://...)" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
                   </div>
                 </div>
 
@@ -4565,7 +4558,7 @@ function AppContent() {
                   <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Custom Accent</p>
                   <div style={{ display: "flex", gap: "12px" }}>
                     <input type="color" value={customAccent || "#10b981"} onChange={(e) => setCustomAccent(e.target.value)} style={{ width: "50px", height: "50px", border: "none", background: "transparent", cursor: "pointer" }} />
-                    <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px" }} />
+                     <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
                   </div>
                 </div>
 
