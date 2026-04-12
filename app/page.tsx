@@ -1,20 +1,20 @@
 "use client";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring } from "framer-motion";
-import { 
-  Trophy, BookOpen, Zap, Settings, Flame, 
+import {
+  Trophy, BookOpen, Zap, Settings, Flame,
   ChevronRight, Search, Plus, Star, Map,
   Clock, CheckCircle2, AlertCircle, FileText,
   MessageSquare, LayoutDashboard, LogOut, User, Volume2
 } from "lucide-react";
 import { initializeApp, getApps } from "firebase/app";
-import { 
-  getFirestore, doc, onSnapshot, setDoc, getDoc, 
-  updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, limit, getDocs 
+import {
+  getFirestore, doc, onSnapshot, setDoc, getDoc,
+  updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, limit, getDocs
 } from "firebase/firestore";
-import { 
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
-  signInAnonymously, onAuthStateChanged, signOut 
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signInAnonymously, onAuthStateChanged, signOut
 } from "firebase/auth";
 
 // --- FIREBASE CONFIG ---
@@ -71,15 +71,15 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
-  
+
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
   const [leaderboardMode, setLeaderboardMode] = useState<"all" | "weekly">("all");
-  
+
   const [loading, setLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(true); 
+  const [dataLoading, setDataLoading] = useState(true);
   const [view, setView] = useState("dashboard");
   const [curBook, setCurBook] = useState<any>(null);
   const [curChapter, setCurChapter] = useState<any>(null);
@@ -174,20 +174,20 @@ export default function Home() {
 
   // Keyboard Easter Eggs + Zen
   useEffect(() => {
-    const konamiCode = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];
+    const konamiCode = ["p", "a", "j", "j", "i"];
     const handler = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
-      
+
       if (e.key.toLowerCase() === "z") setIsZenMode(!isZenMode);
       if (e.key.toLowerCase() === "c") { setMasteryConfetti(true); setTimeout(() => setMasteryConfetti(false), 3000); }
       if (e.key.toLowerCase() === "f") setFireworksMode(!fireworksMode);
-      if (e.key.toLowerCase() === "q") window.location.reload(); 
+      if (e.key.toLowerCase() === "q") window.location.reload();
       if (e.key.toLowerCase() === "g") setGodMode(!godMode);
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setIsSpotlightOpen(true); }
       if (e.key === "Escape") { setIsSpotlightOpen(false); setIsSpeedReadOpen(false); }
-      
+
       setKonamiProgress(prev => {
-        const next = [...prev, e.key].slice(-10);
+        const next = [...prev, e.key.toLowerCase()].slice(-5);
         if (JSON.stringify(next) === JSON.stringify(konamiCode)) {
           setUiTheme("nebula");
           setMasteryConfetti(true);
@@ -210,10 +210,10 @@ export default function Home() {
       return () => window.removeEventListener("mousemove", move);
     }, []);
     return (
-      <motion.div 
-        style={{ 
-          position: "fixed", top: -20, left: -20, width: 40, height: 40, 
-          borderRadius: "50%", background: "var(--accent)", opacity: 0.15, 
+      <motion.div
+        style={{
+          position: "fixed", top: -20, left: -20, width: 40, height: 40,
+          borderRadius: "50%", background: "var(--accent)", opacity: 0.15,
           filter: "blur(20px)", pointerEvents: "none", zIndex: 9999,
           x: useSpring(mouse.x, { damping: 20, stiffness: 200 }),
           y: useSpring(mouse.y, { damping: 20, stiffness: 200 })
@@ -289,10 +289,10 @@ export default function Home() {
       {[...Array(12)].map((_, i) => (
         <motion.div
           key={i}
-          initial={{ 
-            x: Math.random() * 100 + "%", 
-            y: Math.random() * 100 + "%", 
-            opacity: 0.1 
+          initial={{
+            x: Math.random() * 100 + "%",
+            y: Math.random() * 100 + "%",
+            opacity: 0.1
           }}
           animate={{
             y: [null, "-20%", "120%"],
@@ -352,7 +352,7 @@ export default function Home() {
     const timer = setTimeout(() => setDebouncedLibraryQuery(libraryQuery), 250);
     return () => clearTimeout(timer);
   }, [libraryQuery]);
-  
+
   const askAiExplanation = async () => {
     if (!aiExplainQuestion.trim() || !curChapter) return;
     setAiExplainLoading(true);
@@ -456,7 +456,7 @@ export default function Home() {
       const stopWords = ["what", "is", "the", "who", "why", "how", "when", "where", "a", "an", "of", "to", "in", "for", "with", "on", "do", "does", "are", "tell", "me", "about", "describe", "explain"];
       const questionWords = lowerQ.replace(/[?!.]/g, "").split(" ");
       const searchTerms = questionWords.filter((w: string) => !stopWords.includes(w) && w.length > 2);
-      
+
       if (searchTerms.length > 0) {
         const searchQuery = searchTerms.join(" ");
         const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&srlimit=1`);
@@ -545,7 +545,7 @@ export default function Home() {
       setUser(currentUser);
       const canonicalEmail = toCanonicalEmail(`${currentUser?.email || ""}`);
       setIsOwner(ADMIN_EMAILS.has(canonicalEmail));
-      
+
       if (!currentUser) {
         setBooks([]);
         setCompletedLessons([]);
@@ -637,12 +637,12 @@ export default function Home() {
         profilePic,
         customAccent
       }
-    }, { merge: true }).catch(() => {});
+    }, { merge: true }).catch(() => { });
   }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled, profilePic, customAccent]);
 
   useEffect(() => {
     if (!user) return;
-    
+
     const unsubBooks = onSnapshot(doc(db, "data", "pajji_database"), (ds) => {
       if (ds.exists()) {
         const root = ds.data() || {};
@@ -709,9 +709,9 @@ export default function Home() {
         if (typeof prefs.profilePic === "string") setProfilePic(prefs.profilePic);
         if (typeof prefs.customAccent === "string") setCustomAccent(prefs.customAccent);
       } else {
-        setDoc(doc(db, "users", user.uid), { 
-          completed: [], 
-          email: user.email || "guest", 
+        setDoc(doc(db, "users", user.uid), {
+          completed: [],
+          email: user.email || "guest",
           xp: 0,
           lastLesson: null,
           streakCount: 0,
@@ -834,19 +834,19 @@ export default function Home() {
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
       osc.start(now);
       osc.stop(now + 0.24);
-    } catch {}
+    } catch { }
   };
 
   const achievementCatalog = [
     { id: "first_mastery", title: "Kickoff", description: "Master your first lesson.", metric: "completed", target: 1, rarity: "common" },
-    { id: "five_masteries", title: "Builder", description: "Master 5 lessons.", metric: "completed", target: 5, rarity: "rare"  },
-    { id: "twenty_masteries", title: "Deep Learner", description: "Master 20 lessons.", metric: "completed", target: 20, rarity: "epic"  },
-    { id: "fifty_masteries", title: "Ace Scholar", description: "Master 50 lessons.", metric: "completed", target: 50, rarity: "diamond"  },
-    { id: "streak_3", title: "Momentum", description: "Keep a 3-day learning streak.", metric: "streak", target: 3, rarity: "common"  },
-    { id: "streak_7", title: "Streak Engine", description: "Keep a 7-day learning streak.", metric: "streak", target: 7, rarity: "rare"  },
-    { id: "streak_21", title: "Marathon Mind", description: "Keep a 21-day learning streak.", metric: "streak", target: 21, rarity: "diamond"  },
-    { id: "xp_1000", title: "XP Starter", description: "Reach 1,000 XP.", metric: "xp", target: 1000, rarity: "rare"  },
-    { id: "xp_10000", title: "XP Mythic", description: "Reach 10,000 XP.", metric: "xp", target: 10000, rarity: "diamond"  },
+    { id: "five_masteries", title: "Builder", description: "Master 5 lessons.", metric: "completed", target: 5, rarity: "rare" },
+    { id: "twenty_masteries", title: "Deep Learner", description: "Master 20 lessons.", metric: "completed", target: 20, rarity: "epic" },
+    { id: "fifty_masteries", title: "Ace Scholar", description: "Master 50 lessons.", metric: "completed", target: 50, rarity: "diamond" },
+    { id: "streak_3", title: "Momentum", description: "Keep a 3-day learning streak.", metric: "streak", target: 3, rarity: "common" },
+    { id: "streak_7", title: "Streak Engine", description: "Keep a 7-day learning streak.", metric: "streak", target: 7, rarity: "rare" },
+    { id: "streak_21", title: "Marathon Mind", description: "Keep a 21-day learning streak.", metric: "streak", target: 21, rarity: "diamond" },
+    { id: "xp_1000", title: "XP Starter", description: "Reach 1,000 XP.", metric: "xp", target: 1000, rarity: "rare" },
+    { id: "xp_10000", title: "XP Mythic", description: "Reach 10,000 XP.", metric: "xp", target: 10000, rarity: "diamond" },
   ];
 
   const getAchievementProgress = (
@@ -1017,7 +1017,8 @@ export default function Home() {
 
   const handleGuestLogin = async () => {
     setLoading(true);
-    try { await signInAnonymously(auth);
+    try {
+      await signInAnonymously(auth);
     } catch (err: any) { alert(err.message); setLoading(false); }
   };
 
@@ -1025,16 +1026,16 @@ export default function Home() {
     if (!tempChapter || !isOwner || !curBook) return;
     if (!silent) setSaveStatus("Syncing...");
     try {
-        const newList = books.map(b => 
-            b.id === curBook.id 
-            ? { ...b, chapters: b.chapters.map((c: any) => c.id === tempChapter.id ? tempChapter : c) } 
-            : b
-        );
-        await setDoc(doc(db, "data", "pajji_database"), { books: newList });
-        if (!silent) {
-          setSaveStatus("Saved");
-          setTimeout(() => setSaveStatus(""), 2000);
-        }
+      const newList = books.map(b =>
+        b.id === curBook.id
+          ? { ...b, chapters: b.chapters.map((c: any) => c.id === tempChapter.id ? tempChapter : c) }
+          : b
+      );
+      await setDoc(doc(db, "data", "pajji_database"), { books: newList });
+      if (!silent) {
+        setSaveStatus("Saved");
+        setTimeout(() => setSaveStatus(""), 2000);
+      }
     } catch (e) {
       if (!silent) setSaveStatus("Error");
     }
@@ -1043,20 +1044,20 @@ export default function Home() {
   const deleteItem = async (type: 'book' | 'lesson', id: string) => {
     if (!isOwner || !confirm(`Delete ${type}?`)) return;
     try {
-        let newList = type === 'book' ?
+      let newList = type === 'book' ?
         books.filter(b => b.id !== id) : books.map(b => b.id === curBook.id ? { ...b, chapters: b.chapters.filter((c: any) => c.id !== id) } : b);
-        if(type === 'book') setView("library");
-        await setDoc(doc(db, "data", "pajji_database"), { books: newList });
-        setSaveStatus("Deleted");
+      if (type === 'book') setView("library");
+      await setDoc(doc(db, "data", "pajji_database"), { books: newList });
+      setSaveStatus("Deleted");
     } catch (e) { alert("Error deleting."); }
   };
 
   const formatYoutubeLink = (url: string) => {
     if (!url) return "";
     try {
-        let vid = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.includes("youtu.be/") ?
+      let vid = url.includes("v=") ? url.split("v=")[1].split("&")[0] : url.includes("youtu.be/") ?
         url.split("youtu.be/")[1].split("?")[0] : url.includes("shorts/") ? url.split("shorts/")[1].split("?")[0] : "";
-        return vid ? `https://www.youtube.com/embed/${vid}` : url;
+      return vid ? `https://www.youtube.com/embed/${vid}` : url;
     } catch (e) { return url; }
   };
 
@@ -1181,14 +1182,14 @@ export default function Home() {
     const title = prompt("Lesson Title?");
     if (!title || !curBook) return;
     const newLesson = { id: Date.now().toString(), title, summary: "", spellings: "", video: "", slides: "", bookPdf: "", audioBook: "", infographic: "", mindMap: "", quiz: [] };
-    const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...(b.chapters || []), newLesson] } : b );
+    const updatedBooks = books.map(b => b.id === curBook.id ? { ...b, chapters: [...(b.chapters || []), newLesson] } : b);
     await setDoc(doc(db, "data", "pajji_database"), { books: updatedBooks });
   };
 
   const getUnmastered = () => {
     let unmastered: any[] = [];
     books.forEach(book => book.chapters?.forEach((ch: any) => {
-        if (!completedLessons.includes(ch.id)) unmastered.push({ ...ch, bookTitle: book.title, parentBook: book });
+      if (!completedLessons.includes(ch.id)) unmastered.push({ ...ch, bookTitle: book.title, parentBook: book });
     }));
     return unmastered;
   };
@@ -2387,10 +2388,10 @@ export default function Home() {
   const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
   const userLevel = Math.floor(userXP / 500) + 1;
 
-  const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
-  const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
-  const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>;
-  const IconSettings = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a1 1 0 0 1 .97.757l.26 1.04a7.97 7.97 0 0 1 1.8.75l.92-.54a1 1 0 0 1 1.23.17l1.41 1.41a1 1 0 0 1 .17 1.23l-.54.92c.31.57.56 1.17.75 1.8l1.04.26A1 1 0 0 1 21 12a1 1 0 0 1-.76.97l-1.03.26a7.97 7.97 0 0 1-.75 1.8l.54.92a1 1 0 0 1-.17 1.23l-1.41 1.41a1 1 0 0 1-1.23.17l-.92-.54a7.97 7.97 0 0 1-1.8.75l-.26 1.04A1 1 0 0 1 12 21a1 1 0 0 1-.97-.76l-.26-1.03a7.97 7.97 0 0 1-1.8-.75l-.92.54a1 1 0 0 1-1.23-.17l-1.41-1.41a1 1 0 0 1-.17-1.23l.54-.92a7.97 7.97 0 0 1-.75-1.8l-1.04-.26A1 1 0 0 1 3 12a1 1 0 0 1 .76-.97l1.03-.26c.19-.63.44-1.23.75-1.8l-.54-.92a1 1 0 0 1 .17-1.23l1.41-1.41a1 1 0 0 1 1.23-.17l.92.54c.57-.31 1.17-.56 1.8-.75l.26-1.04A1 1 0 0 1 12 3z"/><circle cx="12" cy="12" r="3.2"/></svg>;
+  const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
+  const IconBook = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>;
+  const IconTrophy = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>;
+  const IconSettings = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a1 1 0 0 1 .97.757l.26 1.04a7.97 7.97 0 0 1 1.8.75l.92-.54a1 1 0 0 1 1.23.17l1.41 1.41a1 1 0 0 1 .17 1.23l-.54.92c.31.57.56 1.17.75 1.8l1.04.26A1 1 0 0 1 21 12a1 1 0 0 1-.76.97l-1.03.26a7.97 7.97 0 0 1-.75 1.8l.54.92a1 1 0 0 1-.17 1.23l-1.41 1.41a1 1 0 0 1-1.23.17l-.92-.54a7.97 7.97 0 0 1-1.8.75l-.26 1.04A1 1 0 0 1 12 21a1 1 0 0 1-.97-.76l-.26-1.03a7.97 7.97 0 0 1-1.8-.75l-.92.54a1 1 0 0 1-1.23-.17l-1.41-1.41a1 1 0 0 1-.17-1.23l.54-.92a7.97 7.97 0 0 1-.75-1.8l-1.04-.26A1 1 0 0 1 3 12a1 1 0 0 1 .76-.97l1.03-.26c.19-.63.44-1.23.75-1.8l-.54-.92a1 1 0 0 1 .17-1.23l1.41-1.41a1 1 0 0 1 1.23-.17l.92.54c.57-.31 1.17-.56 1.8-.75l.26-1.04A1 1 0 0 1 12 3z" /><circle cx="12" cy="12" r="3.2" /></svg>;
 
   const isHexColor = (value: string) => /^#([0-9a-fA-F]{6})$/.test(value || "");
   const hexToRgb = (hex: string) => {
@@ -2480,15 +2481,15 @@ export default function Home() {
                 ? "theme-cyber"
                 : uiTheme === "emoji"
                   ? "theme-emoji"
-                : uiTheme === "nebula"
-                  ? "theme-nebula"
-                  : uiTheme === "emerald"
-                    ? "theme-emerald"
-                    : uiTheme === "arctic"
-                      ? "theme-arctic"
-                : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
-                  ? "theme-custom"
-                  : "theme-default";
+                  : uiTheme === "nebula"
+                    ? "theme-nebula"
+                    : uiTheme === "emerald"
+                      ? "theme-emerald"
+                      : uiTheme === "arctic"
+                        ? "theme-arctic"
+                        : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
+                          ? "theme-custom"
+                          : "theme-default";
   const textSizeClass = textSize === "compact" ? "text-size-compact" : textSize === "large" ? "text-size-large" : "text-size-default";
   const motionClass = reduceMotion ? "motion-reduced" : "motion-normal";
   const contrastClass = highContrast ? "contrast-high" : "contrast-normal";
@@ -2497,30 +2498,30 @@ export default function Home() {
   const customThemeVars = useMemo(() => {
     let baseVars: any = {};
     if (activeCustomTheme) {
-       const bg = isHexColor(activeCustomTheme.background) ? activeCustomTheme.background : "#0f172a";
-       const primary = isHexColor(activeCustomTheme.primary) ? activeCustomTheme.primary : "#1e293b";
-       const accent = (customAccent && isHexColor(customAccent)) ? customAccent : (isHexColor(activeCustomTheme.accent) ? activeCustomTheme.accent : "#10b981");
-       const text = getContrastText(primary);
-       const muted = text === "#0f172a" ? "#475569" : "#94a3b8";
-       const accentRgb = hexToRgb(accent) || "16, 185, 129";
-       baseVars = {
-         "--bg": bg, "--side": bg, "--card": primary, "--text": text, "--muted": muted,
-         "--accent": accent, "--accent-rgb": accentRgb, "--accent-soft": `rgba(${accentRgb}, 0.15)`,
-         "--accent-grad": `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 80%, white))`,
-         "--brand-gradient": `linear-gradient(135deg, ${primary}, ${accent})`,
-         "--border": `rgba(${accentRgb}, 0.12)`, "--input-bg": `rgba(${accentRgb}, 0.06)`,
-         "--danger": "#ef4444", "--danger-rgb": "239,68,68", "--warning": "#f59e0b", "--info": accent,
-       };
+      const bg = isHexColor(activeCustomTheme.background) ? activeCustomTheme.background : "#0f172a";
+      const primary = isHexColor(activeCustomTheme.primary) ? activeCustomTheme.primary : "#1e293b";
+      const accent = (customAccent && isHexColor(customAccent)) ? customAccent : (isHexColor(activeCustomTheme.accent) ? activeCustomTheme.accent : "#10b981");
+      const text = getContrastText(primary);
+      const muted = text === "#0f172a" ? "#475569" : "#94a3b8";
+      const accentRgb = hexToRgb(accent) || "16, 185, 129";
+      baseVars = {
+        "--bg": bg, "--side": bg, "--card": primary, "--text": text, "--muted": muted,
+        "--accent": accent, "--accent-rgb": accentRgb, "--accent-soft": `rgba(${accentRgb}, 0.15)`,
+        "--accent-grad": `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 80%, white))`,
+        "--brand-gradient": `linear-gradient(135deg, ${primary}, ${accent})`,
+        "--border": `rgba(${accentRgb}, 0.12)`, "--input-bg": `rgba(${accentRgb}, 0.06)`,
+        "--danger": "#ef4444", "--danger-rgb": "239,68,68", "--warning": "#f59e0b", "--info": accent,
+      };
     } else if (customAccent && isHexColor(customAccent)) {
-       const accentRgb = hexToRgb(customAccent) || "16, 185, 129";
-       baseVars = {
-         "--accent": customAccent,
-         "--accent-rgb": accentRgb,
-         "--accent-soft": `rgba(${accentRgb}, 0.15)`,
-         "--accent-grad": `linear-gradient(135deg, ${customAccent}, color-mix(in oklab, ${customAccent} 80%, white))`,
-         "--border": `rgba(${accentRgb}, 0.12)`,
-         "--input-bg": `rgba(${accentRgb}, 0.06)`,
-       };
+      const accentRgb = hexToRgb(customAccent) || "16, 185, 129";
+      baseVars = {
+        "--accent": customAccent,
+        "--accent-rgb": accentRgb,
+        "--accent-soft": `rgba(${accentRgb}, 0.15)`,
+        "--accent-grad": `linear-gradient(135deg, ${customAccent}, color-mix(in oklab, ${customAccent} 80%, white))`,
+        "--border": `rgba(${accentRgb}, 0.12)`,
+        "--input-bg": `rgba(${accentRgb}, 0.06)`,
+      };
     }
     return baseVars;
   }, [activeCustomTheme, customAccent]);
@@ -2687,7 +2688,7 @@ export default function Home() {
   };
 
   if (loading) return (
-    <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#04140f", flexDirection: "column", gap: "24px"}}>
+    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#04140f", flexDirection: "column", gap: "24px" }}>
       <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
@@ -2710,17 +2711,17 @@ export default function Home() {
 
   if (!user) {
     return (
-      <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", fontFamily: "sans-serif"}}>
-        <div style={{background: "var(--card)", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)"}}>
-          <h1 style={{color: "var(--accent)", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
-          <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "16px"}}>
-            <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)"}} />
-            <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)"}} />
-            <button type="submit" className="btn btn-primary" style={{padding: "14px", fontWeight: "700", cursor: "pointer"}}>{isRegistering ? "Register" : "Sign In"}</button>
+      <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", fontFamily: "sans-serif" }}>
+        <div style={{ background: "var(--card)", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)" }}>
+          <h1 style={{ color: "var(--accent)", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px" }}>PAJJI LEARN</h1>
+          <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <input type="email" placeholder="Email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required style={{ padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
+            <input type="password" placeholder="Password" value={authPass} onChange={(e) => setAuthPass(e.target.value)} required style={{ padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
+            <button type="submit" className="btn btn-primary" style={{ padding: "14px", fontWeight: "700", cursor: "pointer" }}>{isRegistering ? "Register" : "Sign In"}</button>
           </form>
-          <div style={{display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px"}}>
-            <button onClick={handleGuestLogin} style={{background: "none", border: "1px solid var(--accent)", color: "var(--accent)", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>Continue as Guest 👤</button>
-            <button onClick={() => setIsRegistering(!isRegistering)} style={{background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "14px"}}>{isRegistering ? "Back to Login" : "Create Account"}</button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
+            <button onClick={handleGuestLogin} style={{ background: "none", border: "1px solid var(--accent)", color: "var(--accent)", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer" }}>Continue as Guest 👤</button>
+            <button onClick={() => setIsRegistering(!isRegistering)} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "14px" }}>{isRegistering ? "Back to Login" : "Create Account"}</button>
           </div>
         </div>
       </div>
@@ -2745,11 +2746,11 @@ export default function Home() {
                   const items = books.flatMap(b => (b.chapters || []).map((c: any) => ({ ...c, bookTitle: b.title, bookId: b.id })));
                   const filtered = items.filter(c => `${c.title} ${c.bookTitle}`.toLowerCase().includes(spotlightQuery.toLowerCase())).slice(0, 8);
                   return filtered.map(c => (
-                    <div 
-                      key={c.id} 
-                      onClick={() => { openLesson(books.find((b: any) => b.id === c.bookId), c); setIsSpotlightOpen(false); }} 
-                      style={{ padding: "12px 16px", borderRadius: "12px", cursor: "pointer", display: "flex", justifyContent: "space-between" }} 
-                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--input-bg)"} 
+                    <div
+                      key={c.id}
+                      onClick={() => { openLesson(books.find((b: any) => b.id === c.bookId), c); setIsSpotlightOpen(false); }}
+                      style={{ padding: "12px 16px", borderRadius: "12px", cursor: "pointer", display: "flex", justifyContent: "space-between" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--input-bg)"}
                       onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                     >
                       <div>
@@ -2765,10 +2766,10 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <AnimatePresence>
         {isZenMode && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -2783,7 +2784,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <motion.button 
+      <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => { setView("dashboard"); }} // Or open AI directly
@@ -2801,6 +2802,17 @@ export default function Home() {
           --card: rgba(18, 18, 20, 0.6);
           --border: rgba(255, 255, 255, 0.1);
         }
+
+        ::selection {
+          background: rgba(var(--accent-rgb), 0.4);
+          color: white;
+        }
+
+        ::-moz-selection {
+          background: rgba(var(--accent-rgb), 0.4);
+          color: white;
+        }
+
 
         .app-container {
           background: transparent;
@@ -3535,50 +3547,50 @@ export default function Home() {
         }
       `}</style>
 
-      <motion.div 
+      <motion.div
         className="sidebar"
       >
         <div className="sidebar-extras" style={{ marginBottom: "40px" }}>
-            <motion.h1 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              style={{fontSize: "24px", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)"}}
-            >
-              PAJJI <span style={{color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)"}}>LEARN</span>
-            </motion.h1>
-            
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              className="card" 
-              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                <div className={streakCount >= 7 ? "streak-aura" : ""} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
-                  {profilePic ? (
-                    <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <User size={24} color="white" />
-                  )}
-                </div>
-                <div>
-                  <p style={{fontSize: "10px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px"}}>Rank: {userLevel >= 10 ? "ELITE" : "NOVICE"}</p>
-                  <h3 style={{fontSize: "15px", fontWeight: "800"}}>{getUserName(user).split(' ')[0]}</h3>
-                </div>
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            style={{ fontSize: "24px", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)" }}
+          >
+            PAJJI <span style={{ color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)" }}>LEARN</span>
+          </motion.h1>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="card"
+            style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div className={streakCount >= 7 ? "streak-aura" : ""} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
+                {profilePic ? (
+                  <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <User size={24} color="white" />
+                )}
               </div>
-              <div style={{height: "6px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", position: "relative"}}>
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${(userXP % 1000) / 10}%` }}
-                  transition={{ duration: 1.5, type: "spring" }}
-                  style={{ height: "100%", background: "var(--accent-grad)", borderRadius: "10px" }}
-                />
+              <div>
+                <p style={{ fontSize: "10px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Rank: {userLevel >= 10 ? "ELITE" : "NOVICE"}</p>
+                <h3 style={{ fontSize: "15px", fontWeight: "800" }}>{getUserName(user).split(' ')[0]}</h3>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
-                <p style={{fontSize: "11px", fontWeight: "800", opacity: 0.6}}>{userXP} XP</p>
-                <p style={{fontSize: "11px", fontWeight: "800", color: "var(--accent)"}}>Lvl {userLevel + 1}</p>
-              </div>
-            </motion.div>
+            </div>
+            <div style={{ height: "6px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(userXP % 1000) / 10}%` }}
+                transition={{ duration: 1.5, type: "spring" }}
+                style={{ height: "100%", background: "var(--accent-grad)", borderRadius: "10px" }}
+              />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
+              <p style={{ fontSize: "11px", fontWeight: "800", opacity: 0.6 }}>{userXP} XP</p>
+              <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>Lvl {userLevel + 1}</p>
+            </div>
+          </motion.div>
         </div>
 
         <nav className="sidebar-nav">
@@ -3599,11 +3611,11 @@ export default function Home() {
             <span>Settings</span>
           </button>
         </nav>
-        
-        <div className="sidebar-extras" style={{marginTop: "auto"}}>
-          <button 
+
+        <div className="sidebar-extras" style={{ marginTop: "auto" }}>
+          <button
             onClick={() => signOut(auth)}
-            className="nav-btn" 
+            className="nav-btn"
             style={{ color: "#ef4444" }}
           >
             <LogOut size={20} />
@@ -3614,14 +3626,14 @@ export default function Home() {
 
       <div className="main-content" ref={mainContentRef}>
         <div style={{ position: "fixed", top: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 1000, pointerEvents: "none" }}>
-          <motion.div 
+          <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            style={{ 
-              background: "rgba(0,0,0,0.4)", 
-              backdropFilter: "blur(16px)", 
-              padding: "8px 20px", 
-              borderRadius: "100px", 
+            style={{
+              background: "rgba(0,0,0,0.4)",
+              backdropFilter: "blur(16px)",
+              padding: "8px 20px",
+              borderRadius: "100px",
               border: "1px solid var(--border)",
               display: "flex",
               gap: "24px",
@@ -3640,489 +3652,489 @@ export default function Home() {
             </div>
             <div style={{ width: "1px", height: "12px", background: "var(--border)" }} />
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-               {[
-                 { id: "lofi", icon: <Volume2 size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-                 { id: "rain", icon: <Map size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
-               ].map(track => (
-                 <button key={track.id} onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)} style={{ background: "transparent", border: "none", color: activeAudio === track.url ? "var(--accent)" : "white", cursor: "pointer", display: "grid", placeItems: "center" }}>
-                   {track.icon}
-                 </button>
-               ))}
+              {[
+                { id: "lofi", icon: <Volume2 size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+                { id: "rain", icon: <Map size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
+              ].map(track => (
+                <button key={track.id} onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)} style={{ background: "transparent", border: "none", color: activeAudio === track.url ? "var(--accent)" : "white", cursor: "pointer", display: "grid", placeItems: "center" }}>
+                  {track.icon}
+                </button>
+              ))}
             </div>
             <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 10px var(--accent)", animation: "pulse 2s infinite" }} />
           </motion.div>
           {activeAudio && <audio src={activeAudio} autoPlay loop style={{ display: "none" }} />}
         </div>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mobile-header"
         >
-            <h1 style={{fontSize: "18px", fontWeight: "900", fontFamily: "var(--font-syne)"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
-            <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
-                <div style={{fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)"}}>{userXP} XP</div>
-                {mobileQuickSettings && (
-                  <button onClick={() => setView("settings")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px" }}>
-                    <Settings size={18} />
-                  </button>
-                )}
-            </div>
+          <h1 style={{ fontSize: "18px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI <span style={{ color: "var(--accent)" }}>LEARN</span></h1>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div style={{ fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)" }}>{userXP} XP</div>
+            {mobileQuickSettings && (
+              <button onClick={() => setView("settings")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px" }}>
+                <Settings size={18} />
+              </button>
+            )}
+          </div>
         </motion.div>
 
         <AnimatePresence mode="wait">
-        {view === "dashboard" && (
-          <motion.div 
-            key="dashboard"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="page-shell"
-          >
-            <header style={{marginBottom: "40px"}}>
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                <h1 className="page-title" style={{ marginBottom: "4px" }}>
-                  {greeting.text}, {getUserName(user).split(' ')[0]}! {greeting.emoji}
-                </h1>
-                <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8 }}>{quote}</p>
-              </motion.div>
-            </header>
-
-            <motion.div 
-              initial="hidden"
-              animate="show"
-              variants={{
-                show: { transition: { staggerChildren: 0.08 } }
-              }}
-              className="bento-grid" 
-              style={{ marginBottom: "40px" }}
+          {view === "dashboard" && (
+            <motion.div
+              key="dashboard"
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="page-shell"
             >
-              <motion.div 
-                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                whileHover={{ y: -5 }} 
-                className="card" 
-                style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}
+              <header style={{ marginBottom: "40px" }}>
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                  <h1 className="page-title" style={{ marginBottom: "4px" }}>
+                    {greeting.text}, {getUserName(user).split(' ')[0]}! {greeting.emoji}
+                  </h1>
+                  <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8 }}>{quote}</p>
+                </motion.div>
+              </header>
+
+              <motion.div
+                initial="hidden"
+                animate="show"
+                variants={{
+                  show: { transition: { staggerChildren: 0.08 } }
+                }}
+                className="bento-grid"
+                style={{ marginBottom: "40px" }}
               >
-                <div style={{ position: "absolute", top: "-10%", right: "-10%", opacity: 0.1 }}><Star size={120} fill="var(--accent)" color="var(--accent)" /></div>
-                <p style={{fontSize: "13px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px"}}>Level {userLevel}</p>
-                <h3 className="stat-value" style={{ marginTop: "12px", fontSize: "48px" }}>
-                  <AnimatedCounter value={userXP} />
-                </h3>
-                <div style={{height: "8px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", marginTop: "16px", marginBottom: "8px"}}>
-                    <motion.div 
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                  whileHover={{ y: -5 }}
+                  className="card"
+                  style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}
+                >
+                  <div style={{ position: "absolute", top: "-10%", right: "-10%", opacity: 0.1 }}><Star size={120} fill="var(--accent)" color="var(--accent)" /></div>
+                  <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Level {userLevel}</p>
+                  <h3 className="stat-value" style={{ marginTop: "12px", fontSize: "48px" }}>
+                    <AnimatedCounter value={userXP} />
+                  </h3>
+                  <div style={{ height: "8px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", marginTop: "16px", marginBottom: "8px" }}>
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${(userXP % 1000) / 10}%` }}
                       transition={{ duration: 1.5, type: "spring" }}
                       style={{ height: "100%", background: "var(--accent-grad)" }}
                     />
-                </div>
-                <p style={{fontSize: "12px", opacity: 0.5, fontWeight: "800"}}>{Math.max(0, 1000 - (userXP % 1000))} XP to Level {userLevel + 1}</p>
-              </motion.div>
-
-              <motion.div 
-                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                whileHover={{ y: -5 }} 
-                className="card" 
-                style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
-              >
-                <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(59, 130, 246, 0.1)", display: "grid", placeItems: "center", color: "#3b82f6" }}><BookOpen size={28} /></div>
-                <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{completedLessons.length}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Mastered</p></div>
-              </motion.div>
-
-              <motion.div 
-                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                whileHover={{ y: -5 }} 
-                className="card" 
-                style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
-              >
-                <motion.div 
-                  animate={streakCount > 0 ? { scale: [1, 1.15, 1], filter: ["brightness(1)", "brightness(1.4)", "brightness(1)"] } : {}}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                  style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(245, 158, 11, 0.1)", display: "grid", placeItems: "center", color: "#f59e0b" }}
-                >
-                  <Flame size={28} />
-                </motion.div>
-                <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{fontSize: "13px", opacity: 0.5}}>Streak {streakCount > 0 ? "🔥" : ""}</p></div>
-              </motion.div>
-
-              <motion.div 
-                variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                whileHover={{ y: -5 }} 
-                className="card" 
-                style={{ gridColumn: "span 8", display: "flex", alignItems: "center", gap: "32px", padding: "32px" }}
-              >
-                <div style={{ position: "relative", width: "80px", height: "80px", flexShrink: 0 }}>
-                  <svg style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
-                    <circle cx="40" cy="40" r="34" stroke="var(--input-bg)" strokeWidth="8" fill="transparent" />
-                    <motion.circle 
-                      cx="40" cy="40" r="34" stroke="var(--accent)" strokeWidth="8" fill="transparent" 
-                      strokeDasharray="213.6"
-                      initial={{ strokeDashoffset: 213.6 }}
-                      animate={{ strokeDashoffset: 213.6 * (1 - Math.min(1, goalProgressPct / 100)) }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", color: "var(--accent)" }}>
-                    {Math.round(goalProgressPct)}%
                   </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Daily Goal</h3>
-                  <p style={{ color: "var(--muted)", fontSize: "14px", fontWeight: "500" }}>
-                    You&apos;ve completed {dailyCompleted} of {dailyGoal} lessons today. {goalProgressPct >= 100 ? "Goal smashed! 🏆" : "Keep pushing!"}
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="card" style={{ gridColumn: "span 12" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                  Consistency Grind <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "500" }}>Study activity over the last year</span>
-                </h3>
-                <div style={{ display: "flex", gap: "4px", overflowX: "auto", paddingBottom: "8px" }}>
-                  {heatmapData.map((week, weekIdx) => (
-                    <div key={weekIdx} style={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: "4px" }}>
-                      {week.map((active, dayIdx) => (
-                        <div 
-                          key={dayIdx} 
-                          style={{ 
-                            width: "12px", height: "12px", borderRadius: "2px", 
-                            background: active ? "var(--accent)" : "rgba(255,255,255,0.03)",
-                            opacity: active ? 1 : 1
-                          }} 
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {resumeLesson && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.01 }}
-                className="card" 
-                style={{ marginBottom: "32px", borderLeft: "4px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.05)" }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <p style={{fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "4px"}}>Resume Journey</p>
-                    <h3 style={{fontSize: "22px", fontWeight: "800"}}>{resumeLesson.chapter.title}</h3>
-                  </div>
-                  <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} style={{ background: "var(--accent-grad)", border: "none", borderRadius: "12px", color: "white", padding: "12px 24px", fontWeight: "800", cursor: "pointer" }}>
-                    Continue
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-              <h2 className="section-title" style={{ fontFamily: "var(--font-syne)", fontSize: "24px", fontWeight: "800" }}>Challenges 🚀</h2>
-            </div>
-
-            <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px"}}>
-              {recentPinnedPoints.length > 0 && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="card" style={{ border: "1px dashed var(--accent)", background: "var(--accent-soft)", display: "flex", flexDirection: "column", gap: "12px" }}
-                >
-                  <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase" }}>Memory Recall Pulse 🧠</p>
-                  <p style={{ fontSize: "14px", fontWeight: "700", lineHeight: "1.4" }}>&quot;{recentPinnedPoints[0].text.slice(0, 100)}...&quot;</p>
-                  <p style={{ fontSize: "12px", color: "var(--muted)" }}>Do you remember the core concepts of this? Try to explain it out loud.</p>
+                  <p style={{ fontSize: "12px", opacity: 0.5, fontWeight: "800" }}>{Math.max(0, 1000 - (userXP % 1000))} XP to Level {userLevel + 1}</p>
                 </motion.div>
-              )}
-              {getUnmastered().slice(0, 4).map((ch, idx) => {
-                const isMastered = completedLessons.includes(ch.id);
-                return (
-                  <motion.div 
-                    key={ch.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.1 }}
-                    whileHover={{ scale: 1.02, rotateX: 5, rotateY: 5, z: 10 }}
-                    className={`card tilt-card ${isMastered ? "holographic-shine" : ""} ${idx === 0 ? "power-up-card" : ""}`} 
-                    style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center", 
-                      padding: "20px",
-                      position: "relative",
-                      overflow: "hidden"
-                    }}
+
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                  whileHover={{ y: -5 }}
+                  className="card"
+                  style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
+                >
+                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(59, 130, 246, 0.1)", display: "grid", placeItems: "center", color: "#3b82f6" }}><BookOpen size={28} /></div>
+                  <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{completedLessons.length}</h3><p style={{ fontSize: "13px", opacity: 0.5 }}>Mastered</p></div>
+                </motion.div>
+
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                  whileHover={{ y: -5 }}
+                  className="card"
+                  style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
+                >
+                  <motion.div
+                    animate={streakCount > 0 ? { scale: [1, 1.15, 1], filter: ["brightness(1)", "brightness(1.4)", "brightness(1)"] } : {}}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(245, 158, 11, 0.1)", display: "grid", placeItems: "center", color: "#f59e0b" }}
                   >
-                    {idx === 0 && (
-                      <div style={{ position: "absolute", top: "10px", right: "10px", background: "var(--accent-grad)", fontSize: "9px", fontWeight: "900", padding: "2px 6px", borderRadius: "4px", color: "white", zIndex: 10 }}>2X XP</div>
-                    )}
-                    <div style={{ flex: 1 }}>
-                        <p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px"}}>{ch.bookTitle || "NEW LESSON"}</p>
-                        <h3 style={{fontSize: "17px", fontWeight: "800"}}>{ch.title}</h3>
-                    </div>
-                    <button 
-                      onClick={() => openLesson(ch.parentBook, ch)} 
-                      style={{
-                        width: "48px", 
-                        height: "48px", 
-                        borderRadius: "14px", 
-                        background: isMastered ? "var(--accent-grad)" : "rgba(255,255,255,0.05)", 
-                        display: "grid", 
-                        placeItems: "center", 
-                        border: "1px solid transparent", 
-                        cursor: "pointer",
-                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                        color: "white"
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = "transparent"; }}
-                    >
-                      <ChevronRight size={24} />
-                    </button>
+                    <Flame size={28} />
                   </motion.div>
-                );
-              })}
-              {getUnmastered().length === 0 && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="card" style={{textAlign: "center", gridColumn: "1/-1", padding: "60px"}}
-                >
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏆</div>
-                  <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "8px" }}>You&apos;ve mastered everything!</h3>
-                  <p style={{ color: "var(--muted)", fontSize: "14px" }}>All lessons conquered. Time for a boss level? 😎</p>
+                  <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{ fontSize: "13px", opacity: 0.5 }}>Streak {streakCount > 0 ? "🔥" : ""}</p></div>
                 </motion.div>
-              )}
-            </div>
-            
-            <h2 style={{fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800"}}>Achievements 🏅</h2>
-            <div className="card" style={{padding: "20px"}}>
-              <p style={{fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px"}}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
-              <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px"}}>
-                {achievementProgressList.map(a => (
-                  <div key={a.id} className={a.unlocked ? `${a.rarity}-glow` : ""} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
-                    <p style={{fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px"}}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        {a.rarity === "diamond" ? "💎" : a.rarity === "epic" ? "🔮" : "🏅"} {a.title}
-                      </span>
-                      <span style={{fontSize: "10px", color: a.unlocked ? "var(--accent)" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
-                    </p>
-                    <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{a.description}</p>
-                    <div style={{marginTop: "8px"}}>
-                      <div style={{height: "6px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
-                        <div style={{height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "var(--accent)" : "#64748b"}} />
-                      </div>
-                      <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{Math.min(a.progress, a.target)}/{a.target}</p>
+
+                <motion.div
+                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                  whileHover={{ y: -5 }}
+                  className="card"
+                  style={{ gridColumn: "span 8", display: "flex", alignItems: "center", gap: "32px", padding: "32px" }}
+                >
+                  <div style={{ position: "relative", width: "80px", height: "80px", flexShrink: 0 }}>
+                    <svg style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
+                      <circle cx="40" cy="40" r="34" stroke="var(--input-bg)" strokeWidth="8" fill="transparent" />
+                      <motion.circle
+                        cx="40" cy="40" r="34" stroke="var(--accent)" strokeWidth="8" fill="transparent"
+                        strokeDasharray="213.6"
+                        initial={{ strokeDashoffset: 213.6 }}
+                        animate={{ strokeDashoffset: 213.6 * (1 - Math.min(1, goalProgressPct / 100)) }}
+                        transition={{ duration: 1.5, ease: "easeOut" }}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", color: "var(--accent)" }}>
+                      {Math.round(goalProgressPct)}%
                     </div>
                   </div>
-                ))}
-              </div>
-              {allUnlockedAchievementIds.length === 0 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
-                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎯</div>
-                  <p style={{fontSize: "13px", color: "var(--muted)"}}>No badges unlocked yet. Complete a lesson to earn your first one!</p>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Daily Goal</h3>
+                    <p style={{ color: "var(--muted)", fontSize: "14px", fontWeight: "500" }}>
+                      You&apos;ve completed {dailyCompleted} of {dailyGoal} lessons today. {goalProgressPct >= 100 ? "Goal smashed! 🏆" : "Keep pushing!"}
+                    </p>
+                  </div>
                 </motion.div>
-              )}
-              {nextAchievement && (
-                <div style={{marginTop: "16px", padding: "12px", border: "1px dashed var(--border)", borderRadius: "12px"}}>
-                  <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", textTransform: "uppercase"}}>Next Target</p>
-                  <p style={{fontWeight: "800", marginTop: "4px"}}>{nextAchievement.title}</p>
-                  <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "2px"}}>{nextAchievement.description} ({Math.min(nextAchievement.progress, nextAchievement.target)}/{nextAchievement.target})</p>
-                </div>
-              )}
-            </div>
-            <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>Quiz Attempts</h2>
-            <div className="card" style={{padding: "18px"}}>
-              <div style={{display: "flex", gap: "14px", flexWrap: "wrap", marginBottom: "12px"}}>
-                <div style={{fontSize: "13px", color: "var(--muted)"}}>Best: <strong style={{color: "var(--text)"}}>{bestQuizScore}%</strong></div>
-                <div style={{fontSize: "13px", color: "var(--muted)"}}>Weak lessons: <strong style={{color: "var(--text)"}}>{weakLessonIds.length}</strong></div>
-              </div>
-              {recentQuizAttempts.length === 0 ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
-                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>📝</div>
-                  <p style={{fontSize: "13px", color: "var(--muted)"}}>No attempts yet. Submit a quiz to start tracking your progress!</p>
-                </motion.div>
-              ) : (
-                <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
-                  {recentQuizAttempts.map((a: any, idx: number) => (
-                    <div key={`${a.lessonId}-${a.createdAt}-${idx}`} style={{display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px"}}>
-                      <div style={{fontSize: "13px"}}>
-                        <div style={{fontWeight: "700"}}>{a.lessonTitle || "Lesson"}</div>
-                        <div style={{fontSize: "11px", color: "var(--muted)"}}>{new Date(a.createdAt).toLocaleString()}</div>
+
+                <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="card" style={{ gridColumn: "span 12" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
+                    Consistency Grind <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "500" }}>Study activity over the last year</span>
+                  </h3>
+                  <div style={{ display: "flex", gap: "4px", overflowX: "auto", paddingBottom: "8px" }}>
+                    {heatmapData.map((week, weekIdx) => (
+                      <div key={weekIdx} style={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: "4px" }}>
+                        {week.map((active, dayIdx) => (
+                          <div
+                            key={dayIdx}
+                            style={{
+                              width: "12px", height: "12px", borderRadius: "2px",
+                              background: active ? "var(--accent)" : "rgba(255,255,255,0.03)",
+                              opacity: active ? 1 : 1
+                            }}
+                          />
+                        ))}
                       </div>
-                      <div style={{fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "var(--accent)" : "var(--danger)"}}>{a.score}/{a.total} ({a.accuracy}%)</div>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+
+              {resumeLesson && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.01 }}
+                  className="card"
+                  style={{ marginBottom: "32px", borderLeft: "4px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.05)" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "4px" }}>Resume Journey</p>
+                      <h3 style={{ fontSize: "22px", fontWeight: "800" }}>{resumeLesson.chapter.title}</h3>
+                    </div>
+                    <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} style={{ background: "var(--accent-grad)", border: "none", borderRadius: "12px", color: "white", padding: "12px 24px", fontWeight: "800", cursor: "pointer" }}>
+                      Continue
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+                <h2 className="section-title" style={{ fontFamily: "var(--font-syne)", fontSize: "24px", fontWeight: "800" }}>Challenges 🚀</h2>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
+                {recentPinnedPoints.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.02 }}
+                    className="card" style={{ border: "1px dashed var(--accent)", background: "var(--accent-soft)", display: "flex", flexDirection: "column", gap: "12px" }}
+                  >
+                    <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase" }}>Memory Recall Pulse 🧠</p>
+                    <p style={{ fontSize: "14px", fontWeight: "700", lineHeight: "1.4" }}>&quot;{recentPinnedPoints[0].text.slice(0, 100)}...&quot;</p>
+                    <p style={{ fontSize: "12px", color: "var(--muted)" }}>Do you remember the core concepts of this? Try to explain it out loud.</p>
+                  </motion.div>
+                )}
+                {getUnmastered().slice(0, 4).map((ch, idx) => {
+                  const isMastered = completedLessons.includes(ch.id);
+                  return (
+                    <motion.div
+                      key={ch.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      whileHover={{ scale: 1.02, rotateX: 5, rotateY: 5, z: 10 }}
+                      className={`card tilt-card ${isMastered ? "holographic-shine" : ""} ${idx === 0 ? "power-up-card" : ""}`}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "20px",
+                        position: "relative",
+                        overflow: "hidden"
+                      }}
+                    >
+                      {idx === 0 && (
+                        <div style={{ position: "absolute", top: "10px", right: "10px", background: "var(--accent-grad)", fontSize: "9px", fontWeight: "900", padding: "2px 6px", borderRadius: "4px", color: "white", zIndex: 10 }}>2X XP</div>
+                      )}
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px" }}>{ch.bookTitle || "NEW LESSON"}</p>
+                        <h3 style={{ fontSize: "17px", fontWeight: "800" }}>{ch.title}</h3>
+                      </div>
+                      <button
+                        onClick={() => openLesson(ch.parentBook, ch)}
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          borderRadius: "14px",
+                          background: isMastered ? "var(--accent-grad)" : "rgba(255,255,255,0.05)",
+                          display: "grid",
+                          placeItems: "center",
+                          border: "1px solid transparent",
+                          cursor: "pointer",
+                          transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                          color: "white"
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = "transparent"; }}
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    </motion.div>
+                  );
+                })}
+                {getUnmastered().length === 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="card" style={{ textAlign: "center", gridColumn: "1/-1", padding: "60px" }}
+                  >
+                    <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏆</div>
+                    <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "8px" }}>You&apos;ve mastered everything!</h3>
+                    <p style={{ color: "var(--muted)", fontSize: "14px" }}>All lessons conquered. Time for a boss level? 😎</p>
+                  </motion.div>
+                )}
+              </div>
+
+              <h2 style={{ fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800" }}>Achievements 🏅</h2>
+              <div className="card" style={{ padding: "20px" }}>
+                <p style={{ fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px" }}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px" }}>
+                  {achievementProgressList.map(a => (
+                    <div key={a.id} className={a.unlocked ? `${a.rarity}-glow` : ""} style={{ padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88 }}>
+                      <p style={{ fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          {a.rarity === "diamond" ? "💎" : a.rarity === "epic" ? "🔮" : "🏅"} {a.title}
+                        </span>
+                        <span style={{ fontSize: "10px", color: a.unlocked ? "var(--accent)" : "var(--muted)" }}>{a.unlocked ? "Unlocked" : "Locked"}</span>
+                      </p>
+                      <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>{a.description}</p>
+                      <div style={{ marginTop: "8px" }}>
+                        <div style={{ height: "6px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "var(--accent)" : "#64748b" }} />
+                        </div>
+                        <p style={{ fontSize: "10px", color: "var(--muted)", marginTop: "4px" }}>{Math.min(a.progress, a.target)}/{a.target}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-            <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>Pinned Key Points</h2>
-            <div className="card" style={{padding: "18px"}}>
-              {recentPinnedPoints.length === 0 ? (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
-                  <div style={{ fontSize: "36px", marginBottom: "8px" }}>📌</div>
-                  <p style={{fontSize: "13px", color: "var(--muted)"}}>No pinned points yet. Pin key concepts from your lesson notes!</p>
-                </motion.div>
-              ) : (
-                <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
-                  {recentPinnedPoints.map((point) => {
-                    const lesson = getLessonById(point.lessonId);
-                    return (
-                      <div key={point.id} style={{display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px"}}>
-                        <div>
-                          <div style={{fontWeight: "700", fontSize: "13px"}}>{point.text}</div>
-                          <div style={{fontSize: "11px", color: "var(--muted)"}}>
-                            {(lesson?.book?.title || "Unknown Book")} • {(lesson?.chapter?.title || "Unknown Lesson")}
+                {allUnlockedAchievementIds.length === 0 && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
+                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎯</div>
+                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>No badges unlocked yet. Complete a lesson to earn your first one!</p>
+                  </motion.div>
+                )}
+                {nextAchievement && (
+                  <div style={{ marginTop: "16px", padding: "12px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
+                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--muted)", textTransform: "uppercase" }}>Next Target</p>
+                    <p style={{ fontWeight: "800", marginTop: "4px" }}>{nextAchievement.title}</p>
+                    <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>{nextAchievement.description} ({Math.min(nextAchievement.progress, nextAchievement.target)}/{nextAchievement.target})</p>
+                  </div>
+                )}
+              </div>
+              <h2 style={{ fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800" }}>Quiz Attempts</h2>
+              <div className="card" style={{ padding: "18px" }}>
+                <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", marginBottom: "12px" }}>
+                  <div style={{ fontSize: "13px", color: "var(--muted)" }}>Best: <strong style={{ color: "var(--text)" }}>{bestQuizScore}%</strong></div>
+                  <div style={{ fontSize: "13px", color: "var(--muted)" }}>Weak lessons: <strong style={{ color: "var(--text)" }}>{weakLessonIds.length}</strong></div>
+                </div>
+                {recentQuizAttempts.length === 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
+                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>📝</div>
+                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>No attempts yet. Submit a quiz to start tracking your progress!</p>
+                  </motion.div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {recentQuizAttempts.map((a: any, idx: number) => (
+                      <div key={`${a.lessonId}-${a.createdAt}-${idx}`} style={{ display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px" }}>
+                        <div style={{ fontSize: "13px" }}>
+                          <div style={{ fontWeight: "700" }}>{a.lessonTitle || "Lesson"}</div>
+                          <div style={{ fontSize: "11px", color: "var(--muted)" }}>{new Date(a.createdAt).toLocaleString()}</div>
+                        </div>
+                        <div style={{ fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "var(--accent)" : "var(--danger)" }}>{a.score}/{a.total} ({a.accuracy}%)</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <h2 style={{ fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800" }}>Pinned Key Points</h2>
+              <div className="card" style={{ padding: "18px" }}>
+                {recentPinnedPoints.length === 0 ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
+                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>📌</div>
+                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>No pinned points yet. Pin key concepts from your lesson notes!</p>
+                  </motion.div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {recentPinnedPoints.map((point) => {
+                      const lesson = getLessonById(point.lessonId);
+                      return (
+                        <div key={point.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px" }}>
+                          <div>
+                            <div style={{ fontWeight: "700", fontSize: "13px" }}>{point.text}</div>
+                            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                              {(lesson?.book?.title || "Unknown Book")} • {(lesson?.chapter?.title || "Unknown Lesson")}
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            {lesson && (
+                              <button className="btn btn-secondary" style={{ padding: "6px 10px" }} onClick={() => openLesson(lesson.book, lesson.chapter)}>Open</button>
+                            )}
+                            <button className="btn btn-danger" style={{ padding: "6px 10px" }} onClick={() => removePinnedKeyPoint(point.id)}>Remove</button>
                           </div>
                         </div>
-                        <div style={{display: "flex", gap: "6px", alignItems: "center"}}>
-                          {lesson && (
-                            <button className="btn btn-secondary" style={{padding: "6px 10px"}} onClick={() => openLesson(lesson.book, lesson.chapter)}>Open</button>
-                          )}
-                          <button className="btn btn-danger" style={{padding: "6px 10px"}} onClick={() => removePinnedKeyPoint(point.id)}>Remove</button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <h2 style={{ fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800" }}>All Notes</h2>
+              <div className="card" style={{ padding: "18px" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "10px" }}>
+                  <input
+                    type="text"
+                    placeholder="Search across all your notes..."
+                    value={notesSearch}
+                    onChange={(e) => setNotesSearch(e.target.value)}
+                    style={{ padding: "12px", flex: 1, minWidth: "220px" }}
+                  />
+                  <button className="btn btn-secondary" onClick={exportAllNotesMarkdown}>Export All (.md)</button>
                 </div>
-              )}
-            </div>
-            <h2 style={{fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800"}}>All Notes</h2>
-            <div className="card" style={{padding: "18px"}}>
-              <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "10px"}}>
-                <input
-                  type="text"
-                  placeholder="Search across all your notes..."
-                  value={notesSearch}
-                  onChange={(e) => setNotesSearch(e.target.value)}
-                  style={{padding: "12px", flex: 1, minWidth: "220px"}}
-                />
-                <button className="btn btn-secondary" onClick={exportAllNotesMarkdown}>Export All (.md)</button>
-              </div>
-              <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px"}}>
-                <button className="btn btn-secondary" onClick={() => setNotesTagFilter("all")} style={{padding: "6px 10px", background: notesTagFilter === "all" ? "var(--accent-soft)" : "var(--input-bg)"}}>All Tags</button>
-                {availableNoteTags.map((tag) => (
-                  <button key={`filter-${tag}`} className="btn btn-secondary" onClick={() => setNotesTagFilter(tag)} style={{padding: "6px 10px", background: notesTagFilter === tag ? "var(--accent-soft)" : "var(--input-bg)"}}>
-                    #{tag}
-                  </button>
-                ))}
-              </div>
-              {allNotesEntries.length === 0 ? (
-                <p style={{fontSize: "13px", color: "var(--muted)"}}>No matching notes found.</p>
-              ) : (
-                <div style={{display: "flex", flexDirection: "column", gap: "8px"}}>
-                  {allNotesEntries.slice(0, 20).map((item) => (
-                    <div key={item.lessonId} style={{border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px"}}>
-                      <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center"}}>
-                        <div>
-                          <div style={{fontWeight: "700", fontSize: "13px"}}>{item.lessonTitle}</div>
-                          <div style={{fontSize: "11px", color: "var(--muted)"}}>{item.bookTitle}</div>
-                        </div>
-                        {(() => {
-                          const lessonEntry = item.lesson;
-                          if (!lessonEntry) return null;
-                          return <button className="btn btn-secondary" style={{padding: "6px 10px"}} onClick={() => openLesson(lessonEntry.book, lessonEntry.chapter)}>Open</button>;
-                        })()}
-                      </div>
-                      {(item.tags || []).length > 0 && (
-                        <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px"}}>
-                          {(item.tags || []).map((tag: string) => (
-                            <span key={`${item.lessonId}-${tag}`} style={{fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <p style={{fontSize: "12px", color: "var(--muted)", marginTop: "6px", whiteSpace: "pre-wrap"}}>{`${item.note}`.slice(0, 180)}{`${item.note}`.length > 180 ? "..." : ""}</p>
-                    </div>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+                  <button className="btn btn-secondary" onClick={() => setNotesTagFilter("all")} style={{ padding: "6px 10px", background: notesTagFilter === "all" ? "var(--accent-soft)" : "var(--input-bg)" }}>All Tags</button>
+                  {availableNoteTags.map((tag) => (
+                    <button key={`filter-${tag}`} className="btn btn-secondary" onClick={() => setNotesTagFilter(tag)} style={{ padding: "6px 10px", background: notesTagFilter === tag ? "var(--accent-soft)" : "var(--input-bg)" }}>
+                      #{tag}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
-          </motion.div>
-        )}
+                {allNotesEntries.length === 0 ? (
+                  <p style={{ fontSize: "13px", color: "var(--muted)" }}>No matching notes found.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {allNotesEntries.slice(0, 20).map((item) => (
+                      <div key={item.lessonId} style={{ border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
+                          <div>
+                            <div style={{ fontWeight: "700", fontSize: "13px" }}>{item.lessonTitle}</div>
+                            <div style={{ fontSize: "11px", color: "var(--muted)" }}>{item.bookTitle}</div>
+                          </div>
+                          {(() => {
+                            const lessonEntry = item.lesson;
+                            if (!lessonEntry) return null;
+                            return <button className="btn btn-secondary" style={{ padding: "6px 10px" }} onClick={() => openLesson(lessonEntry.book, lessonEntry.chapter)}>Open</button>;
+                          })()}
+                        </div>
+                        {(item.tags || []).length > 0 && (
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
+                            {(item.tags || []).map((tag: string) => (
+                              <span key={`${item.lessonId}-${tag}`} style={{ fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--input-bg)" }}>
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "6px", whiteSpace: "pre-wrap" }}>{`${item.note}`.slice(0, 180)}{`${item.note}`.length > 180 ? "..." : ""}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
 
-        {view === "library" && (
-          <motion.div 
-            key="library"
-            initial={{ opacity: 0, x: 30, scale: 0.98 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -20, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="page-shell"
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-              <h1 className="page-title">The Vault 📚</h1>
-              {isOwner && <button onClick={() => {const t = prompt("Book Name?"); if(t) { const nl = [...books, {id: Date.now().toString(), title: t, chapters: []}]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); }}} className="btn btn-primary">+ New Book</button>}
-            </div>
-            
-            <div className="card" style={{ display: "flex", gap: "16px", padding: "16px", marginBottom: "32px" }}>
-              <input type="text" placeholder="Search the library..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{ flex: 1, padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)" }} />
-            </div>
+          {view === "library" && (
+            <motion.div
+              key="library"
+              initial={{ opacity: 0, x: 30, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -20, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="page-shell"
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
+                <h1 className="page-title">The Vault 📚</h1>
+                {isOwner && <button onClick={() => { const t = prompt("Book Name?"); if (t) { const nl = [...books, { id: Date.now().toString(), title: t, chapters: [] }]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); } }} className="btn btn-primary">+ New Book</button>}
+              </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
-              {sortedFilteredBooks.map(b => (
-                <motion.div 
-                  key={b.id}
-                  whileHover={{ y: -5, borderColor: "var(--accent)" }}
-                  onClick={() => {setCurBook(b); setView("chapters");}}
-                  className="card" style={{ cursor: "pointer", textAlign: "center", transition: "all 0.3s ease" }}
-                >
-                  <div style={{ height: "120px", background: "var(--input-bg)", borderRadius: "16px", marginBottom: "16px", display: "grid", placeItems: "center", fontSize: "40px" }}>📖</div>
-                  <h3 style={{ fontWeight: "800" }}>{b.title}</h3>
-                  <p style={{ fontSize: "12px", opacity: 0.5 }}>{b.chapters?.length || 0} Lessons</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+              <div className="card" style={{ display: "flex", gap: "16px", padding: "16px", marginBottom: "32px" }}>
+                <input type="text" placeholder="Search the library..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{ flex: 1, padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)" }} />
+              </div>
 
-        {view === "leaderboard" && (
-          <motion.div 
-            key="leaderboard"
-            initial={{ opacity: 0, y: 30, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            style={{ maxWidth: "700px", margin: "0 auto" }}
-          >
-            <h1 className="page-title" style={{ textAlign: "center", marginBottom: "32px" }}>Hall of Fame 🏆</h1>
-            <div style={{display: "flex", justifyContent: "center", gap: "12px", marginBottom: "32px"}}>
-               <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{background: leaderboardMode === "all" ? "var(--accent-soft)" : "var(--input-bg)", color: leaderboardMode === "all" ? "var(--accent)" : "var(--text)"}}>All Time</button>
-               <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{background: leaderboardMode === "weekly" ? "var(--accent-soft)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "var(--accent)" : "var(--text)"}}>Weekly Grind</button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
-                <motion.div 
-                  key={p.id} 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="card" style={{ display: "flex", alignItems: "center", padding: "16px 24px", background: p.id === user.uid ? "rgba(var(--accent-rgb), 0.15)" : "var(--card)", border: p.id === user.uid ? "1px solid var(--accent)" : "1px solid var(--border)" }}
-                >
-                  <span style={{ width: "40px", fontWeight: "900", color: i < 3 ? "var(--accent)" : "var(--muted)", fontSize: i < 3 ? "20px" : "16px" }}>#{i + 1}</span>
-                  <span style={{ flex: 1, fontWeight: "700" }}>{p.email?.split('@')[0]}</span>
-                  <span className="xp-badge" style={{ padding: "8px 16px" }}>{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
+                {sortedFilteredBooks.map(b => (
+                  <motion.div
+                    key={b.id}
+                    whileHover={{ y: -5, borderColor: "var(--accent)" }}
+                    onClick={() => { setCurBook(b); setView("chapters"); }}
+                    className="card" style={{ cursor: "pointer", textAlign: "center", transition: "all 0.3s ease" }}
+                  >
+                    <div style={{ height: "120px", background: "var(--input-bg)", borderRadius: "16px", marginBottom: "16px", display: "grid", placeItems: "center", fontSize: "40px" }}>📖</div>
+                    <h3 style={{ fontWeight: "800" }}>{b.title}</h3>
+                    <p style={{ fontSize: "12px", opacity: 0.5 }}>{b.chapters?.length || 0} Lessons</p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-        {view === "settings" && (
-          <motion.div 
-            key="settings"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="page-shell" style={{ maxWidth: "600px" }}
-          >
-            <h1 className="page-title" style={{ marginBottom: "32px" }}>Preferences ⚙️</h1>
-            <div className="card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {view === "leaderboard" && (
+            <motion.div
+              key="leaderboard"
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{ maxWidth: "700px", margin: "0 auto" }}
+            >
+              <h1 className="page-title" style={{ textAlign: "center", marginBottom: "32px" }}>Hall of Fame 🏆</h1>
+              <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "32px" }}>
+                <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{ background: leaderboardMode === "all" ? "var(--accent-soft)" : "var(--input-bg)", color: leaderboardMode === "all" ? "var(--accent)" : "var(--text)" }}>All Time</button>
+                <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{ background: leaderboardMode === "weekly" ? "var(--accent-soft)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "var(--accent)" : "var(--text)" }}>Weekly Grind</button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).map((p, i) => (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="card" style={{ display: "flex", alignItems: "center", padding: "16px 24px", background: p.id === user.uid ? "rgba(var(--accent-rgb), 0.15)" : "var(--card)", border: p.id === user.uid ? "1px solid var(--accent)" : "1px solid var(--border)" }}
+                  >
+                    <span style={{ width: "40px", fontWeight: "900", color: i < 3 ? "var(--accent)" : "var(--muted)", fontSize: i < 3 ? "20px" : "16px" }}>#{i + 1}</span>
+                    <span style={{ flex: 1, fontWeight: "700" }}>{p.email?.split('@')[0]}</span>
+                    <span className="xp-badge" style={{ padding: "8px 16px" }}>{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {view === "settings" && (
+            <motion.div
+              key="settings"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: -20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="page-shell" style={{ maxWidth: "600px" }}
+            >
+              <h1 className="page-title" style={{ marginBottom: "32px" }}>Preferences ⚙️</h1>
+              <div className="card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
-                  <p style={{fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px"}}>Custom Profile</p>
+                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Custom Profile</p>
                   <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                     <div style={{ width: "50px", height: "50px", borderRadius: "12px", background: "var(--accent-grad)", flexShrink: 0, overflow: "hidden" }}>
                       {profilePic ? <img src={profilePic} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={24} style={{ margin: "13px" }} />}
@@ -4132,7 +4144,7 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <p style={{fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px"}}>Custom Accent</p>
+                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Custom Accent</p>
                   <div style={{ display: "flex", gap: "12px" }}>
                     <input type="color" value={customAccent || "#10b981"} onChange={(e) => setCustomAccent(e.target.value)} style={{ width: "50px", height: "50px", border: "none", background: "transparent", cursor: "pointer" }} />
                     <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px" }} />
@@ -4142,86 +4154,86 @@ export default function Home() {
                 <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
 
                 <button onClick={() => setReduceMotion(!reduceMotion)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                     <Zap size={20} />
-                     <span>Reduce Motion</span>
-                   </div>
-                   <span style={{ color: "var(--accent)", fontWeight: "800" }}>{reduceMotion ? "ON" : "OFF"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <Zap size={20} />
+                    <span>Reduce Motion</span>
+                  </div>
+                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{reduceMotion ? "ON" : "OFF"}</span>
                 </button>
                 <button onClick={() => setSoundEnabled(!soundEnabled)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                     <Volume2 size={20} />
-                     <span>Victory Sounds</span>
-                   </div>
-                   <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <Volume2 size={20} />
+                    <span>Victory Sounds</span>
+                  </div>
+                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
                 </button>
                 <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
                 <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
-                   <LogOut size={20} />
-                   <span>Terminate Session</span>
+                  <LogOut size={20} />
+                  <span>Terminate Session</span>
                 </button>
-             </div>
-
-            <div className="card" style={{ marginTop: "24px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Theme Selection</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
-                {visibleThemePreviewCards.map((item) => {
-                  const selected = item.key === uiTheme;
-                  const allowed = hasThemeAccess(item.key);
-                  return (
-                    <motion.button
-                      key={item.key}
-                      whileHover={allowed ? { y: -2 } : {}}
-                      onClick={() => allowed && setUiTheme(item.key)}
-                      style={{ 
-                        padding: "8px", 
-                        borderRadius: "12px", 
-                        background: selected ? "rgba(var(--accent-rgb), 0.1)" : "var(--input-bg)", 
-                        border: selected ? "2px solid var(--accent)" : "1px solid var(--border)",
-                        cursor: allowed ? "pointer" : "not-allowed",
-                        opacity: allowed ? 1 : 0.5,
-                        textAlign: "left"
-                      }}
-                    >
-                      <div style={{ height: "40px", borderRadius: "8px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative" }}>
-                         <div style={{ position: "absolute", top: "8px", left: "8px", width: "16px", height: "4px", borderRadius: "4px", background: item.accent }} />
-                      </div>
-                      <p style={{ fontSize: "11px", fontWeight: "800", color: selected ? "var(--text)" : "var(--muted)" }}>{item.label}</p>
-                    </motion.button>
-                  );
-                })}
               </div>
-            </div>
 
-            {isOwner && (
               <div className="card" style={{ marginTop: "24px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
-                <div style={{ display: "flex", gap: "8px" }}>
-                   <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
-                   <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
+                <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Theme Selection</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+                  {visibleThemePreviewCards.map((item) => {
+                    const selected = item.key === uiTheme;
+                    const allowed = hasThemeAccess(item.key);
+                    return (
+                      <motion.button
+                        key={item.key}
+                        whileHover={allowed ? { y: -2 } : {}}
+                        onClick={() => allowed && setUiTheme(item.key)}
+                        style={{
+                          padding: "8px",
+                          borderRadius: "12px",
+                          background: selected ? "rgba(var(--accent-rgb), 0.1)" : "var(--input-bg)",
+                          border: selected ? "2px solid var(--accent)" : "1px solid var(--border)",
+                          cursor: allowed ? "pointer" : "not-allowed",
+                          opacity: allowed ? 1 : 0.5,
+                          textAlign: "left"
+                        }}
+                      >
+                        <div style={{ height: "40px", borderRadius: "8px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative" }}>
+                          <div style={{ position: "absolute", top: "8px", left: "8px", width: "16px", height: "4px", borderRadius: "4px", background: item.accent }} />
+                        </div>
+                        <p style={{ fontSize: "11px", fontWeight: "800", color: selected ? "var(--text)" : "var(--muted)" }}>{item.label}</p>
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              {isOwner && (
+                <div className="card" style={{ marginTop: "24px" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
+                    <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {view === "chapters" && curBook && (
-          <div className="page-shell" style={{maxWidth: "880px"}}>
-            <button onClick={() => setView("library")} className="btn-link" style={{marginBottom: "16px"}}>← Library 📚</button>
+          <div className="page-shell" style={{ maxWidth: "880px" }}>
+            <button onClick={() => setView("library")} className="btn-link" style={{ marginBottom: "16px" }}>← Library 📚</button>
             <div className="page-header">
-                <h1 className="page-title">{curBook.title}</h1>
-                {isOwner && <button onClick={addLesson} className="btn btn-primary">+ Add Lesson</button>}
+              <h1 className="page-title">{curBook.title}</h1>
+              {isOwner && <button onClick={addLesson} className="btn btn-primary">+ Add Lesson</button>}
             </div>
             {(curBook.chapters || []).map((ch: any) => (
-              <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px"}}>
-                <div style={{flex: 1}}>
-                    <span style={{fontSize: "17px", fontWeight: "700"}}>{ch.title}</span>
-                    {completedLessons.includes(ch.id) && <span style={{marginLeft: "12px", fontSize: "11px", color: "var(--accent)", fontWeight: "900", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "10px"}}>✓ MASTERED</span>}
+              <div key={ch.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px" }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: "17px", fontWeight: "700" }}>{ch.title}</span>
+                  {completedLessons.includes(ch.id) && <span style={{ marginLeft: "12px", fontSize: "11px", color: "var(--accent)", fontWeight: "900", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "10px" }}>✓ MASTERED</span>}
                 </div>
-                <div style={{display: "flex", gap: "10px"}}>
-                  <button onClick={() => openLesson(curBook, ch)} className="btn btn-primary" style={{padding: "8px 20px"}}>Study</button>
-                  {isOwner && (<button onClick={() => {setCurChapter(ch); setTempChapter(ch); setView("edit");}} className="btn btn-secondary" style={{padding: "8px 12px"}}>✎</button>)}
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button onClick={() => openLesson(curBook, ch)} className="btn btn-primary" style={{ padding: "8px 20px" }}>Study</button>
+                  {isOwner && (<button onClick={() => { setCurChapter(ch); setTempChapter(ch); setView("edit"); }} className="btn btn-secondary" style={{ padding: "8px 12px" }}>✎</button>)}
                 </div>
               </div>
             ))}
@@ -4229,25 +4241,25 @@ export default function Home() {
         )}
 
         {view === "study" && curChapter && (
-          <div className="page-shell" style={{maxWidth: "1000px"}}>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center"}}>
+          <div className="page-shell" style={{ maxWidth: "1000px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center" }}>
               <button onClick={() => setView("chapters")} className="btn-link">← Lessons</button>
-              <div style={{display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end"}}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
                 {quickReviewMode && (
-                  <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{padding: "8px 12px"}}>End Quick Review</button>
+                  <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{ padding: "8px 12px" }}>End Quick Review</button>
                 )}
                 {!completedLessons.includes(curChapter.id) ? (
-                  <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)"}}>CLAIM 100 XP</button>
+                  <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{ padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)" }}>CLAIM 100 XP</button>
                 ) : (
-                  <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
-                      <div className="xp-badge">MASTERED</div>
-                      <button onClick={() => unmasterLesson(curChapter.id)} style={{background: "none", border: "none", opacity: 0.5, cursor: "pointer"}}>↺</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div className="xp-badge">MASTERED</div>
+                    <button onClick={() => unmasterLesson(curChapter.id)} style={{ background: "none", border: "none", opacity: 0.5, cursor: "pointer" }}>↺</button>
                   </div>
                 )}
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-              <h1 style={{fontSize: "24px", fontWeight: "900"}}>{curChapter.title}</h1>
+              <h1 style={{ fontSize: "24px", fontWeight: "900" }}>{curChapter.title}</h1>
               <button onClick={() => setIsSpeedReadOpen(true)} className="btn btn-secondary" style={{ padding: "8px 16px", borderRadius: "100px", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
                 <Zap size={14} /> Blaze Mode
               </button>
@@ -4256,110 +4268,110 @@ export default function Home() {
             <AnimatePresence>
               {isSpeedReadOpen && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 1000000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                   <div style={{ fontSize: "64px", fontWeight: "900", color: "white", marginBottom: "40px", fontFamily: "var(--font-syne)", textAlign: "center", maxWidth: "80%" }}>
-                     {curChapter.summary?.split(/\s+/)[speedReadIndex] || "READY?"}
-                   </div>
-                   <div style={{ display: "flex", gap: "24px" }}>
-                     <button onClick={() => setIsSpeedReadOpen(false)} className="btn btn-secondary">Exit</button>
-                     <button onClick={() => setSpeedReadIndex(0)} className="btn btn-secondary">Reset</button>
-                     <button onClick={() => {
-                        const words = curChapter.summary?.split(/\s+/) || [];
-                        const timer = setInterval(() => {
-                          setSpeedReadIndex(idx => {
-                            if (idx >= words.length - 1) { clearInterval(timer); return idx; }
-                            return idx + 1;
-                          });
-                        }, 200); // 300 WPM
-                     }} className="btn btn-primary">Start</button>
-                   </div>
+                  <div style={{ fontSize: "64px", fontWeight: "900", color: "white", marginBottom: "40px", fontFamily: "var(--font-syne)", textAlign: "center", maxWidth: "80%" }}>
+                    {curChapter.summary?.split(/\s+/)[speedReadIndex] || "READY?"}
+                  </div>
+                  <div style={{ display: "flex", gap: "24px" }}>
+                    <button onClick={() => setIsSpeedReadOpen(false)} className="btn btn-secondary">Exit</button>
+                    <button onClick={() => setSpeedReadIndex(0)} className="btn btn-secondary">Reset</button>
+                    <button onClick={() => {
+                      const words = curChapter.summary?.split(/\s+/) || [];
+                      const timer = setInterval(() => {
+                        setSpeedReadIndex(idx => {
+                          if (idx >= words.length - 1) { clearInterval(timer); return idx; }
+                          return idx + 1;
+                        });
+                      }, 200); // 300 WPM
+                    }} className="btn btn-primary">Start</button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="tab-container" style={{display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px"}}>
-                {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
-                    <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
-                ))}
+            <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px" }}>
+              {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
+                <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
+              ))}
             </div>
-            <div className="card" style={{minHeight: "500px", padding: "32px"}}>
-               {["Summary", "Spellings"].includes(activeTab) && <div style={{whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)"}}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
-               {activeTab === "AI Explanation" && (
-                 <div style={{display: "flex", flexDirection: "column", gap: "16px"}}>
-                   <div style={{background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)"}}>
-                     <h3 style={{fontWeight: "800", marginBottom: "8px", color: "var(--accent)"}}>Ask AI about this lesson</h3>
-                     <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                       <input 
-                         type="text" 
-                         value={aiExplainQuestion} 
-                         onChange={(e) => setAiExplainQuestion(e.target.value)} 
-                         placeholder="E.g. What is the main theme of this summary?" 
-                         style={{flex: 1, padding: "12px", minWidth: "200px"}} 
-                         onKeyDown={(e) => { if(e.key === "Enter") askAiExplanation(); }}
-                       />
-                       <button onClick={askAiExplanation} className="btn btn-primary" disabled={aiExplainLoading}>
-                         {aiExplainLoading ? "Thinking..." : "Ask"}
-                       </button>
-                     </div>
-                   </div>
-                   {aiExplainAnswer && (
-                     <div style={{background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", WebkitUserSelect: "text", userSelect: "text"}}>
-                       <h4 style={{fontWeight: "800", color: "var(--accent)"}}>AI Explanation</h4>
-                       <div style={{marginTop: "8px", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "15px"}}>{aiExplainAnswer}</div>
-                     </div>
-                   )}
-                 </div>
-               )}
-               {activeTab === "Quiz" && (() => {
-                 const quiz = normalizeQuiz(curChapter);
-                 if (quiz.length === 0) {
-                   return <div style={{textAlign: "center", opacity: 0.7, padding: "80px 20px"}}>No quiz questions added yet.</div>;
-                 }
-                 const questionIndicesSource = quizActiveIndices && quizActiveIndices.length > 0
-                   ? quizActiveIndices
-                   : quiz.map((_: any, idx: number) => idx);
-                 const sourceSet = new Set(questionIndicesSource);
-                 const orderedFromState = quizQuestionOrder.filter((idx: number) => sourceSet.has(idx));
-                 const missingIndices = questionIndicesSource.filter((idx: number) => !orderedFromState.includes(idx));
-                 const orderedQuestionIndices = [...orderedFromState, ...missingIndices];
-                 const wrongIndices = orderedQuestionIndices.filter((idx: number) => quizReview[idx] && !quizReview[idx].isCorrect);
-                 const safePos = Math.max(0, Math.min(currentQuizPos, orderedQuestionIndices.length - 1));
-                 const activeQuestionIndex = orderedQuestionIndices[safePos];
-                 const q = quiz[activeQuestionIndex];
-                 return (
-                  <div style={{display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "84px"}}>
-                    <div style={{display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap"}}>
-                      <button onClick={() => startQuizAttempt(curChapter)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+            <div className="card" style={{ minHeight: "500px", padding: "32px" }}>
+              {["Summary", "Spellings"].includes(activeTab) && <div style={{ whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)" }}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
+              {activeTab === "AI Explanation" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)" }}>
+                    <h3 style={{ fontWeight: "800", marginBottom: "8px", color: "var(--accent)" }}>Ask AI about this lesson</h3>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <input
+                        type="text"
+                        value={aiExplainQuestion}
+                        onChange={(e) => setAiExplainQuestion(e.target.value)}
+                        placeholder="E.g. What is the main theme of this summary?"
+                        style={{ flex: 1, padding: "12px", minWidth: "200px" }}
+                        onKeyDown={(e) => { if (e.key === "Enter") askAiExplanation(); }}
+                      />
+                      <button onClick={askAiExplanation} className="btn btn-primary" disabled={aiExplainLoading}>
+                        {aiExplainLoading ? "Thinking..." : "Ask"}
+                      </button>
+                    </div>
+                  </div>
+                  {aiExplainAnswer && (
+                    <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", WebkitUserSelect: "text", userSelect: "text" }}>
+                      <h4 style={{ fontWeight: "800", color: "var(--accent)" }}>AI Explanation</h4>
+                      <div style={{ marginTop: "8px", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "15px" }}>{aiExplainAnswer}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === "Quiz" && (() => {
+                const quiz = normalizeQuiz(curChapter);
+                if (quiz.length === 0) {
+                  return <div style={{ textAlign: "center", opacity: 0.7, padding: "80px 20px" }}>No quiz questions added yet.</div>;
+                }
+                const questionIndicesSource = quizActiveIndices && quizActiveIndices.length > 0
+                  ? quizActiveIndices
+                  : quiz.map((_: any, idx: number) => idx);
+                const sourceSet = new Set(questionIndicesSource);
+                const orderedFromState = quizQuestionOrder.filter((idx: number) => sourceSet.has(idx));
+                const missingIndices = questionIndicesSource.filter((idx: number) => !orderedFromState.includes(idx));
+                const orderedQuestionIndices = [...orderedFromState, ...missingIndices];
+                const wrongIndices = orderedQuestionIndices.filter((idx: number) => quizReview[idx] && !quizReview[idx].isCorrect);
+                const safePos = Math.max(0, Math.min(currentQuizPos, orderedQuestionIndices.length - 1));
+                const activeQuestionIndex = orderedQuestionIndices[safePos];
+                const q = quiz[activeQuestionIndex];
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "84px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                      <button onClick={() => startQuizAttempt(curChapter)} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
                         Start / Restart
                       </button>
-                      <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
+                      <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
                         Retry Wrong Only
                       </button>
-                      <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+                      <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
                         Shuffle: {quizShuffleEnabled ? "On" : "Off"}
                       </button>
-                      <button onClick={() => setShowShortcuts((prev) => !prev)} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer"}}>
+                      <button onClick={() => setShowShortcuts((prev) => !prev)} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
                         Shortcuts
                       </button>
                     </div>
                     {showShortcuts && (
-                      <div style={{border: "1px dashed var(--border)", borderRadius: "12px", padding: "10px 12px", background: "var(--card)", fontSize: "12px", color: "var(--muted)"}}>
-                        <strong style={{color: "var(--text)"}}>Keyboard:</strong> Left/Right = navigate, Enter = submit, R = restart, ? = toggle this panel
+                      <div style={{ border: "1px dashed var(--border)", borderRadius: "12px", padding: "10px 12px", background: "var(--card)", fontSize: "12px", color: "var(--muted)" }}>
+                        <strong style={{ color: "var(--text)" }}>Keyboard:</strong> Left/Right = navigate, Enter = submit, R = restart, ? = toggle this panel
                       </div>
                     )}
-                    <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                      <button onClick={useFiftyFiftyPowerUp} disabled={q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]} className="btn btn-secondary" style={{opacity: (q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]) ? 0.55 : 1}}>50:50 ✂️</button>
-                      <button onClick={useHintPowerUp} disabled={!!usedHint[activeQuestionIndex]} className="btn btn-secondary" style={{opacity: usedHint[activeQuestionIndex] ? 0.55 : 1}}>Hint 💡</button>
-                      <button onClick={useSkipPowerUp} disabled={!!usedSkip[activeQuestionIndex]} className="btn btn-secondary" style={{opacity: usedSkip[activeQuestionIndex] ? 0.55 : 1}}>Skip (-20 XP) ⏭️</button>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button onClick={useFiftyFiftyPowerUp} disabled={q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]} className="btn btn-secondary" style={{ opacity: (q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]) ? 0.55 : 1 }}>50:50 ✂️</button>
+                      <button onClick={useHintPowerUp} disabled={!!usedHint[activeQuestionIndex]} className="btn btn-secondary" style={{ opacity: usedHint[activeQuestionIndex] ? 0.55 : 1 }}>Hint 💡</button>
+                      <button onClick={useSkipPowerUp} disabled={!!usedSkip[activeQuestionIndex]} className="btn btn-secondary" style={{ opacity: usedSkip[activeQuestionIndex] ? 0.55 : 1 }}>Skip (-20 XP) ⏭️</button>
                     </div>
-                    <div className="card" style={{padding: "12px 14px"}}>
-                      <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px"}}>
-                        <span style={{fontSize: "12px", fontWeight: "800", color: "var(--muted)"}}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
-                        <span style={{fontSize: "12px", fontWeight: "800", color: "var(--accent)"}}>{Math.round(((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100)}%</span>
+                    <div className="card" style={{ padding: "12px 14px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--muted)" }}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
+                        <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--accent)" }}>{Math.round(((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100)}%</span>
                       </div>
-                      <div style={{height: "7px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
-                        <div style={{height: "100%", width: `${((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100}%`, background: "var(--accent-grad)"}} />
+                      <div style={{ height: "7px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100}%`, background: "var(--accent-grad)" }} />
                       </div>
                     </div>
-                    <div style={{display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(34px, 1fr))", gap: "6px"}}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(34px, 1fr))", gap: "6px" }}>
                       {orderedQuestionIndices.map((qIndex: number, navIndex: number) => {
                         const isCurrent = navIndex === safePos;
                         const isAnswered = quizAnswers[qIndex] !== undefined && `${quizAnswers[qIndex]}`.trim() !== "";
@@ -4370,431 +4382,431 @@ export default function Home() {
                           <button
                             key={`nav-${qIndex}`}
                             onClick={() => setCurrentQuizPos(navIndex)}
-                            style={{height: "34px", borderRadius: "10px", border, background: bg, color: "var(--text)", fontWeight: "800", cursor: "pointer", fontSize: "12px"}}
+                            style={{ height: "34px", borderRadius: "10px", border, background: bg, color: "var(--text)", fontWeight: "800", cursor: "pointer", fontSize: "12px" }}
                           >
                             {navIndex + 1}
                           </button>
                         );
                       })}
                     </div>
-                    <div key={`${q.question}-${activeQuestionIndex}`} className="quiz-question-card" style={{padding: "16px", borderRadius: "16px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
-                        {(() => {
-                          const review = quizReview[activeQuestionIndex];
-                          return (
-                            <>
-                        <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px"}}>
-                          <p style={{fontWeight: "800"}}>{safePos + 1}. {q.question}</p>
-                          <span style={{fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)"}}>
-                            {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
-                          </span>
-                        </div>
+                    <div key={`${q.question}-${activeQuestionIndex}`} className="quiz-question-card" style={{ padding: "16px", borderRadius: "16px", border: "1px solid var(--border)", background: "var(--input-bg)" }}>
+                      {(() => {
+                        const review = quizReview[activeQuestionIndex];
+                        return (
+                          <>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px" }}>
+                              <p style={{ fontWeight: "800" }}>{safePos + 1}. {q.question}</p>
+                              <span style={{ fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
+                                {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
+                              </span>
+                            </div>
 
-                        {q.type === "caseStudy" && q.caseText && (
-                          <div style={{padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", background: "var(--input-bg)", marginBottom: "10px", whiteSpace: "pre-wrap", fontSize: "14px"}}>
-                            {q.caseText}
-                          </div>
-                        )}
-
-                        {q.type === "pictureStudy" && (
-                          <div style={{marginBottom: "10px"}}>
-                            {!q.imageUrl && (
-                              <div style={{padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--muted)", fontSize: "13px"}}>
-                                No image linked for this question yet.
+                            {q.type === "caseStudy" && q.caseText && (
+                              <div style={{ padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", background: "var(--input-bg)", marginBottom: "10px", whiteSpace: "pre-wrap", fontSize: "14px" }}>
+                                {q.caseText}
                               </div>
                             )}
-                            {!!q.imageUrl && (
-                              <>
-                                {formatDrivePreviewLink(q.imageUrl) ? (
-                                  <iframe
-                                    src={formatDrivePreviewLink(q.imageUrl)}
-                                    title={`question-img-${activeQuestionIndex + 1}`}
-                                    style={{width: "100%", height: "260px", borderRadius: "14px", border: "1px solid var(--border)", background: "var(--bg)"}}
-                                  />
-                                ) : (
-                                  <img
-                                    src={formatImageLink(q.imageUrl)}
-                                    alt={`question-${activeQuestionIndex + 1}`}
-                                    onError={() => setQuizImageErrors(prev => ({ ...prev, [activeQuestionIndex]: true }))}
-                                    style={{maxWidth: "100%", maxHeight: "260px", width: "100%", borderRadius: "14px", border: "1px solid var(--border)", objectFit: "contain", background: "var(--bg)"}}
-                                  />
-                                )}
-                                {quizImageErrors[activeQuestionIndex] && (
-                                  <div style={{marginTop: "6px", fontSize: "12px", color: "#f59e0b", fontWeight: "700"}}>
-                                    Image preview failed. Use the link below.
+
+                            {q.type === "pictureStudy" && (
+                              <div style={{ marginBottom: "10px" }}>
+                                {!q.imageUrl && (
+                                  <div style={{ padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--muted)", fontSize: "13px" }}>
+                                    No image linked for this question yet.
                                   </div>
                                 )}
-                                <a href={formatImageLink(q.imageUrl)} target="_blank" rel="noreferrer" style={{display: "inline-block", marginTop: "6px", fontSize: "12px", color: "#10b981", fontWeight: "700"}}>
-                                  Open image in new tab
-                                </a>
-                              </>
+                                {!!q.imageUrl && (
+                                  <>
+                                    {formatDrivePreviewLink(q.imageUrl) ? (
+                                      <iframe
+                                        src={formatDrivePreviewLink(q.imageUrl)}
+                                        title={`question-img-${activeQuestionIndex + 1}`}
+                                        style={{ width: "100%", height: "260px", borderRadius: "14px", border: "1px solid var(--border)", background: "var(--bg)" }}
+                                      />
+                                    ) : (
+                                      <img
+                                        src={formatImageLink(q.imageUrl)}
+                                        alt={`question-${activeQuestionIndex + 1}`}
+                                        onError={() => setQuizImageErrors(prev => ({ ...prev, [activeQuestionIndex]: true }))}
+                                        style={{ maxWidth: "100%", maxHeight: "260px", width: "100%", borderRadius: "14px", border: "1px solid var(--border)", objectFit: "contain", background: "var(--bg)" }}
+                                      />
+                                    )}
+                                    {quizImageErrors[activeQuestionIndex] && (
+                                      <div style={{ marginTop: "6px", fontSize: "12px", color: "#f59e0b", fontWeight: "700" }}>
+                                        Image preview failed. Use the link below.
+                                      </div>
+                                    )}
+                                    <a href={formatImageLink(q.imageUrl)} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "6px", fontSize: "12px", color: "#10b981", fontWeight: "700" }}>
+                                      Open image in new tab
+                                    </a>
+                                  </>
+                                )}
+                              </div>
                             )}
-                          </div>
-                        )}
 
-                        {q.type === "mcq" ? (
-                          <div style={{display: "grid", gap: "8px"}}>
-                            {((quizOptionOrder[activeQuestionIndex] && quizOptionOrder[activeQuestionIndex].length > 0)
-                              ? quizOptionOrder[activeQuestionIndex]
-                              : (q.options || []).map((_: string, opIndex: number) => opIndex).filter((opIndex: number) => `${(q.options || [])[opIndex] || ""}`.trim())
-                            ).filter((originalIndex: number) => !(hiddenOptionsByQuestion[activeQuestionIndex] || []).includes(originalIndex)).map((originalIndex: number) => {
-                              const op = (q.options || [])[originalIndex] || "";
-                              const selected = quizAnswers[activeQuestionIndex] === originalIndex;
-                              const isCorrectOption = originalIndex === q.correctIndex;
-                              const showCorrectOption = quizSubmitted && isCorrectOption;
-                              const showWrongSelected = quizSubmitted && selected && !isCorrectOption;
-                              return (
-                                <button
-                                  key={`${activeQuestionIndex}-${originalIndex}`}
-                                  onClick={() => {
-                                    setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: originalIndex }));
-                                    setQuizSubmitted(false);
-                                    setQuizReview({});
-                                    setQuizResult("");
-                                  }}
-                                  style={{
-                                    textAlign: "left",
-                                    padding: "10px 12px",
-                                    borderRadius: "12px",
-                                    border: showWrongSelected ? "1px solid var(--danger)" : showCorrectOption ? "1px solid var(--accent)" : selected ? "1px solid var(--accent)" : "1px solid var(--border)",
-                                    background: showWrongSelected ? "rgba(var(--danger-rgb),0.14)" : showCorrectOption ? "var(--accent-soft)" : selected ? "var(--accent-soft)" : "var(--input-bg)",
-                                    color: "var(--text)",
-                                    cursor: "pointer",
-                                    fontWeight: selected ? "700" : "500"
-                                  }}
-                                >
-                                  {String.fromCharCode(65 + originalIndex)}. {op}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <input
-                            type="text"
-                            placeholder="Type your answer..."
-                            value={`${quizAnswers[activeQuestionIndex] ?? ""}`}
-                            onChange={(e) => {
-                              setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: e.target.value }));
-                              setQuizSubmitted(false);
-                              setQuizReview({});
-                              setQuizResult("");
-                            }}
-                            style={{padding: "12px"}}
-                          />
-                        )}
-                        {usedHint[activeQuestionIndex] && (
-                          <div style={{marginTop: "8px", fontSize: "12px", color: "var(--muted)", fontWeight: "700"}}>
-                            Hint: {q.type === "mcq"
-                              ? `Correct option is ${String.fromCharCode(65 + q.correctIndex)}`
-                              : `Starts with "${`${q.answer || ""}`.trim().charAt(0) || ""}"`}
-                          </div>
-                        )}
-                        {quizSubmitted && review && (
-                          <div style={{marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: review.isCorrect ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--danger-rgb),0.35)", background: review.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.12)", fontSize: "13px"}}>
-                            {review.isCorrect ? (
-                              <span style={{fontWeight: "800", color: "var(--accent)"}}>Correct answer.</span>
+                            {q.type === "mcq" ? (
+                              <div style={{ display: "grid", gap: "8px" }}>
+                                {((quizOptionOrder[activeQuestionIndex] && quizOptionOrder[activeQuestionIndex].length > 0)
+                                  ? quizOptionOrder[activeQuestionIndex]
+                                  : (q.options || []).map((_: string, opIndex: number) => opIndex).filter((opIndex: number) => `${(q.options || [])[opIndex] || ""}`.trim())
+                                ).filter((originalIndex: number) => !(hiddenOptionsByQuestion[activeQuestionIndex] || []).includes(originalIndex)).map((originalIndex: number) => {
+                                  const op = (q.options || [])[originalIndex] || "";
+                                  const selected = quizAnswers[activeQuestionIndex] === originalIndex;
+                                  const isCorrectOption = originalIndex === q.correctIndex;
+                                  const showCorrectOption = quizSubmitted && isCorrectOption;
+                                  const showWrongSelected = quizSubmitted && selected && !isCorrectOption;
+                                  return (
+                                    <button
+                                      key={`${activeQuestionIndex}-${originalIndex}`}
+                                      onClick={() => {
+                                        setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: originalIndex }));
+                                        setQuizSubmitted(false);
+                                        setQuizReview({});
+                                        setQuizResult("");
+                                      }}
+                                      style={{
+                                        textAlign: "left",
+                                        padding: "10px 12px",
+                                        borderRadius: "12px",
+                                        border: showWrongSelected ? "1px solid var(--danger)" : showCorrectOption ? "1px solid var(--accent)" : selected ? "1px solid var(--accent)" : "1px solid var(--border)",
+                                        background: showWrongSelected ? "rgba(var(--danger-rgb),0.14)" : showCorrectOption ? "var(--accent-soft)" : selected ? "var(--accent-soft)" : "var(--input-bg)",
+                                        color: "var(--text)",
+                                        cursor: "pointer",
+                                        fontWeight: selected ? "700" : "500"
+                                      }}
+                                    >
+                                      {String.fromCharCode(65 + originalIndex)}. {op}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             ) : (
-                              <span style={{fontWeight: "700", color: "var(--danger)"}}>
-                                Wrong answer. Your answer: {review.submitted}. Correct answer: {review.expected || "Not set"}.
-                              </span>
+                              <input
+                                type="text"
+                                placeholder="Type your answer..."
+                                value={`${quizAnswers[activeQuestionIndex] ?? ""}`}
+                                onChange={(e) => {
+                                  setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: e.target.value }));
+                                  setQuizSubmitted(false);
+                                  setQuizReview({});
+                                  setQuizResult("");
+                                }}
+                                style={{ padding: "12px" }}
+                              />
                             )}
-                          </div>
-                        )}
-                        {quizSubmitted && q.explanation && (
-                          <div style={{marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", fontSize: "13px"}}>
-                            <span style={{fontWeight: "800", color: "#3b82f6"}}>Explanation:</span> {q.explanation}
-                          </div>
-                        )}
-                            </>
-                          );
-                        })()}
+                            {usedHint[activeQuestionIndex] && (
+                              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--muted)", fontWeight: "700" }}>
+                                Hint: {q.type === "mcq"
+                                  ? `Correct option is ${String.fromCharCode(65 + q.correctIndex)}`
+                                  : `Starts with "${`${q.answer || ""}`.trim().charAt(0) || ""}"`}
+                              </div>
+                            )}
+                            {quizSubmitted && review && (
+                              <div style={{ marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: review.isCorrect ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--danger-rgb),0.35)", background: review.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.12)", fontSize: "13px" }}>
+                                {review.isCorrect ? (
+                                  <span style={{ fontWeight: "800", color: "var(--accent)" }}>Correct answer.</span>
+                                ) : (
+                                  <span style={{ fontWeight: "700", color: "var(--danger)" }}>
+                                    Wrong answer. Your answer: {review.submitted}. Correct answer: {review.expected || "Not set"}.
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {quizSubmitted && q.explanation && (
+                              <div style={{ marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", fontSize: "13px" }}>
+                                <span style={{ fontWeight: "800", color: "#3b82f6" }}>Explanation:</span> {q.explanation}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <div style={{ position: "sticky", bottom: "10px", zIndex: 20, border: "1px solid var(--border)", background: "var(--card)", borderRadius: "14px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button onClick={() => setCurrentQuizPos(prev => Math.max(0, prev - 1))} disabled={safePos === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer" }}>Prev</button>
+                        <button onClick={() => setCurrentQuizPos(prev => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer" }}>Next</button>
                       </div>
-                    <div style={{position: "sticky", bottom: "10px", zIndex: 20, border: "1px solid var(--border)", background: "var(--card)", borderRadius: "14px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap"}}>
-                      <div style={{display: "flex", gap: "8px"}}>
-                        <button onClick={() => setCurrentQuizPos(prev => Math.max(0, prev - 1))} disabled={safePos === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer"}}>Prev</button>
-                        <button onClick={() => setCurrentQuizPos(prev => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer"}}>Next</button>
-                      </div>
-                      <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap"}}>
-                        <button onClick={submitQuiz} style={{padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "800", cursor: "pointer"}}>Submit Quiz</button>
-                        <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1}}>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                        <button onClick={submitQuiz} style={{ padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "800", cursor: "pointer" }}>Submit Quiz</button>
+                        <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
                           Retry Wrong
                         </button>
-                        {quizResult && <span style={{fontWeight: "800", color: quizResult.startsWith("Score") ? "var(--accent)" : "var(--warning)"}}>{quizResult}</span>}
+                        {quizResult && <span style={{ fontWeight: "800", color: quizResult.startsWith("Score") ? "var(--accent)" : "var(--warning)" }}>{quizResult}</span>}
                       </div>
                     </div>
                   </div>
-                 );
-               })()}
-               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)"}} /> : "No video available.")}
-               {activeTab === "My Notes" && (
-                 <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
-                   <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap"}}>
-                     <p style={{fontSize: "13px", color: "var(--muted)"}}>Write your own notes from Summary, Spellings, Quiz, PDFs, and videos.</p>
-                     <span style={{fontSize: "12px", fontWeight: "700", color: noteSaving ? "var(--warning)" : "var(--accent)"}}>
-                       {noteSaving ? "Saving..." : (noteSavedAt ? `Saved at ${noteSavedAt}` : "Autosave on")}
-                     </span>
-                   </div>
-                   <textarea
-                     placeholder="Type your lesson notes here..."
-                     value={noteDraft}
-                     onChange={(e) => setNoteDraft(e.target.value)}
-                     style={{minHeight: "340px", lineHeight: 1.6}}
-                   />
-                   <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                     <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Definition")}>Template: Definition</button>
-                     <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Cause/Effect")}>Template: Cause/Effect</button>
-                     <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Timeline")}>Template: Timeline</button>
-                   </div>
-                   <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                     <button onClick={() => saveCurrentNote()} className="btn btn-primary" disabled={noteSaving} style={{opacity: noteSaving ? 0.7 : 1}}>Save Note</button>
-                     <button onClick={generateFlashcardsFromNote} className="btn btn-secondary">Generate Flashcards</button>
-                     <button onClick={exportCurrentNote} className="btn btn-secondary">Export Note (.txt)</button>
-                     <button
-                       onClick={async () => {
-                         if (!confirm("Clear note for this lesson?")) return;
-                         setNoteDraft("");
-                         await saveCurrentNote("");
-                       }}
-                       className="btn btn-secondary"
-                       disabled={noteSaving}
-                       style={{opacity: noteSaving ? 0.7 : 1}}
-                     >
-                       Clear Note
-                     </button>
-                   </div>
-                   <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)"}}>
-                     <p style={{fontSize: "12px", fontWeight: "800", marginBottom: "8px"}}>Tags</p>
-                     <div style={{display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px"}}>
-                       <input
-                         type="text"
-                         placeholder="Add tag (example: exam)"
-                         value={newTagInput}
-                         onChange={(e) => setNewTagInput(e.target.value)}
-                         onKeyDown={(e) => {
-                           if (e.key === "Enter") {
-                             e.preventDefault();
-                             addTagToCurrentLesson(newTagInput);
-                           }
-                         }}
-                         style={{padding: "10px", flex: 1, minWidth: "220px"}}
-                       />
-                       <button className="btn btn-secondary" onClick={() => addTagToCurrentLesson(newTagInput)}>Add Tag</button>
-                     </div>
-                     <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px"}}>
-                       {quickTagOptions.map((tag) => (
-                         <button key={`quick-tag-${tag}`} className="btn btn-secondary" style={{padding: "5px 8px"}} onClick={() => addTagToCurrentLesson(tag)}>
-                           + #{tag}
-                         </button>
-                       ))}
-                     </div>
-                     {currentLessonTags.length > 0 && (
-                       <div style={{display: "flex", gap: "6px", flexWrap: "wrap"}}>
-                         {currentLessonTags.map((tag) => (
-                           <button key={`tag-${tag}`} className="btn btn-secondary" style={{padding: "4px 8px"}} onClick={() => removeTagFromCurrentLesson(tag)}>
-                             #{tag} x
-                           </button>
-                         ))}
-                       </div>
-                     )}
-                   </div>
-                   {lessonFlashcards.length > 0 && (
-                     <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)"}}>
-                       <p style={{fontSize: "12px", fontWeight: "800", marginBottom: "8px"}}>
-                         Flashcards ({Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length})
-                       </p>
-                       <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "12px", background: "var(--card)", minHeight: "88px"}}>
-                         <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px"}}>Q</p>
-                         <p style={{fontSize: "14px", fontWeight: "700"}}>{lessonFlashcards[flashcardIndex]?.q}</p>
-                         {flashcardReveal && (
-                           <>
-                             <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginTop: "10px", marginBottom: "6px"}}>A</p>
-                             <p style={{fontSize: "13px", color: "var(--muted)"}}>{lessonFlashcards[flashcardIndex]?.a}</p>
-                           </>
-                         )}
-                       </div>
-                       <div style={{display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap"}}>
-                         <button className="btn btn-secondary" onClick={() => setFlashcardIndex((prev) => Math.max(0, prev - 1))} disabled={flashcardIndex === 0} style={{opacity: flashcardIndex === 0 ? 0.6 : 1}}>Prev</button>
-                         <button className="btn btn-secondary" onClick={() => setFlashcardReveal((prev) => !prev)}>{flashcardReveal ? "Hide Answer" : "Show Answer"}</button>
-                         <button className="btn btn-secondary" onClick={() => { setFlashcardReveal(false); setFlashcardIndex((prev) => Math.min(lessonFlashcards.length - 1, prev + 1)); }} disabled={flashcardIndex >= lessonFlashcards.length - 1} style={{opacity: flashcardIndex >= lessonFlashcards.length - 1 ? 0.6 : 1}}>Next</button>
-                       </div>
-                     </div>
-                   )}
-                   <div style={{border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)"}}>
-                     <p style={{fontSize: "12px", fontWeight: "800", marginBottom: "8px"}}>Pin Key Point</p>
-                     <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
-                       <input
-                         type="text"
-                         placeholder="Add a key takeaway from this lesson..."
-                         value={newPinnedPointText}
-                         onChange={(e) => setNewPinnedPointText(e.target.value)}
-                         style={{padding: "10px", flex: 1, minWidth: "220px"}}
-                       />
-                       <button className="btn btn-primary" onClick={addPinnedKeyPoint}>Pin</button>
-                     </div>
-                     {lessonPinnedPoints.length > 0 && (
-                       <div style={{display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px"}}>
-                         {lessonPinnedPoints.map((point) => (
-                           <div key={point.id} style={{display: "flex", justifyContent: "space-between", gap: "8px", border: "1px solid var(--border)", borderRadius: "10px", padding: "6px 8px", background: "var(--card)"}}>
-                             <span style={{fontSize: "12px"}}>{point.text}</span>
-                             <button className="btn btn-danger" style={{padding: "4px 8px"}} onClick={() => removePinnedKeyPoint(point.id)}>x</button>
-                           </div>
-                         ))}
-                       </div>
-                     )}
-                   </div>
-                 </div>
-               )}
-               {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => { 
-                 let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", ""); 
-                 let link = curChapter[k]; 
-                 return (
-                   <div style={{display: "flex", flexDirection: "column", gap: "20px"}}>
-                     {link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{border: "none", borderRadius: "20px"}} /> : <div style={{textAlign: "center", padding: "100px", opacity: 0.5}}>This resource hasn't been linked yet.</div>}
-                     {activeTab === "Book PDF" && curChapter.audioBook && (
-                        <div style={{padding: "20px", background: "var(--input-bg)", borderRadius: "20px", display: "flex", flexDirection: "column", gap: "10px"}}>
-                          <h3 style={{fontSize: "16px", fontWeight: "800"}}>Audiobook Resource</h3>
-                          {curChapter.audioBook.includes("drive.google.com") ? (
-                            <iframe src={curChapter.audioBook.replace("/view", "/preview")} width="100%" height="150" style={{border: "none", borderRadius: "10px"}} />
-                          ) : (
-                            <audio controls src={curChapter.audioBook} style={{width: "100%", outline: "none"}} />
-                          )}
-                        </div>
-                     )}
-                   </div>
-                 );
-               })()}
+                );
+              })()}
+              {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{ borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }} /> : "No video available.")}
+              {activeTab === "My Notes" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
+                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>Write your own notes from Summary, Spellings, Quiz, PDFs, and videos.</p>
+                    <span style={{ fontSize: "12px", fontWeight: "700", color: noteSaving ? "var(--warning)" : "var(--accent)" }}>
+                      {noteSaving ? "Saving..." : (noteSavedAt ? `Saved at ${noteSavedAt}` : "Autosave on")}
+                    </span>
+                  </div>
+                  <textarea
+                    placeholder="Type your lesson notes here..."
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    style={{ minHeight: "340px", lineHeight: 1.6 }}
+                  />
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Definition")}>Template: Definition</button>
+                    <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Cause/Effect")}>Template: Cause/Effect</button>
+                    <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Timeline")}>Template: Timeline</button>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button onClick={() => saveCurrentNote()} className="btn btn-primary" disabled={noteSaving} style={{ opacity: noteSaving ? 0.7 : 1 }}>Save Note</button>
+                    <button onClick={generateFlashcardsFromNote} className="btn btn-secondary">Generate Flashcards</button>
+                    <button onClick={exportCurrentNote} className="btn btn-secondary">Export Note (.txt)</button>
+                    <button
+                      onClick={async () => {
+                        if (!confirm("Clear note for this lesson?")) return;
+                        setNoteDraft("");
+                        await saveCurrentNote("");
+                      }}
+                      className="btn btn-secondary"
+                      disabled={noteSaving}
+                      style={{ opacity: noteSaving ? 0.7 : 1 }}
+                    >
+                      Clear Note
+                    </button>
+                  </div>
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
+                    <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>Tags</p>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
+                      <input
+                        type="text"
+                        placeholder="Add tag (example: exam)"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addTagToCurrentLesson(newTagInput);
+                          }
+                        }}
+                        style={{ padding: "10px", flex: 1, minWidth: "220px" }}
+                      />
+                      <button className="btn btn-secondary" onClick={() => addTagToCurrentLesson(newTagInput)}>Add Tag</button>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
+                      {quickTagOptions.map((tag) => (
+                        <button key={`quick-tag-${tag}`} className="btn btn-secondary" style={{ padding: "5px 8px" }} onClick={() => addTagToCurrentLesson(tag)}>
+                          + #{tag}
+                        </button>
+                      ))}
+                    </div>
+                    {currentLessonTags.length > 0 && (
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        {currentLessonTags.map((tag) => (
+                          <button key={`tag-${tag}`} className="btn btn-secondary" style={{ padding: "4px 8px" }} onClick={() => removeTagFromCurrentLesson(tag)}>
+                            #{tag} x
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {lessonFlashcards.length > 0 && (
+                    <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
+                      <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>
+                        Flashcards ({Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length})
+                      </p>
+                      <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "12px", background: "var(--card)", minHeight: "88px" }}>
+                        <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px" }}>Q</p>
+                        <p style={{ fontSize: "14px", fontWeight: "700" }}>{lessonFlashcards[flashcardIndex]?.q}</p>
+                        {flashcardReveal && (
+                          <>
+                            <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginTop: "10px", marginBottom: "6px" }}>A</p>
+                            <p style={{ fontSize: "13px", color: "var(--muted)" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
+                          </>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
+                        <button className="btn btn-secondary" onClick={() => setFlashcardIndex((prev) => Math.max(0, prev - 1))} disabled={flashcardIndex === 0} style={{ opacity: flashcardIndex === 0 ? 0.6 : 1 }}>Prev</button>
+                        <button className="btn btn-secondary" onClick={() => setFlashcardReveal((prev) => !prev)}>{flashcardReveal ? "Hide Answer" : "Show Answer"}</button>
+                        <button className="btn btn-secondary" onClick={() => { setFlashcardReveal(false); setFlashcardIndex((prev) => Math.min(lessonFlashcards.length - 1, prev + 1)); }} disabled={flashcardIndex >= lessonFlashcards.length - 1} style={{ opacity: flashcardIndex >= lessonFlashcards.length - 1 ? 0.6 : 1 }}>Next</button>
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
+                    <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>Pin Key Point</p>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <input
+                        type="text"
+                        placeholder="Add a key takeaway from this lesson..."
+                        value={newPinnedPointText}
+                        onChange={(e) => setNewPinnedPointText(e.target.value)}
+                        style={{ padding: "10px", flex: 1, minWidth: "220px" }}
+                      />
+                      <button className="btn btn-primary" onClick={addPinnedKeyPoint}>Pin</button>
+                    </div>
+                    {lessonPinnedPoints.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px" }}>
+                        {lessonPinnedPoints.map((point) => (
+                          <div key={point.id} style={{ display: "flex", justifyContent: "space-between", gap: "8px", border: "1px solid var(--border)", borderRadius: "10px", padding: "6px 8px", background: "var(--card)" }}>
+                            <span style={{ fontSize: "12px" }}>{point.text}</span>
+                            <button className="btn btn-danger" style={{ padding: "4px 8px" }} onClick={() => removePinnedKeyPoint(point.id)}>x</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => {
+                let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", "");
+                let link = curChapter[k];
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    {link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{ border: "none", borderRadius: "20px" }} /> : <div style={{ textAlign: "center", padding: "100px", opacity: 0.5 }}>This resource hasn't been linked yet.</div>}
+                    {activeTab === "Book PDF" && curChapter.audioBook && (
+                      <div style={{ padding: "20px", background: "var(--input-bg)", borderRadius: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                        <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Audiobook Resource</h3>
+                        {curChapter.audioBook.includes("drive.google.com") ? (
+                          <iframe src={curChapter.audioBook.replace("/view", "/preview")} width="100%" height="150" style={{ border: "none", borderRadius: "10px" }} />
+                        ) : (
+                          <audio controls src={curChapter.audioBook} style={{ width: "100%", outline: "none" }} />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
 
         {view === "edit" && tempChapter && (
-          <div className="card" style={{maxWidth: "900px", margin: "0 auto"}}>
-            <div style={{display: "flex", justifyContent: "space-between", marginBottom: "32px"}}>
-                <h2 style={{fontWeight: "900"}}>Editor</h2>
-                <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{background: "var(--accent)", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer"}}>SAVE CHANGES</button>
+          <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px" }}>
+              <h2 style={{ fontWeight: "900" }}>Editor</h2>
+              <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{ background: "var(--accent)", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer" }}>SAVE CHANGES</button>
             </div>
-            <div style={{display: "flex", flexDirection: "column", gap: "24px"}}>
-                <div><label style={{color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({...tempChapter, summary: e.target.value})} /></div>
-                <div><label style={{color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px"}}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({...tempChapter, spellings: e.target.value})} /></div>
-                <div style={{padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)"}}>
-                    <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap"}}>
-                      <label style={{color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase"}}>Interactive Quiz</label>
-                      <button onClick={addQuizQuestion} style={{padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "700", cursor: "pointer"}}>+ Add Question</button>
-                    </div>
-                    <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
-                      {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
-                        <div key={`edit-quiz-${qIndex}`} style={{border: "1px solid var(--border)", borderRadius: "14px", padding: "12px", background: "var(--card)"}}>
-                          <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px"}}>
-                            <p style={{fontWeight: "800", fontSize: "12px"}}>Question {qIndex + 1}</p>
-                            <button onClick={() => removeQuizQuestion(qIndex)} style={{background: "rgba(var(--danger-rgb),0.14)", color: "var(--danger)", border: "1px solid rgba(var(--danger-rgb),0.3)", borderRadius: "8px", padding: "4px 8px", cursor: "pointer", fontWeight: "700"}}>Remove</button>
-                          </div>
-                          <div style={{marginBottom: "8px"}}>
-                            <p style={{fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)"}}>Question Type</p>
-                            <select value={q.type || "mcq"} onChange={(e) => updateQuizQuestion(qIndex, "type", e.target.value)} style={{padding: "10px"}}>
-                              <option value="mcq">MCQ</option>
-                              <option value="oneWord">One Word</option>
-                              <option value="caseStudy">Case Study</option>
-                              <option value="pictureStudy">Picture Study</option>
-                            </select>
-                          </div>
-                          <input type="text" placeholder="Type question..." value={q.question || ""} onChange={(e) => updateQuizQuestion(qIndex, "question", e.target.value)} style={{padding: "10px", marginBottom: "10px"}} />
-                          {(q.type || "mcq") === "mcq" ? (
-                            <>
-                              <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px"}}>
-                                {[0, 1, 2, 3].map((oIndex) => (
-                                  <input key={`q-${qIndex}-o-${oIndex}`} type="text" placeholder={`Option ${String.fromCharCode(65 + oIndex)}`} value={(q.options || [])[oIndex] || ""} onChange={(e) => updateQuizOption(qIndex, oIndex, e.target.value)} style={{padding: "10px"}} />
-                                ))}
-                              </div>
-                              <div style={{marginTop: "10px"}}>
-                                <p style={{fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)"}}>Correct Option</p>
-                                <select value={q.correctIndex ?? 0} onChange={(e) => updateQuizQuestion(qIndex, "correctIndex", Number(e.target.value))} style={{padding: "10px"}}>
-                                  <option value={0}>A</option>
-                                  <option value={1}>B</option>
-                                  <option value={2}>C</option>
-                                  <option value={3}>D</option>
-                                </select>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              {(q.type === "caseStudy") && (
-                                <textarea placeholder="Case study passage..." value={q.caseText || ""} onChange={(e) => updateQuizQuestion(qIndex, "caseText", e.target.value)} style={{minHeight: "90px", marginBottom: "8px"}} />
-                              )}
-                              {(q.type === "pictureStudy") && (
-                                <input type="text" placeholder="Image URL (https://...)" value={q.imageUrl || ""} onChange={(e) => updateQuizQuestion(qIndex, "imageUrl", e.target.value)} style={{padding: "10px", marginBottom: "8px"}} />
-                              )}
-                              <input type="text" placeholder="Correct answer (exact text)" value={q.answer || ""} onChange={(e) => updateQuizQuestion(qIndex, "answer", e.target.value)} style={{padding: "10px"}} />
-                            </>
-                          )}
-                          <textarea
-                            placeholder="Explanation shown after submit (optional)"
-                            value={q.explanation || ""}
-                            onChange={(e) => updateQuizQuestion(qIndex, "explanation", e.target.value)}
-                            style={{minHeight: "80px", marginTop: "8px"}}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{marginTop: "14px", borderTop: "1px dashed var(--border)", paddingTop: "12px"}}>
-                      <p style={{fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase"}}>Quick Bulk Add (NotebookLM Friendly)</p>
-                      <div style={{display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px"}}>
-                        <span style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>Parser mode:</span>
-                        <button onClick={() => setParserMode("strict")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "strict" ? "var(--accent-soft)" : "var(--input-bg)"}}>Strict</button>
-                        <button onClick={() => setParserMode("balanced")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "balanced" ? "var(--accent-soft)" : "var(--input-bg)"}}>Balanced</button>
-                        <button onClick={() => setParserMode("aggressive")} className="btn btn-secondary" style={{padding: "6px 10px", background: parserMode === "aggressive" ? "var(--accent-soft)" : "var(--input-bg)"}}>Aggressive</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div><label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({ ...tempChapter, summary: e.target.value })} /></div>
+              <div><label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({ ...tempChapter, spellings: e.target.value })} /></div>
+              <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap" }}>
+                  <label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase" }}>Interactive Quiz</label>
+                  <button onClick={addQuizQuestion} style={{ padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "700", cursor: "pointer" }}>+ Add Question</button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
+                    <div key={`edit-quiz-${qIndex}`} style={{ border: "1px solid var(--border)", borderRadius: "14px", padding: "12px", background: "var(--card)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <p style={{ fontWeight: "800", fontSize: "12px" }}>Question {qIndex + 1}</p>
+                        <button onClick={() => removeQuizQuestion(qIndex)} style={{ background: "rgba(var(--danger-rgb),0.14)", color: "var(--danger)", border: "1px solid rgba(var(--danger-rgb),0.3)", borderRadius: "8px", padding: "4px 8px", cursor: "pointer", fontWeight: "700" }}>Remove</button>
                       </div>
-                      <textarea
-                        placeholder={`Paste from NotebookLM directly.\nSupported examples:\n1) What is ...?\nA) ...\nB) ...\nC) ...\nD) ...\nCorrect Answer: B\n\nQ2: Another question...\nA. ...\nB. ...\nAnswer: Option text`}
-                        value={quizBuilderText}
-                        onChange={(e) => setQuizBuilderText(e.target.value)}
-                        style={{minHeight: "130px"}}
-                      />
-                      <div style={{display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap"}}>
-                        <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer"}}>
-                          Preview Paste
-                        </button>
-                        <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer"}}>
-                          Add Preview
-                        </button>
-                        <button onClick={bulkAddQuizQuestions} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Parse & Add Questions</button>
-                        <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1}}>
-                          {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
-                        </button>
-                        <button onClick={exportQuizPack} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: "pointer"}}>Export Pack</button>
-                        <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer"}}>
-                          Import Pack
-                        </button>
+                      <div style={{ marginBottom: "8px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)" }}>Question Type</p>
+                        <select value={q.type || "mcq"} onChange={(e) => updateQuizQuestion(qIndex, "type", e.target.value)} style={{ padding: "10px" }}>
+                          <option value="mcq">MCQ</option>
+                          <option value="oneWord">One Word</option>
+                          <option value="caseStudy">Case Study</option>
+                          <option value="pictureStudy">Picture Study</option>
+                        </select>
                       </div>
-                      <textarea
-                        placeholder="Quiz pack JSON (exported or pasted)"
-                        value={quizPackText}
-                        onChange={(e) => setQuizPackText(e.target.value)}
-                        style={{minHeight: "110px", marginTop: "8px"}}
-                      />
-                      {parsedPreview.length > 0 && (
-                        <div style={{marginTop: "8px", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--card)"}}>
-                          <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px"}}>Preview ({parsedPreview.length})</p>
-                          <div style={{display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto"}}>
-                            {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
-                              <div key={`preview-${idx}`} style={{fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px"}}>
-                                <strong style={{fontSize: "10px", color: "var(--accent)", marginRight: "6px"}}>{q.type}</strong>{q.question}
-                              </div>
+                      <input type="text" placeholder="Type question..." value={q.question || ""} onChange={(e) => updateQuizQuestion(qIndex, "question", e.target.value)} style={{ padding: "10px", marginBottom: "10px" }} />
+                      {(q.type || "mcq") === "mcq" ? (
+                        <>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                            {[0, 1, 2, 3].map((oIndex) => (
+                              <input key={`q-${qIndex}-o-${oIndex}`} type="text" placeholder={`Option ${String.fromCharCode(65 + oIndex)}`} value={(q.options || [])[oIndex] || ""} onChange={(e) => updateQuizOption(qIndex, oIndex, e.target.value)} style={{ padding: "10px" }} />
                             ))}
                           </div>
-                        </div>
+                          <div style={{ marginTop: "10px" }}>
+                            <p style={{ fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)" }}>Correct Option</p>
+                            <select value={q.correctIndex ?? 0} onChange={(e) => updateQuizQuestion(qIndex, "correctIndex", Number(e.target.value))} style={{ padding: "10px" }}>
+                              <option value={0}>A</option>
+                              <option value={1}>B</option>
+                              <option value={2}>C</option>
+                              <option value={3}>D</option>
+                            </select>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {(q.type === "caseStudy") && (
+                            <textarea placeholder="Case study passage..." value={q.caseText || ""} onChange={(e) => updateQuizQuestion(qIndex, "caseText", e.target.value)} style={{ minHeight: "90px", marginBottom: "8px" }} />
+                          )}
+                          {(q.type === "pictureStudy") && (
+                            <input type="text" placeholder="Image URL (https://...)" value={q.imageUrl || ""} onChange={(e) => updateQuizQuestion(qIndex, "imageUrl", e.target.value)} style={{ padding: "10px", marginBottom: "8px" }} />
+                          )}
+                          <input type="text" placeholder="Correct answer (exact text)" value={q.answer || ""} onChange={(e) => updateQuizQuestion(qIndex, "answer", e.target.value)} style={{ padding: "10px" }} />
+                        </>
                       )}
+                      <textarea
+                        placeholder="Explanation shown after submit (optional)"
+                        value={q.explanation || ""}
+                        onChange={(e) => updateQuizQuestion(qIndex, "explanation", e.target.value)}
+                        style={{ minHeight: "80px", marginTop: "8px" }}
+                      />
                     </div>
+                  ))}
                 </div>
-                <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px"}}>
-                    {["video", "slides", "bookPdf", "audioBook", "infographic", "mindMap"].map(f => (
-                        <div key={f}><p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px"}}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({...tempChapter, [f]: e.target.value})} style={{padding: "12px"}} /></div>
-                    ))}
+                <div style={{ marginTop: "14px", borderTop: "1px dashed var(--border)", paddingTop: "12px" }}>
+                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase" }}>Quick Bulk Add (NotebookLM Friendly)</p>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "700" }}>Parser mode:</span>
+                    <button onClick={() => setParserMode("strict")} className="btn btn-secondary" style={{ padding: "6px 10px", background: parserMode === "strict" ? "var(--accent-soft)" : "var(--input-bg)" }}>Strict</button>
+                    <button onClick={() => setParserMode("balanced")} className="btn btn-secondary" style={{ padding: "6px 10px", background: parserMode === "balanced" ? "var(--accent-soft)" : "var(--input-bg)" }}>Balanced</button>
+                    <button onClick={() => setParserMode("aggressive")} className="btn btn-secondary" style={{ padding: "6px 10px", background: parserMode === "aggressive" ? "var(--accent-soft)" : "var(--input-bg)" }}>Aggressive</button>
+                  </div>
+                  <textarea
+                    placeholder={`Paste from NotebookLM directly.\nSupported examples:\n1) What is ...?\nA) ...\nB) ...\nC) ...\nD) ...\nCorrect Answer: B\n\nQ2: Another question...\nA. ...\nB. ...\nAnswer: Option text`}
+                    value={quizBuilderText}
+                    onChange={(e) => setQuizBuilderText(e.target.value)}
+                    style={{ minHeight: "130px" }}
+                  />
+                  <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
+                    <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer" }}>
+                      Preview Paste
+                    </button>
+                    <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer" }}>
+                      Add Preview
+                    </button>
+                    <button onClick={bulkAddQuizQuestions} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>Parse & Add Questions</button>
+                    <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1 }}>
+                      {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
+                    </button>
+                    <button onClick={exportQuizPack} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>Export Pack</button>
+                    <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer" }}>
+                      Import Pack
+                    </button>
+                  </div>
+                  <textarea
+                    placeholder="Quiz pack JSON (exported or pasted)"
+                    value={quizPackText}
+                    onChange={(e) => setQuizPackText(e.target.value)}
+                    style={{ minHeight: "110px", marginTop: "8px" }}
+                  />
+                  {parsedPreview.length > 0 && (
+                    <div style={{ marginTop: "8px", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--card)" }}>
+                      <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px" }}>Preview ({parsedPreview.length})</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
+                        {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
+                          <div key={`preview-${idx}`} style={{ fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px" }}>
+                            <strong style={{ fontSize: "10px", color: "var(--accent)", marginRight: "6px" }}>{q.type}</strong>{q.question}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                {["video", "slides", "bookPdf", "audioBook", "infographic", "mindMap"].map(f => (
+                  <div key={f}><p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px" }}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({ ...tempChapter, [f]: e.target.value })} style={{ padding: "12px" }} /></div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
         {saveStatus && (
-          <div style={{position: "fixed", right: "20px", bottom: achievementToast ? "88px" : "20px", zIndex: 1200, padding: "10px 14px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)", fontWeight: "700", color: "var(--text)"}}>
+          <div style={{ position: "fixed", right: "20px", bottom: achievementToast ? "88px" : "20px", zIndex: 1200, padding: "10px 14px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card)", fontWeight: "700", color: "var(--text)" }}>
             {saveStatus}
           </div>
         )}
@@ -4802,12 +4814,12 @@ export default function Home() {
           <div className="firework-burst">🎆🎇</div>
         )}
         {themeUnlockShowcase && (
-          <div style={{position: "fixed", inset: 0, zIndex: 1204, background: "rgba(2,6,23,0.55)", display: "grid", placeItems: "center"}}>
-            <div className="card" style={{maxWidth: "360px", textAlign: "center", padding: "22px"}}>
-              <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900"}}>Theme Unlocked</p>
-              <h3 style={{fontSize: "24px", marginTop: "8px", marginBottom: "8px", color: "var(--accent)"}}>✨ {themeUnlockShowcase.label}</h3>
-              <p style={{fontSize: "13px", color: "var(--muted)"}}>You earned a new theme through achievements.</p>
-              <button className="btn btn-primary" style={{marginTop: "12px"}} onClick={() => setThemeUnlockShowcase(null)}>Awesome</button>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1204, background: "rgba(2,6,23,0.55)", display: "grid", placeItems: "center" }}>
+            <div className="card" style={{ maxWidth: "360px", textAlign: "center", padding: "22px" }}>
+              <p style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900" }}>Theme Unlocked</p>
+              <h3 style={{ fontSize: "24px", marginTop: "8px", marginBottom: "8px", color: "var(--accent)" }}>✨ {themeUnlockShowcase.label}</h3>
+              <p style={{ fontSize: "13px", color: "var(--muted)" }}>You earned a new theme through achievements.</p>
+              <button className="btn btn-primary" style={{ marginTop: "12px" }} onClick={() => setThemeUnlockShowcase(null)}>Awesome</button>
             </div>
           </div>
         )}
@@ -4843,7 +4855,7 @@ export default function Home() {
                 </span>
               ))}
             </div>
-            <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)"}}>
+            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)" }}>
               🏆 {achievementToast}
             </div>
           </>

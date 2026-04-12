@@ -4,7 +4,7 @@
   :root {
     --background: #0a0a0b;
     --foreground: #ffffff;
-    --accent: #a855f7;
+    --accent: #10b981;
     --card: #121214;
     --border: #27272a;
   }
@@ -35,7 +35,7 @@
   }
 
   .text-glow {
-    text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   }
 
   .neo-brutalism {
