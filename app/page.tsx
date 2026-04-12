@@ -5,7 +5,8 @@ import {
   Trophy, BookOpen, Zap, Settings, Flame,
   ChevronRight, Search, Plus, Star, Map,
   Clock, CheckCircle2, AlertCircle, FileText,
-  MessageSquare, LayoutDashboard, LogOut, User, Volume2
+  MessageSquare, LayoutDashboard, LogOut, User, Volume2,
+  X, Moon, Sun
 } from "lucide-react";
 import { initializeApp, getApps } from "firebase/app";
 import {
@@ -230,12 +231,14 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [sessionStartTime]);
 
-  // Track session XP
+  // Track session XP correctly
+  const [prevUserXP, setPrevUserXP] = useState(userXP);
   useEffect(() => {
-    if (userXP > 0) {
-      setSessionXP(prev => prev + 5); // Fallback: just track progress
+    if (userXP > prevUserXP) {
+      setSessionXP(prev => prev + (userXP - prevUserXP));
     }
-  }, [userXP]);
+    setPrevUserXP(userXP);
+  }, [userXP, prevUserXP]);
 
   // Motivational Quotes
   const quotes = [
@@ -525,7 +528,12 @@ export default function Home() {
 
   useEffect(() => {
     const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    setTheme(darkQuery.matches ? 'dark' : 'light');
+    const storedTheme = window.localStorage.getItem("theme") as 'dark' | 'light';
+    if (storedTheme) {
+      setTheme(storedTheme);
+    } else {
+      setTheme(darkQuery.matches ? 'dark' : 'light');
+    }
     const storedUiTheme = window.localStorage.getItem("uiTheme");
     if (storedUiTheme) setUiTheme(storedUiTheme);
     const storedTextSize = window.localStorage.getItem("textSize");
@@ -538,7 +546,13 @@ export default function Home() {
     if (storedQuickSettings === "1" || storedQuickSettings === "0") setMobileQuickSettings(storedQuickSettings === "1");
     const storedSound = window.localStorage.getItem("soundEnabled");
     if (storedSound === "1" || storedSound === "0") setSoundEnabled(storedSound === "1");
-    const themeListener = (e: MediaQueryListEvent) => setTheme(e.matches ? 'dark' : 'light');
+    
+    // Only follow system theme if no manual preference is set
+    const themeListener = (e: MediaQueryListEvent) => {
+      if (!window.localStorage.getItem("theme")) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    };
     darkQuery.addEventListener('change', themeListener);
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -613,6 +627,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    window.localStorage.setItem("theme", theme);
     window.localStorage.setItem("uiTheme", uiTheme);
     window.localStorage.setItem("textSize", textSize);
     window.localStorage.setItem("reduceMotion", reduceMotion ? "1" : "0");
@@ -620,7 +635,23 @@ export default function Home() {
     window.localStorage.setItem("sidebarDensity", sidebarDensity);
     window.localStorage.setItem("mobileQuickSettings", mobileQuickSettings ? "1" : "0");
     window.localStorage.setItem("soundEnabled", soundEnabled ? "1" : "0");
-  }, [uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled]);
+  }, [theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled]);
+
+  // Optimized Mouse Spotlight Effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const cards = document.querySelectorAll('.card');
+      cards.forEach((card: any) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [view]);
 
   useEffect(() => {
     if (!user || !settingsHydratedRef.current) return;
@@ -1415,11 +1446,17 @@ export default function Home() {
       if (accuracyPct >= 85) nextWeakIds = nextWeakIds.filter((id) => id !== curChapter.id);
       setQuizAttempts(nextAttempts);
       setWeakLessonIds(nextWeakIds);
+      const xpGain = score * 10; // 10 XP per correct answer
+      const nextXP = userXP + xpGain;
+      
       try {
         await setDoc(doc(db, "users", user.uid), {
           quizAttempts: nextAttempts,
-          weakLessonIds: nextWeakIds
+          weakLessonIds: nextWeakIds,
+          xp: nextXP
         }, { merge: true });
+        setSaveStatus(`+${xpGain} XP earned! 📚`);
+        setTimeout(() => setSaveStatus(""), 2000);
       } catch (e) {
         console.error(e);
       }
@@ -2735,16 +2772,31 @@ export default function Home() {
 
       <AnimatePresence>
         {isSpotlightOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 100000, display: "flex", justifyContent: "center", paddingTop: "100px" }}>
-            <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} style={{ width: "90%", maxWidth: "600px", background: "var(--card)", borderRadius: "24px", border: "1px solid var(--border)", height: "fit-content", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsSpotlightOpen(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", zIndex: 100000, display: "flex", justifyContent: "center", paddingTop: "100px", cursor: "pointer" }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: "90%", maxWidth: "600px", background: "var(--card)", borderRadius: "24px", border: "1px solid var(--border)", height: "fit-content", overflow: "hidden", display: "flex", flexDirection: "column", cursor: "default" }}
+            >
               <div style={{ padding: "20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "12px" }}>
                 <Search size={20} color="var(--accent)" />
                 <input autoFocus placeholder="Jump to command, book or setting..." style={{ flex: 1, background: "transparent", border: "none", color: "white", fontSize: "16px", outline: "none" }} value={spotlightQuery} onChange={(e) => setSpotlightQuery(e.target.value)} />
+                <button onClick={() => setIsSpotlightOpen(false)} style={{ background: "transparent", border: "none", color: "var(--muted)", cursor: "pointer", padding: "4px" }}>
+                  <X size={20} />
+                </button>
               </div>
               <div style={{ maxHeight: "400px", overflowY: "auto", padding: "12px" }}>
                 {(() => {
                   const items = books.flatMap(b => (b.chapters || []).map((c: any) => ({ ...c, bookTitle: b.title, bookId: b.id })));
                   const filtered = items.filter(c => `${c.title} ${c.bookTitle}`.toLowerCase().includes(spotlightQuery.toLowerCase())).slice(0, 8);
+                  if (filtered.length === 0) return <div style={{ padding: "20px", textAlign: "center", color: "var(--muted)" }}>No results found</div>;
                   return filtered.map(c => (
                     <div
                       key={c.id}
@@ -2787,8 +2839,8 @@ export default function Home() {
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
-        onClick={() => { setView("dashboard"); }} // Or open AI directly
-        style={{ position: "fixed", bottom: "100px", right: "24px", width: "60px", height: "60px", borderRadius: "50%", background: "var(--accent-grad)", border: "none", zIndex: 1000, color: "white", display: "grid", placeItems: "center", boxShadow: "0 8px 32px rgba(var(--accent-rgb), 0.4)", cursor: "pointer" }}
+        onClick={() => { setIsSpotlightOpen(true); }} // Assigned to Spotlight Search
+        className="bolt-button"
       >
         <Zap size={28} />
       </motion.button>
@@ -2817,6 +2869,102 @@ export default function Home() {
         .app-container {
           background: transparent;
           color: white;
+        }
+
+        .bolt-button {
+          position: fixed;
+          bottom: 40px;
+          right: 24px;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: var(--accent-grad);
+          border: none;
+          z-index: 1000;
+          color: white;
+          display: grid;
+          place-items: center;
+          box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.4);
+          cursor: pointer;
+        }
+
+        .status-bar-wrapper {
+          position: fixed;
+          top: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 1000;
+          pointer-events: none;
+          width: fit-content;
+        }
+
+        .status-bar {
+          background: rgba(0,0,0,0.6);
+          backdrop-filter: blur(20px);
+          padding: 10px 24px;
+          border-radius: 100px;
+          border: 1px solid var(--border);
+          display: flex;
+          gap: 24px;
+          align-items: center;
+          box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15), 0 8px 32px rgba(0,0,0,0.4);
+          pointer-events: auto;
+          cursor: grab;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+          .status-bar-wrapper {
+            left: 0 !important;
+            right: 0 !important;
+            transform: none !important;
+            display: flex !important;
+            justify-content: center !important;
+            padding: 0 10px !important;
+            width: 100% !important;
+          }
+          .status-bar {
+            gap: 12px !important;
+            padding: 8px 16px !important;
+            width: auto !important;
+            max-width: 100% !important;
+            overflow-x: auto !important;
+            justify-content: flex-start !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .status-bar > div, .status-bar > button { flex-shrink: 0 !important; }
+          .mobile-hide { display: none !important; }
+          .mobile-sep { display: none !important; }
+        }
+
+        .card {
+          position: relative;
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          padding: 24px;
+          backdrop-filter: blur(12px);
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+          overflow: hidden;
+        }
+
+        .card:hover {
+          box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+          border-color: var(--accent);
+        }
+
+        .card::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(var(--accent-rgb), 0.15), transparent 40%);
+          opacity: 0;
+          transition: opacity 0.4s;
+          pointer-events: none;
+        }
+
+        .card:hover::after {
+          opacity: 1;
         }
 
         .sidebar {
@@ -2969,6 +3117,7 @@ export default function Home() {
           font-weight: 800;
           letter-spacing: -1.5px;
           margin-bottom: 8px;
+          line-height: 1.1;
         }
 
         .bento-grid {
@@ -3536,14 +3685,40 @@ export default function Home() {
             box-shadow: 0 0 8px var(--accent);
           }
           
-          .main-content { padding: 16px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); overflow-x: hidden; margin-left: 0 !important; }
+          .main-content { 
+            padding: 140px 16px !important; 
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px) !important; 
+            overflow-x: hidden; 
+            margin-left: 0 !important; 
+          }
           .page-shell { max-width: 100%; }
-          .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); }
+          .mobile-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 24px; 
+            padding: 12px 16px; 
+            background: var(--card); 
+            border-radius: 20px; 
+            border: 1px solid var(--border);
+            margin-top: -20px; /* Pull it slightly up since main-content has huge padding */
+          }
           .dashboard-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
           .library-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
           .library-tools { grid-template-columns: 1fr !important; }
           .tab-container { overflow-x: auto; padding-bottom: 10px; gap: 8px; }
-          .page-title { font-size: 24px; }
+          .page-title { 
+            font-size: 24px !important; 
+            letter-spacing: -1.5px !important; 
+            line-height: 1 !important;
+            margin-bottom: 12px !important;
+          }
+          .bolt-button {
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 100px);
+            right: 16px;
+            width: 54px;
+            height: 54px;
+          }
         }
       `}</style>
 
@@ -3625,32 +3800,55 @@ export default function Home() {
       </motion.div>
 
       <div className="main-content" ref={mainContentRef}>
-        <div style={{ position: "fixed", top: "24px", left: "50%", transform: "translateX(-50%)", zIndex: 1000, pointerEvents: "none" }}>
+        <div className="status-bar-wrapper">
           <motion.div
+            drag
+            dragConstraints={{ left: -100, right: 100, top: 0, bottom: 400 }}
+            dragElastic={0.1}
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            style={{
-              background: "rgba(0,0,0,0.4)",
-              backdropFilter: "blur(16px)",
-              padding: "8px 20px",
-              borderRadius: "100px",
-              border: "1px solid var(--border)",
-              display: "flex",
-              gap: "24px",
-              alignItems: "center",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
-            }}
+            className="status-bar"
+            whileDrag={{ cursor: "grabbing", scale: 1.02, boxShadow: "0 15px 45px rgba(0,0,0,0.6)" }}
           >
+            {/* Level Badge */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "800" }}>
+              <div style={{ background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>LVL {userLevel}</div>
+              {leaderboard.length > 0 && user && (
+                <div style={{ background: "rgba(255,255,255,0.1)", color: "white", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>
+                  #{leaderboard.sort((a, b) => (b.xp || 0) - (a.xp || 0)).findIndex(p => p.uid === user.uid) + 1}
+                </div>
+              )}
+            </div>
+            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+            
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800" }}>
               <Zap size={14} color="var(--accent)" />
-              <span style={{ color: "var(--accent)" }}>{sessionXP} XP SESSION</span>
+              <span style={{ color: "var(--accent)" }}>{sessionXP} <span className="mobile-hide">XP SESSION</span></span>
             </div>
-            <div style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800", color: "white" }}>
               <Clock size={14} />
-              <span>{sessionTime} MINS STUDYING</span>
+              <span>{sessionTime}m</span>
             </div>
-            <div style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+
+            {/* Streak & Goal & Wins */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#f59e0b" }}>
+                <Flame size={14} />
+                <span>{streakCount}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#ec4899" }}>
+                <span style={{ fontSize: "10px" }}>W</span>
+                <span>{dailyCompleted}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#3b82f6" }}>
+                <Trophy size={14} />
+                <span>{Math.round(goalProgressPct)}%</span>
+              </div>
+            </div>
+            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
+
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               {[
                 { id: "lofi", icon: <Volume2 size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
@@ -3660,6 +3858,13 @@ export default function Home() {
                   {track.icon}
                 </button>
               ))}
+              <div style={{ width: "1px", height: "12px", background: "var(--border)", margin: "0 4px" }} />
+              <button 
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+                style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", display: "grid", placeItems: "center" }}
+              >
+                {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
+              </button>
             </div>
             <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 10px var(--accent)", animation: "pulse 2s infinite" }} />
           </motion.div>
@@ -4153,6 +4358,13 @@ export default function Home() {
 
                 <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
 
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+                    <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                  </div>
+                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{theme === 'dark' ? 'ON' : 'OFF'}</span>
+                </button>
                 <button onClick={() => setReduceMotion(!reduceMotion)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <Zap size={20} />
