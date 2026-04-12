@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useMemo } from "react";
+import Head from "next/head";
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring } from "framer-motion";
 import {
   Trophy, BookOpen, Zap, Settings, Flame,
@@ -68,6 +69,19 @@ const ADMIN_EMAILS = new Set([
 ].map(toCanonicalEmail));
 
 export default function Home() {
+  return (
+    <>
+      <Head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+      </Head>
+      <AppContent />
+    </>
+  );
+}
+
+function AppContent() {
   const [user, setUser] = useState<any>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
@@ -138,6 +152,7 @@ export default function Home() {
   const [sessionXP, setSessionXP] = useState(0);
   const [sessionStartTime] = useState(Date.now());
   const [sessionTime, setSessionTime] = useState(0);
+  const [activityHistory, setActivityHistory] = useState<Record<string, boolean>>({});
   const [isZenMode, setIsZenMode] = useState(false);
   const [zenTime, setZenTime] = useState(25 * 60);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
@@ -153,10 +168,6 @@ export default function Home() {
   const [godMode, setGodMode] = useState(false);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  // Memoized stable heatmap data
-  const heatmapData = useMemo(() => {
-    return [...Array(52)].map(() => [...Array(7)].map(() => Math.random() > 0.8));
-  }, []);
 
   // Zen Mode Timer
   useEffect(() => {
@@ -516,6 +527,46 @@ export default function Home() {
   const [usedHint, setUsedHint] = useState<Record<number, boolean>>({});
   const [usedSkip, setUsedSkip] = useState<Record<number, boolean>>({});
 
+  // Memoized accurate heatmap data with intensity levels
+  const heatmapData = useMemo(() => {
+    const activityCounts: Record<string, number> = {};
+
+    const addActivity = (isoString?: string) => {
+      if (!isoString) return;
+      const key = isoString.split('T')[0];
+      activityCounts[key] = (activityCounts[key] || 0) + 1;
+    };
+
+    // Compile counts
+    Object.keys(activityHistory).forEach(d => { activityCounts[d] = (activityCounts[d] || 0) + 1; });
+    quizAttempts.forEach(a => addActivity(a.createdAt));
+    pinnedKeyPoints.forEach(p => addActivity(p.createdAt));
+    Object.values(notesMeta).forEach(ts => { if (ts && typeof ts === 'string') addActivity(ts); });
+    if (lastStudyDate) activityCounts[lastStudyDate] = (activityCounts[lastStudyDate] || 0) + 1;
+
+    const weeks = [];
+    const now = new Date();
+    const startDate = new Date(now);
+    startDate.setDate(now.getDate() - (51 * 7 + now.getDay()));
+    startDate.setHours(0, 0, 0, 0);
+    
+    let current = new Date(startDate);
+    for (let w = 0; w < 52; w++) {
+      const week = [];
+      for (let d = 0; d < 7; d++) {
+        const y = current.getFullYear();
+        const m = `${current.getMonth() + 1}`.padStart(2, "0");
+        const day = `${current.getDate()}`.padStart(2, "0");
+        const dateKey = `${y}-${m}-${day}`;
+        
+        week.push(activityCounts[dateKey] || 0);
+        current.setDate(current.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+    return weeks;
+  }, [activityHistory, quizAttempts, pinnedKeyPoints, notesMeta, lastStudyDate]);
+
   const curBookIdRef = useRef<string | null>(null);
   const lastAutosavePayloadRef = useRef("");
   const noteAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -727,6 +778,7 @@ export default function Home() {
         setPinnedKeyPoints(Array.isArray(data.pinnedKeyPoints) ? data.pinnedKeyPoints : []);
         setNoteTags((data.noteTags && typeof data.noteTags === "object") ? data.noteTags : {});
         setLastStudyTabByLesson((data.lastStudyTabByLesson && typeof data.lastStudyTabByLesson === "object") ? data.lastStudyTabByLesson : {});
+        setActivityHistory(data.activityHistory || {});
         setGiftedThemes(Array.isArray(data.giftedThemes) ? data.giftedThemes : []);
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
@@ -978,7 +1030,8 @@ export default function Home() {
         achievements: mergedAchievements,
         dailyProgressDate: today,
         dailyCompleted: nextDailyCompleted,
-        dailyGoalHits: nextDailyGoalHits
+        dailyGoalHits: nextDailyGoalHits,
+        [`activityHistory.${today}`]: true
       }, { merge: true });
       setMasteryConfetti(true);
       playVictoryTone();
@@ -1448,12 +1501,14 @@ export default function Home() {
       setWeakLessonIds(nextWeakIds);
       const xpGain = score * 10; // 10 XP per correct answer
       const nextXP = userXP + xpGain;
+      const today = getLocalDateKey();
       
       try {
         await setDoc(doc(db, "users", user.uid), {
           quizAttempts: nextAttempts,
           weakLessonIds: nextWeakIds,
-          xp: nextXP
+          xp: nextXP,
+          [`activityHistory.${today}`]: true
         }, { merge: true });
         setSaveStatus(`+${xpGain} XP earned! 📚`);
         setTimeout(() => setSaveStatus(""), 2000);
@@ -2004,12 +2059,14 @@ export default function Home() {
     try {
       await updateDoc(userRef, {
         [`lessonNotes.${chapterId}`]: text,
-        [`notesMeta.${chapterId}`]: touchedAt
+        [`notesMeta.${chapterId}`]: touchedAt,
+        [`activityHistory.${touchedAt.split('T')[0]}`]: true
       });
     } catch {
       await setDoc(userRef, {
         lessonNotes: { [chapterId]: text },
-        notesMeta: { [chapterId]: touchedAt }
+        notesMeta: { [chapterId]: touchedAt },
+        activityHistory: { [touchedAt.split('T')[0]]: true }
       }, { merge: true });
     }
   };
@@ -2875,8 +2932,50 @@ export default function Home() {
           --accent-rgb: 16, 185, 129;
           --accent-soft: rgba(16, 185, 129, 0.15);
           --accent-grad: linear-gradient(135deg, #10b981, #34d399);
-          --card: rgba(18, 18, 20, 0.6);
-          --border: rgba(255, 255, 255, 0.1);
+          --card: rgba(18, 18, 20, 0.7);
+          --border: rgba(255, 255, 255, 0.08);
+          --side: rgba(10, 10, 12, 0.95);
+          --font-main: 'Outfit', sans-serif;
+          --font-heading: 'Syne', sans-serif;
+        }
+
+        body {
+          font-family: var(--font-main);
+          letter-spacing: -0.01em;
+          background: #050505;
+        }
+
+        .syne-heading {
+          font-family: var(--font-heading);
+          letter-spacing: -0.04em;
+          text-transform: uppercase;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        .shimmer {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+          background-size: 200% 100%;
+          animation: shimmer 2s infinite;
+        }
+
+        .mesh-glow {
+          position: relative;
+        }
+        .mesh-glow::before {
+          content: "";
+          position: absolute;
+          top: -20%;
+          right: -20%;
+          width: 60%;
+          height: 60%;
+          background: radial-gradient(circle, rgba(var(--accent-rgb), 0.1) 0%, transparent 70%);
+          filter: blur(40px);
+          z-index: 0;
+          pointer-events: none;
         }
 
         ::selection {
@@ -2965,25 +3064,29 @@ export default function Home() {
           position: relative;
           background: var(--card);
           border: 1px solid var(--border);
-          border-radius: 24px;
+          border-radius: 28px;
           padding: 24px;
-          backdrop-filter: blur(12px);
-          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+          backdrop-filter: blur(24px);
+          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
           overflow: hidden;
+          box-shadow: 0 4px 24px -12px rgba(0,0,0,0.5);
+          display: flex;
+          flex-direction: column;
         }
 
         .card:hover {
-          box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-          border-color: var(--accent);
+          transform: translateY(-8px);
+          box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--accent-rgb), 0.2);
+          border-color: rgba(var(--accent-rgb), 0.4);
         }
 
         .card::after {
           content: "";
           position: absolute;
           inset: 0;
-          background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y), rgba(var(--accent-rgb), 0.15), transparent 40%);
+          background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(var(--accent-rgb), 0.18), transparent 45%);
           opacity: 0;
-          transition: opacity 0.4s;
+          transition: opacity 0.5s;
           pointer-events: none;
         }
 
@@ -2992,25 +3095,31 @@ export default function Home() {
         }
 
         .sidebar {
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(20px);
+          background: var(--side);
+          backdrop-filter: blur(30px);
           border-right: 1px solid var(--border);
-          padding: 24px;
+          padding: 32px 20px;
           display: flex;
           flex-direction: column;
           height: 100vh;
-          position: fixed;
-          left: 0;
           top: 0;
           width: 280px;
           z-index: 50;
         }
 
         .main-content {
-          margin-left: 280px;
-          padding: 40px;
+          flex: 1;
+          padding: 48px;
           min-height: 100vh;
-          max-width: 1400px;
+          overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .page-shell {
+          width: 100%;
+          max-width: 980px;
         }
 
         .card {
@@ -3152,11 +3261,36 @@ export default function Home() {
         }
 
         @media (max-width: 1024px) {
-          .sidebar { width: 80px; padding: 16px; align-items: center; }
-          .sidebar h1, .sidebar span, .profile-card p, .profile-card h3, .sidebar-extras h1 { display: none; }
-          .main-content { margin-left: 80px; padding: 24px; }
-          .nav-btn { justify-content: center; padding: 12px; }
-          .nav-btn svg { width: 24px; height: 24px; }
+          .sidebar { 
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 72px;
+            width: fit-content;
+            max-width: 90%;
+            flex-direction: row;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            z-index: 1100;
+            background: rgba(10,10,12,0.8);
+            backdrop-filter: blur(20px);
+            gap: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+          }
+          .sidebar-extras, .sidebar h1 { display: none !important; }
+          .main-content { padding-top: 100px; padding-bottom: 120px; }
+          .sidebar-nav { flex-direction: row; gap: 4px; }
+          .nav-btn { 
+            padding: 0;
+            width: 54px;
+            height: 54px;
+            justify-content: center;
+            border-radius: 50%;
+          }
+          .nav-btn span { display: none; }
+          .nav-btn svg { width: 22px; height: 22px; }
         }
         .theme-default {
           --accent: #10b981;
@@ -3759,12 +3893,15 @@ export default function Home() {
           }
           
           .main-content { 
-            padding: 140px 16px !important; 
-            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px) !important; 
+            padding: 120px 20px !important; 
+            padding-bottom: 140px !important; 
             overflow-x: hidden; 
             margin-left: 0 !important; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
           }
-          .page-shell { max-width: 100%; }
+          .page-shell { width: 100%; max-width: 600px; }
           .mobile-header { 
             display: flex; 
             justify-content: space-between; 
@@ -3969,12 +4106,12 @@ export default function Home() {
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="page-shell"
             >
-              <header style={{ marginBottom: "40px" }}>
+              <header style={{ marginBottom: "40px", textAlign: "left" }}>
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                  <h1 className="page-title" style={{ marginBottom: "4px" }}>
-                    {greeting.text}, {getUserName(user).split(' ')[0]}! {greeting.emoji}
+                  <h1 className="page-title syne-heading" style={{ marginBottom: "8px", fontSize: "min(36px, 8vw)", lineHeight: "1", color: "white" }}>
+                    {greeting.text},<br/>{getUserName(user).split(' ')[0]}! {greeting.emoji}
                   </h1>
-                  <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8 }}>{quote}</p>
+                  <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8, maxWidth: "400px" }}>{quote}</p>
                 </motion.div>
               </header>
 
@@ -3990,7 +4127,7 @@ export default function Home() {
                 <motion.div
                   variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
                   whileHover={{ y: -5 }}
-                  className="card"
+                  className="card mesh-glow"
                   style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}
                 >
                   <div style={{ position: "absolute", top: "-10%", right: "-10%", opacity: 0.1 }}><Star size={120} fill="var(--accent)" color="var(--accent)" /></div>
@@ -4003,8 +4140,10 @@ export default function Home() {
                       initial={{ width: 0 }}
                       animate={{ width: `${(userXP % 1000) / 10}%` }}
                       transition={{ duration: 1.5, type: "spring" }}
-                      style={{ height: "100%", background: "var(--accent-grad)" }}
-                    />
+                      style={{ height: "100%", background: "var(--accent-grad)", position: "relative" }}
+                    >
+                      <div className="shimmer" style={{ position: "absolute", inset: 0 }} />
+                    </motion.div>
                   </div>
                   <p style={{ fontSize: "12px", opacity: 0.5, fontWeight: "800" }}>{Math.max(0, 1000 - (userXP % 1000))} XP to Level {userLevel + 1}</p>
                 </motion.div>
@@ -4066,19 +4205,20 @@ export default function Home() {
                 </motion.div>
 
                 <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="card" style={{ gridColumn: "span 12" }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                    Consistency Grind <span style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "500" }}>Study activity over the last year</span>
+                  <h3 className="syne-heading" style={{ fontSize: "14px", fontWeight: "800", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", color: "var(--accent)" }}>
+                    Consistency Grind <span style={{ color: "var(--muted)", fontSize: "11px", fontWeight: "500", textTransform: "none", letterSpacing: "0" }}>Study activity over the last year</span>
                   </h3>
                   <div style={{ display: "flex", gap: "4px", overflowX: "auto", paddingBottom: "8px" }}>
                     {heatmapData.map((week, weekIdx) => (
                       <div key={weekIdx} style={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: "4px" }}>
-                        {week.map((active, dayIdx) => (
+                        {week.map((count, dayIdx) => (
                           <div
                             key={dayIdx}
                             style={{
-                              width: "12px", height: "12px", borderRadius: "2px",
-                              background: active ? "var(--accent)" : "rgba(255,255,255,0.03)",
-                              opacity: active ? 1 : 1
+                              width: "12px", height: "12px", borderRadius: "3.5px",
+                              background: count >= 4 ? "var(--accent)" : count >= 1 ? "rgba(var(--accent-rgb), 0.45)" : "rgba(255,255,255,0.04)",
+                              transition: "all 0.3s ease",
+                              boxShadow: count >= 4 ? "0 0 10px rgba(var(--accent-rgb), 0.3)" : "none"
                             }}
                           />
                         ))}
@@ -4109,7 +4249,7 @@ export default function Home() {
               )}
 
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-                <h2 className="section-title" style={{ fontFamily: "var(--font-syne)", fontSize: "24px", fontWeight: "800" }}>Challenges 🚀</h2>
+                <h2 className="section-title syne-heading" style={{ fontSize: "22px", fontWeight: "800" }}>Challenges 🚀</h2>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
