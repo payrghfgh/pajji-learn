@@ -7,7 +7,7 @@ import {
   ChevronRight, Search, Plus, Star, Map,
   Clock, CheckCircle2, AlertCircle, FileText,
   MessageSquare, LayoutDashboard, LogOut, User, Volume2,
-  X, Moon, Sun
+  X, Moon, Sun, CloudRain, Waves, Coffee, Brain, Music, Sparkles, Wind
 } from "lucide-react";
 import { initializeApp, getApps } from "firebase/app";
 import {
@@ -3029,6 +3029,25 @@ function AppContent() {
           white-space: nowrap;
         }
 
+        @keyframes music-pulse {
+          0% { transform: scale(1.25) translateY(-2px); filter: drop-shadow(0 0 2px var(--accent)); }
+          50% { transform: scale(1.35) translateY(-4px); filter: drop-shadow(0 0 8px var(--accent)); }
+          100% { transform: scale(1.25) translateY(-2px); filter: drop-shadow(0 0 2px var(--accent)); }
+        }
+
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .playing-icon {
+          animation: music-pulse 2s infinite ease-in-out;
+        }
+
+        .playing-icon-spin {
+          animation: spin-slow 8s linear infinite;
+        }
+
         @media (max-width: 768px) {
           .status-bar-wrapper {
             left: 0 !important;
@@ -4054,10 +4073,35 @@ function AppContent() {
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               {[
-                { id: "lofi", icon: <Volume2 size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-                { id: "rain", icon: <Map size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
+                { id: "lofi", icon: <Music size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", label: "Lofi Focus" },
+                { id: "rain", icon: <CloudRain size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", label: "Rainy Day" },
+                { id: "focus", icon: <Brain size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", label: "Deep Work" },
+                { id: "chill", icon: <Coffee size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", label: "Chill Vibes" },
+                { id: "synth", icon: <Zap size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", label: "Synth Night" },
+                { id: "wind", icon: <Wind size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", label: "Forest Wind" },
+                { id: "waves", icon: <Waves size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", label: "Deep Sea" },
               ].map(track => (
-                <button key={track.id} onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)} style={{ background: "transparent", border: "none", color: activeAudio === track.url ? "var(--accent)" : "white", cursor: "pointer", display: "grid", placeItems: "center" }}>
+                <button 
+                  key={track.id} 
+                  title={track.label}
+                  onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)} 
+                  style={{ 
+                    background: "transparent", 
+                    border: "none", 
+                    color: activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)", 
+                    cursor: "pointer", 
+                    display: "grid", 
+                    placeItems: "center",
+                    transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                    transform: activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)",
+                    animation: activeAudio === track.url ? "music-pulse 2s infinite ease-in-out" : "none"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "white"; if (activeAudio !== track.url) e.currentTarget.style.transform = "scale(1.3) translateY(-2px)"; }}
+                  onMouseLeave={(e) => { 
+                    e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)"; 
+                    e.currentTarget.style.transform = activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)";
+                  }}
+                >
                   {track.icon}
                 </button>
               ))}
