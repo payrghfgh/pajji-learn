@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper to check if user is an admin
+    function isAdmin() {
+      return request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
+         request.auth.token.email.matches('.*rushan.*') ||
+         request.auth.token.email.matches('.*arjun.*'));
+    }
+
+    // Individual user records
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAdmin();
+    }
+    
+    // Feedback collection
+    match /feedback/{feedbackId} {
+      // Anyone signed in can submit feedback
+      allow create: if request.auth != null;
+      // Only admins can read the list of feedback
+      allow read: if isAdmin();
+    }
+
+    // Project data (like themes and global config)
+    match /data/pajji_database {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Default: Admins can do everything
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

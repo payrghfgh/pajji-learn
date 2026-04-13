@@ -7,12 +7,12 @@ import {
   ChevronRight, ChevronLeft, Search, Plus, Star, Map,
   Clock, CheckCircle2, AlertCircle, FileText,
   MessageSquare, LayoutDashboard, LogOut, User, Volume2,
-  X, Moon, Sun, CloudRain, Waves, Coffee, Brain, Music, Sparkles, Wind, Info, Heart
+  X, Moon, Sun, CloudRain, Waves, Coffee, Brain, Music, Sparkles, Wind, Info, Heart, Send
 } from "lucide-react";
 import { initializeApp, getApps } from "firebase/app";
 import {
   getFirestore, doc, onSnapshot, setDoc, getDoc,
-  updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, limit, getDocs
+  updateDoc, arrayUnion, arrayRemove, collection, query, orderBy, limit, getDocs, addDoc
 } from "firebase/firestore";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -166,6 +166,9 @@ function AppContent() {
   const [prevLevel, setPrevLevel] = useState<number | null>(null);
   const [konamiProgress, setKonamiProgress] = useState<string[]>([]);
   const [godMode, setGodMode] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  const [allFeedback, setAllFeedback] = useState<any[]>([]);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
 
@@ -1427,6 +1430,44 @@ function AppContent() {
     setUsedHint({});
     setUsedSkip({});
   };
+
+  const submitFeedback = async () => {
+    if (!feedbackText.trim() || !user) return;
+    setIsSubmittingFeedback(true);
+    try {
+      await addDoc(collection(db, "feedback"), {
+        text: feedbackText,
+        uid: user.uid,
+        email: user.email || "Anonymous",
+        createdAt: new Date().toISOString(),
+      });
+      setFeedbackText("");
+      setSaveStatus("Feedback sent! Thank you! ❤️");
+      setTimeout(() => setSaveStatus(""), 3000);
+    } catch (e: any) {
+      console.error("Feedback Error:", e);
+      setSaveStatus(`Error: ${e.message || "Unknown error"}`);
+      setTimeout(() => setSaveStatus(""), 4000);
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
+
+  const fetchFeedback = async () => {
+    if (!isOwner) return;
+    try {
+      const snap = await getDocs(query(collection(db, "feedback"), orderBy("createdAt", "desc"), limit(50)));
+      setAllFeedback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error("Failed to fetch feedback", e);
+    }
+  };
+
+  useEffect(() => {
+    if (view === "settings" && isOwner) {
+      fetchFeedback();
+    }
+  }, [view, isOwner]);
 
   const submitQuiz = async () => {
     const quiz = normalizeQuiz(curChapter);
@@ -4678,6 +4719,41 @@ function AppContent() {
               </div>
 
               <div className="card" style={{ marginTop: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                  <div style={{ padding: "8px", borderRadius: "10px", background: "var(--accent-soft)", color: "var(--accent)" }}>
+                    <MessageSquare size={18} />
+                  </div>
+                  <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Feedback</h3>
+                </div>
+                <textarea
+                  placeholder="Tell us what you think or report a bug..."
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  style={{
+                    width: "100%",
+                    minHeight: "100px",
+                    padding: "16px",
+                    borderRadius: "16px",
+                    background: "var(--input-bg)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text)",
+                    fontSize: "14px",
+                    resize: "none",
+                    marginBottom: "12px"
+                  }}
+                />
+                <button
+                  onClick={submitFeedback}
+                  disabled={isSubmittingFeedback || !feedbackText.trim()}
+                  className="btn btn-primary"
+                  style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", opacity: (!feedbackText.trim() || isSubmittingFeedback) ? 0.6 : 1 }}
+                >
+                  <Send size={18} />
+                  {isSubmittingFeedback ? "Sending..." : "Submit Feedback"}
+                </button>
+              </div>
+
+              <div className="card" style={{ marginTop: "24px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Theme Selection</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
                   {visibleThemePreviewCards.map((item) => {
@@ -4708,12 +4784,36 @@ function AppContent() {
                 </div>
               </div>
 
-              {isOwner && (
-                <div className="card" style={{ marginTop: "24px" }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
-                    <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
+               {isOwner && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "24px" }}>
+                  <div className="card">
+                    <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
+                      <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "800" }}>User Feedback ({allFeedback.length})</h3>
+                      <button onClick={fetchFeedback} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "12px", cursor: "pointer", fontWeight: "800" }}>Refresh</button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px", overflowY: "auto", paddingRight: "4px" }}>
+                      {allFeedback.length === 0 ? (
+                        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "14px", padding: "20px" }}>No feedback yet.</p>
+                      ) : (
+                        allFeedback.map((fb) => (
+                          <div key={fb.id} style={{ padding: "16px", borderRadius: "16px", background: "var(--input-bg)", border: "1px solid var(--border)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                              <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--accent)" }}>{fb.email}</span>
+                              <span style={{ fontSize: "10px", color: "var(--muted)" }}>{fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : ""}</span>
+                            </div>
+                            <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{fb.text}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
