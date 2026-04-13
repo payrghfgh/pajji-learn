@@ -4,10 +4,10 @@ import Head from "next/head";
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring } from "framer-motion";
 import {
   Trophy, BookOpen, Zap, Settings, Flame,
-  ChevronRight, Search, Plus, Star, Map,
+  ChevronRight, ChevronLeft, Search, Plus, Star, Map,
   Clock, CheckCircle2, AlertCircle, FileText,
   MessageSquare, LayoutDashboard, LogOut, User, Volume2,
-  X, Moon, Sun, CloudRain, Waves, Coffee, Brain, Music, Sparkles, Wind
+  X, Moon, Sun, CloudRain, Waves, Coffee, Brain, Music, Sparkles, Wind, Info, Heart
 } from "lucide-react";
 import { initializeApp, getApps } from "firebase/app";
 import {
@@ -549,7 +549,7 @@ function AppContent() {
     const startDate = new Date(now);
     startDate.setDate(now.getDate() - (51 * 7 + now.getDay()));
     startDate.setHours(0, 0, 0, 0);
-    
+
     let current = new Date(startDate);
     for (let w = 0; w < 52; w++) {
       const week = [];
@@ -558,7 +558,7 @@ function AppContent() {
         const m = `${current.getMonth() + 1}`.padStart(2, "0");
         const day = `${current.getDate()}`.padStart(2, "0");
         const dateKey = `${y}-${m}-${day}`;
-        
+
         week.push(activityCounts[dateKey] || 0);
         current.setDate(current.getDate() + 1);
       }
@@ -597,7 +597,7 @@ function AppContent() {
     if (storedQuickSettings === "1" || storedQuickSettings === "0") setMobileQuickSettings(storedQuickSettings === "1");
     const storedSound = window.localStorage.getItem("soundEnabled");
     if (storedSound === "1" || storedSound === "0") setSoundEnabled(storedSound === "1");
-    
+
     // Only follow system theme if no manual preference is set
     const themeListener = (e: MediaQueryListEvent) => {
       if (!window.localStorage.getItem("theme")) {
@@ -1502,7 +1502,7 @@ function AppContent() {
       const xpGain = score * 10; // 10 XP per correct answer
       const nextXP = userXP + xpGain;
       const today = getLocalDateKey();
-      
+
       try {
         await setDoc(doc(db, "users", user.uid), {
           quizAttempts: nextAttempts,
@@ -2539,6 +2539,7 @@ function AppContent() {
     { key: "nebula", label: "Nebula", accent: "#a78bfa", bg: "linear-gradient(135deg,#1b1038,#2f1f69)", source: "builtIn" },
     { key: "emerald", label: "Emerald", accent: "#22c55e", bg: "linear-gradient(135deg,#022c22,#14532d)", source: "builtIn" },
     { key: "arctic", label: "Arctic", accent: "#38bdf8", bg: "linear-gradient(135deg,#dbeafe,#ecfeff)", source: "builtIn" },
+    { key: "williams", label: "Williams Blue", accent: "#3267D4", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)", source: "builtIn" },
   ];
   const customThemeCards: ThemePreview[] = customThemes.map((t) => ({
     key: t.id,
@@ -2581,9 +2582,11 @@ function AppContent() {
                       ? "theme-emerald"
                       : uiTheme === "arctic"
                         ? "theme-arctic"
-                        : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
-                          ? "theme-custom"
-                          : "theme-default";
+                        : uiTheme === "williams"
+                          ? "theme-williams"
+                          : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
+                            ? "theme-custom"
+                            : "theme-default";
   const textSizeClass = textSize === "compact" ? "text-size-compact" : textSize === "large" ? "text-size-large" : "text-size-default";
   const motionClass = reduceMotion ? "motion-reduced" : "motion-normal";
   const contrastClass = highContrast ? "contrast-high" : "contrast-normal";
@@ -2624,19 +2627,19 @@ function AppContent() {
   useEffect(() => {
     const root = document.documentElement;
     // Remove old theme classes
-    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "default"];
+    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "default"];
     themes.forEach(t => root.classList.remove(`theme-${t}`));
     root.classList.remove("dark", "light");
-    
+
     // Add current theme classes
     root.classList.add(uiThemeClass);
     root.classList.add(theme);
-    
+
     // Apply custom variables if existing
     Object.entries(customThemeVars).forEach(([key, value]) => {
       root.style.setProperty(key, value as string);
     });
-    
+
     // Cleanup custom variables if not in a custom theme
     if (!activeCustomTheme && !customAccent) {
       const varsToClear = ["--bg", "--side", "--card", "--text", "--muted", "--accent", "--accent-rgb", "--accent-soft", "--accent-grad", "--brand-gradient", "--border", "--input-bg"];
@@ -3717,6 +3720,36 @@ function AppContent() {
             radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.18), transparent 36%),
             radial-gradient(circle at 100% 100%, rgba(125, 211, 252, 0.14), transparent 40%);
         }
+        .theme-williams {
+          --accent: #3267D4;
+          --accent-rgb: 50, 103, 212;
+          --accent-soft: rgba(50, 103, 212, 0.15);
+          --accent-grad: linear-gradient(135deg, #3267D4, #4a7be0);
+          --brand-gradient: linear-gradient(135deg, #1e3a8a, #3267D4);
+        }
+        .theme-williams.dark {
+          --bg: #050b18;
+          --side: #0a1428;
+          --card: #0f1c3c;
+          --text: #eef2ff;
+          --muted: #94a3b8;
+          --border: rgba(50, 103, 212, 0.24);
+          --input-bg: #122246;
+        }
+        .theme-williams.light {
+          --bg: #f5f8ff;
+          --side: #ffffff;
+          --card: #ffffff;
+          --text: #1e3a8a;
+          --muted: #4b5563;
+          --border: rgba(50, 103, 212, 0.12);
+          --input-bg: #eef2ff;
+        }
+        .theme-williams .app-container, .theme-williams.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(50, 103, 212, 0.18), transparent 36%),
+            radial-gradient(circle at 100% 100%, rgba(50, 103, 212, 0.12), transparent 42%);
+        }
         .sidebar { width: 280px; background: var(--side); border-right: 1px solid var(--border); padding: 32px 24px; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; font-size: calc(1rem * var(--font-scale)); }
         .density-compact .sidebar { width: 244px; padding: 20px 14px; }
         .theme-f1 .sidebar { box-shadow: inset -1px 0 0 rgba(225, 6, 0, 0.2); }
@@ -3775,7 +3808,7 @@ function AppContent() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg, .theme-nebula .nav-btn.active svg, .theme-emerald .nav-btn.active svg, .theme-arctic .nav-btn.active svg, .theme-emoji .nav-btn.active svg {
+        .theme-f1 .nav-btn.active svg, .theme-liquid .nav-btn.active svg, .theme-ocean .nav-btn.active svg, .theme-sunset .nav-btn.active svg, .theme-cyber .nav-btn.active svg, .theme-amoled .nav-btn.active svg, .theme-nebula .nav-btn.active svg, .theme-emerald .nav-btn.active svg, .theme-arctic .nav-btn.active svg, .theme-williams .nav-btn.active svg, .theme-emoji .nav-btn.active svg {
           background: rgba(var(--accent-rgb), 0.22);
           border-radius: 8px;
           padding: 2px;
@@ -4042,7 +4075,7 @@ function AppContent() {
               )}
             </div>
             <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-            
+
             <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800" }}>
               <Zap size={14} color="var(--accent)" />
               <span style={{ color: "var(--accent)" }}>{sessionXP} <span className="mobile-hide">XP SESSION</span></span>
@@ -4081,24 +4114,24 @@ function AppContent() {
                 { id: "wind", icon: <Wind size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", label: "Forest Wind" },
                 { id: "waves", icon: <Waves size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", label: "Deep Sea" },
               ].map(track => (
-                <button 
-                  key={track.id} 
+                <button
+                  key={track.id}
                   title={track.label}
-                  onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)} 
-                  style={{ 
-                    background: "transparent", 
-                    border: "none", 
-                    color: activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)", 
-                    cursor: "pointer", 
-                    display: "grid", 
+                  onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)",
+                    cursor: "pointer",
+                    display: "grid",
                     placeItems: "center",
                     transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                     transform: activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)",
                     animation: activeAudio === track.url ? "music-pulse 2s infinite ease-in-out" : "none"
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.color = "white"; if (activeAudio !== track.url) e.currentTarget.style.transform = "scale(1.3) translateY(-2px)"; }}
-                  onMouseLeave={(e) => { 
-                    e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)"; 
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)";
                     e.currentTarget.style.transform = activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)";
                   }}
                 >
@@ -4106,8 +4139,8 @@ function AppContent() {
                 </button>
               ))}
               <div style={{ width: "1px", height: "12px", background: "var(--border)", margin: "0 4px" }} />
-              <button 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", display: "grid", placeItems: "center" }}
               >
                 {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
@@ -4146,7 +4179,7 @@ function AppContent() {
               <header style={{ marginBottom: "40px", textAlign: "left" }}>
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
                   <h1 className="page-title syne-heading" style={{ marginBottom: "8px", fontSize: "min(36px, 8vw)", lineHeight: "1", color: "var(--text)" }}>
-                    {greeting.text},<br/>{getUserName(user).split(' ')[0]}! {greeting.emoji}
+                    {greeting.text},<br />{getUserName(user).split(' ')[0]}! {greeting.emoji}
                   </h1>
                   <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8, maxWidth: "400px" }}>{quote}</p>
                 </motion.div>
@@ -4602,7 +4635,7 @@ function AppContent() {
                   <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Custom Accent</p>
                   <div style={{ display: "flex", gap: "12px" }}>
                     <input type="color" value={customAccent || "#10b981"} onChange={(e) => setCustomAccent(e.target.value)} style={{ width: "50px", height: "50px", border: "none", background: "transparent", cursor: "pointer" }} />
-                     <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
+                    <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
                   </div>
                 </div>
 
@@ -4628,6 +4661,14 @@ function AppContent() {
                     <span>Victory Sounds</span>
                   </div>
                   <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
+                </button>
+                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+                <button onClick={() => setView("credits")} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <Info size={20} />
+                    <span>Credits & Attribution</span>
+                  </div>
+                  <ChevronRight size={18} color="var(--muted)" />
                 </button>
                 <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
                 <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
@@ -4676,6 +4717,54 @@ function AppContent() {
                   </div>
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {view === "credits" && (
+            <motion.div
+              key="credits"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: -20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="page-shell" style={{ maxWidth: "600px" }}
+            >
+              <button onClick={() => setView("settings")} className="btn-link" style={{ marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <ChevronLeft size={18} /> Back to Settings
+              </button>
+
+              <h1 className="page-title" style={{ marginBottom: "32px" }}>Credits 🏆</h1>
+
+              <div className="card" style={{ padding: "40px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
+                <div style={{ padding: "20px", borderRadius: "50%", background: "var(--accent-soft)", color: "var(--accent)", width: "80px", height: "80px", display: "grid", placeItems: "center" }}>
+                  <Heart size={40} fill="currentColor" />
+                </div>
+
+                <div>
+                  <h2 style={{ fontSize: "24px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI LEARN</h2>
+                  <p style={{ color: "var(--muted)", maxWidth: "300px", margin: "12px auto" }}>Built with passion for modern students.</p>
+                </div>
+
+                <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Lead Developer</p>
+                    <p style={{ fontSize: "20px", fontWeight: "700" }}>Rushan</p>
+                  </div>
+
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Main Tester</p>
+                    <p style={{ fontSize: "20px", fontWeight: "700" }}>Arjun</p>
+                  </div>
+                </div>
+
+                <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
+
+                <p style={{ fontSize: "14px", fontWeight: "700", fontStyle: "italic", opacity: 0.8 }}>
+
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
