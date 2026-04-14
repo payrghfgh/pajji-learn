@@ -103,7 +103,68 @@
     text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
   }
 
-  .neo-brutalism {
-    @apply border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
+  /* 3D Flashcard Styles */
+  .flashcard-scene {
+    width: 100%;
+    height: 300px;
+    perspective: 1000px;
+    cursor: pointer;
+  }
+
+  .flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+
+  .flashcard-scene.is-flipped .flashcard-inner {
+    transform: rotateY(180deg);
+  }
+
+  .flashcard-front, .flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 24px;
+    padding: 32px;
+    border: 1px solid var(--border);
+    box-shadow: var(--card-shadow);
+  }
+
+  .flashcard-front {
+    background: var(--card);
+    color: var(--text);
+  }
+
+  .flashcard-back {
+    background: var(--accent-grad);
+    color: white;
+    transform: rotateY(180deg);
+  }
+
+  /* Focus Garden Growth */
+  @keyframes leaf-grow {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .leaf-grow {
+    animation: leaf-grow 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transform-origin: bottom center;
+  }
+
+  /* Command Palette Overlay */
+  .command-palette-backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
   }
 }

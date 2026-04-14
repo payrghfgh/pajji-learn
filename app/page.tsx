@@ -161,6 +161,7 @@ function AppContent() {
   const [activeAudio, setActiveAudio] = useState<string | null>(null);
   const [isSpeedReadOpen, setIsSpeedReadOpen] = useState(false);
   const [speedReadIndex, setSpeedReadIndex] = useState(0);
+  const [gardenPlants, setGardenPlants] = useState<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [profilePic, setProfilePic] = useState<string>("");
   const [customAccent, setCustomAccent] = useState<string>("");
@@ -177,7 +178,16 @@ function AppContent() {
   useEffect(() => {
     let timer: any;
     if (isZenMode && zenTime > 0) {
-      timer = setInterval(() => setZenTime(t => t - 1), 1000);
+      timer = setInterval(() => {
+        setZenTime(t => {
+          const next = t - 1;
+          // Every 5 minutes (300 seconds), grow a plant
+          if (next > 0 && (25 * 60 - next) % 300 === 0) {
+            setGardenPlants(prev => prev + 1);
+          }
+          return next;
+        });
+      }, 1000);
     }
     return () => clearInterval(timer);
   }, [isZenMode, zenTime]);
@@ -278,6 +288,27 @@ function AppContent() {
   }, [userXP, prevLevel]);
 
   // Components for animations
+  const FocusGarden = () => (
+    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", padding: "20px" }}>
+      {[...Array(gardenPlants)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="leaf-grow"
+          style={{ width: "24px", height: "40px", color: "var(--accent)" }}
+        >
+          <svg viewBox="0 0 100 100">
+            <path d="M 50 100 C 20 70 20 30 50 0 C 80 30 80 70 50 100" fill="currentColor" />
+          </svg>
+        </motion.div>
+      ))}
+      {gardenPlants === 0 && (
+        <div style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "700" }}>
+          Start focusing to grow your garden...
+        </div>
+      )}
+    </div>
+  );
+
   const AnimatedCounter = ({ value }: { value: number }) => {
     const [displayValue, setDisplayValue] = useState(value);
     useEffect(() => {
@@ -370,6 +401,71 @@ function AppContent() {
     const timer = setTimeout(() => setDebouncedLibraryQuery(libraryQuery), 250);
     return () => clearTimeout(timer);
   }, [libraryQuery]);
+
+  const CommandPalette = () => {
+    const searchResults = useMemo(() => {
+      if (!spotlightQuery.trim()) return [];
+      const q = spotlightQuery.toLowerCase();
+      let results: any[] = [];
+      books.forEach(b => {
+        if (b.title.toLowerCase().includes(q)) results.push({ type: "book", item: b, label: `Book: ${b.title}` });
+        (b.chapters || []).forEach((c: any) => {
+          if (c.title.toLowerCase().includes(q)) results.push({ type: "lesson", item: c, book: b, label: `Lesson: ${c.title}` });
+          if (lessonNotes[c.id]?.toLowerCase().includes(q)) results.push({ type: "note", item: c, book: b, label: `Note in: ${c.title}` });
+        });
+      });
+      return results.slice(0, 10);
+    }, [spotlightQuery, books]);
+
+    if (!isSpotlightOpen) return null;
+
+    return (
+      <div className="fixed inset-0 z-[99999] flex items-start justify-center pt-[15vh] px-4 command-palette-backdrop" onClick={() => setIsSpotlightOpen(false)}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="w-full max-w-2xl bg-[#121214] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex items-center p-6 border-b border-white/5">
+            <Search className="text-emerald-500 mr-4" size={24} />
+            <input
+              autoFocus
+              className="bg-transparent border-none outline-none text-xl w-full text-white placeholder:text-white/20"
+              placeholder="Search anything... (lessons, books, notes)"
+              value={spotlightQuery}
+              onChange={e => setSpotlightQuery(e.target.value)}
+            />
+          </div>
+          <div className="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
+            {searchResults.length > 0 ? (
+              searchResults.map((res, i) => (
+                <button
+                  key={i}
+                  className="w-full text-left p-4 rounded-2xl hover:bg-emerald-500/10 flex items-center justify-between group transition-all"
+                  onClick={() => {
+                    if (res.type === "lesson") openLesson(res.book, res.item);
+                    else if (res.type === "note") { openLesson(res.book, res.item); setActiveTab("My Notes"); }
+                    else if (res.type === "book") { setCurBook(res.item); setView("chapters"); }
+                    setIsSpotlightOpen(false);
+                  }}
+                >
+                  <span className="font-bold text-white group-hover:text-emerald-400">{res.label}</span>
+                  <ChevronRight size={18} className="text-white/20 group-hover:text-emerald-400" />
+                </button>
+              ))
+            ) : (
+              <div className="p-8 text-center text-white/40">No results found for &quot;{spotlightQuery}&quot;</div>
+            )}
+          </div>
+          <div className="p-4 bg-white/5 text-[10px] uppercase tracking-widest font-black text-white/30 flex justify-between">
+            <span>ESC to close</span>
+            <span>ENTER to select</span>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
   const askAiExplanation = async () => {
     if (!aiExplainQuestion.trim() || !curChapter) return;
@@ -4340,6 +4436,7 @@ function AppContent() {
                 </motion.div>
               </motion.div>
 
+
               {resumeLesson && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -4936,11 +5033,16 @@ function AppContent() {
                       }, 200); // 300 WPM
                     }} className="btn btn-primary">Start</button>
                   </div>
+                  {isZenMode && (
+                    <div style={{ marginTop: "40px", width: "100%", maxWidth: "400px" }}>
+                      <FocusGarden />
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
-            <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", marginBottom: "20px" }}>
-              {["Summary", "Spellings", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
+            <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
+              {["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
                 <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
               ))}
             </div>
@@ -5260,28 +5362,6 @@ function AppContent() {
                       </div>
                     )}
                   </div>
-                  {lessonFlashcards.length > 0 && (
-                    <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
-                      <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>
-                        Flashcards ({Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length})
-                      </p>
-                      <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "12px", background: "var(--card)", minHeight: "88px" }}>
-                        <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px" }}>Q</p>
-                        <p style={{ fontSize: "14px", fontWeight: "700" }}>{lessonFlashcards[flashcardIndex]?.q}</p>
-                        {flashcardReveal && (
-                          <>
-                            <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginTop: "10px", marginBottom: "6px" }}>A</p>
-                            <p style={{ fontSize: "13px", color: "var(--muted)" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
-                          </>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
-                        <button className="btn btn-secondary" onClick={() => setFlashcardIndex((prev) => Math.max(0, prev - 1))} disabled={flashcardIndex === 0} style={{ opacity: flashcardIndex === 0 ? 0.6 : 1 }}>Prev</button>
-                        <button className="btn btn-secondary" onClick={() => setFlashcardReveal((prev) => !prev)}>{flashcardReveal ? "Hide Answer" : "Show Answer"}</button>
-                        <button className="btn btn-secondary" onClick={() => { setFlashcardReveal(false); setFlashcardIndex((prev) => Math.min(lessonFlashcards.length - 1, prev + 1)); }} disabled={flashcardIndex >= lessonFlashcards.length - 1} style={{ opacity: flashcardIndex >= lessonFlashcards.length - 1 ? 0.6 : 1 }}>Next</button>
-                      </div>
-                    </div>
-                  )}
                   <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
                     <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>Pin Key Point</p>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -5305,6 +5385,73 @@ function AppContent() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {activeTab === "Flashcards" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <div style={{ textAlign: "center", marginBottom: "12px" }}>
+                    <p style={{ fontSize: "13px", color: "var(--muted)", fontWeight: "700" }}>
+                      Master your knowledge with 3D Flashcards. Click to flip!
+                    </p>
+                    <p style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>
+                      Progress: {Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length}
+                    </p>
+                  </div>
+
+                  {lessonFlashcards.length > 0 ? (
+                    <>
+                      <div
+                        className={`flashcard-scene ${flashcardReveal ? "is-flipped" : ""}`}
+                        onClick={() => {
+                          setFlashcardReveal(!flashcardReveal);
+                          if (soundEnabled) {
+                            try {
+                              new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3").play().catch(() => {});
+                            } catch (e) {}
+                          }
+                        }}
+                      >
+                        <div className="flashcard-inner">
+                          <div className="flashcard-front">
+                            <span style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Question</span>
+                            <h2 style={{ fontSize: "24px", fontWeight: "800", lineHeight: "1.4" }}>{lessonFlashcards[flashcardIndex]?.q}</h2>
+                            <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.5 }}>Click to Reveal Answer</p>
+                          </div>
+                          <div className="flashcard-back">
+                            <span style={{ fontSize: "12px", color: "white", opacity: 0.8, fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Answer</span>
+                            <p style={{ fontSize: "20px", fontWeight: "700", lineHeight: "1.6" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
+                            <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.8 }}>Click to hide</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev) => Math.max(0, prev - 1)); setFlashcardReveal(false); }}
+                          disabled={flashcardIndex === 0}
+                          style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
+                        >
+                          <ChevronLeft size={24} />
+                        </button>
+                        <button
+                          className="btn btn-primary"
+                          onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev) => Math.min(lessonFlashcards.length - 1, prev + 1)); setFlashcardReveal(false); }}
+                          disabled={flashcardIndex >= lessonFlashcards.length - 1}
+                          style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
+                        >
+                          <ChevronRight size={24} />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "80px", border: "1px dashed var(--border)", borderRadius: "24px" }}>
+                      <BookOpen size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
+                      <p style={{ fontWeight: "700", opacity: 0.5 }}>No flashcards for this lesson.</p>
+                      <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>Import from Notes</button>
+                    </div>
+                  )}
                 </div>
               )}
               {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => {
@@ -5512,6 +5659,7 @@ function AppContent() {
             </div>
           </>
         )}
+        <CommandPalette />
       </div>
     </div>
   );
