@@ -3,6 +3,7 @@
 import { Inter, Syne } from "next/font/google";
 import "./globals.css";
 import { PremiumBackground } from "./components/PremiumBackground";
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
         <main className="relative z-0 min-h-screen">
           {children}
         </main>
+        <SpeedInsights />
       </body>
     </html>
   )
