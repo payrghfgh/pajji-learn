@@ -1,4 +1,5 @@
 "use client";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { useEffect, useState, useRef, useMemo } from "react";
 import Head from "next/head";
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring } from "framer-motion";
@@ -4784,7 +4785,7 @@ function AppContent() {
                 </div>
               </div>
 
-               {isOwner && (
+              {isOwner && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "24px" }}>
                   <div className="card">
                     <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
