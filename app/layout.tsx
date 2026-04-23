@@ -15,7 +15,7 @@ const syne = Syne({
 });
 
 export const metadata = {
-  title: "Pajji Learn | Master Your Future",
+  title: "Pajji Learn",
   description: "A premium, high-octane learning dashboard for the next generation of scholars.",
 };
 

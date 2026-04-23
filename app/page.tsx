@@ -171,6 +171,8 @@ function AppContent() {
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   const [allFeedback, setAllFeedback] = useState<any[]>([]);
+  const [membership, setMembership] = useState<string>("");
+  const [membershipExpiry, setMembershipExpiry] = useState<string>("");
   const mainContentRef = useRef<HTMLDivElement>(null);
 
 
@@ -807,6 +809,7 @@ function AppContent() {
   useEffect(() => {
     if (!user || !settingsHydratedRef.current) return;
     setDoc(doc(db, "users", user.uid), {
+      membership: membership || "",
       uiSettings: {
         theme,
         uiTheme,
@@ -820,7 +823,7 @@ function AppContent() {
         customAccent
       }
     }, { merge: true }).catch(() => { });
-  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled, profilePic, customAccent]);
+  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled, profilePic, customAccent, membership]);
 
   useEffect(() => {
     if (!user) return;
@@ -861,6 +864,9 @@ function AppContent() {
       if (ds.exists()) {
         const data = ds.data();
         if (data?.isAdmin === true) setIsOwner(true);
+        if (data && data.membership === undefined) {
+          setDoc(doc(db, "users", user.uid), { membership: "" }, { merge: true }).catch(() => {});
+        }
         setCompletedLessons(data.completed || []);
         setUserXP(data.xp || 0);
         setLastLesson(data.lastLesson || null);
@@ -880,6 +886,8 @@ function AppContent() {
         setLastStudyTabByLesson((data.lastStudyTabByLesson && typeof data.lastStudyTabByLesson === "object") ? data.lastStudyTabByLesson : {});
         setActivityHistory(data.activityHistory || {});
         setGiftedThemes(Array.isArray(data.giftedThemes) ? data.giftedThemes : []);
+        setMembership(data.membership || "");
+        setMembershipExpiry(data.membershipExpiry || "");
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
         if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
@@ -914,6 +922,7 @@ function AppContent() {
           noteTags: {},
           giftedThemes: [],
           isAdmin: ADMIN_EMAILS.has(toCanonicalEmail(user.email || "")),
+          membership: "",
           lastStudyTabByLesson: {},
           uiSettings: {
             theme,
@@ -944,6 +953,7 @@ function AppContent() {
         setPinnedKeyPoints([]);
         setNoteTags({});
         setLastStudyTabByLesson({});
+        setMembership("");
       }
       settingsHydratedRef.current = true;
       setDataLoading(false);
@@ -1637,7 +1647,8 @@ function AppContent() {
       if (accuracyPct >= 85) nextWeakIds = nextWeakIds.filter((id) => id !== curChapter.id);
       setQuizAttempts(nextAttempts);
       setWeakLessonIds(nextWeakIds);
-      const xpGain = score * 10; // 10 XP per correct answer
+      const baseXpPerAnswer = memTier === "ultra" ? 20 : 10; // Ultra = 2x XP
+      const xpGain = score * baseXpPerAnswer;
       const nextXP = userXP + xpGain;
       const today = getLocalDateKey();
 
@@ -2145,6 +2156,17 @@ function AppContent() {
     setQuickReviewMode(true);
     openLesson(nextLesson.book, nextLesson.chapter);
   };
+  // Membership tier helper (checks expiry)
+  const getMemberTier = (mem: string, expiry: string) => {
+    if (expiry && new Date(expiry) < new Date()) return "free"; // expired
+    const n = (mem || "").toUpperCase().replace(/[\s_]+/g, "");
+    if (n === "PAJJIULTRA") return "ultra";
+    if (n === "PAJJIPRO") return "pro";
+    if (n === "PAJJIPLUS") return "plus";
+    return "free";
+  };
+  const memTier = getMemberTier(membership, membershipExpiry);
+
   const useFiftyFiftyPowerUp = () => {
     const quiz = normalizeQuiz(curChapter);
     const q = quiz[quizQuestionOrder[currentQuizPos] ?? 0];
@@ -2165,9 +2187,10 @@ function AppContent() {
     if (!user) return;
     const qIndex = quizQuestionOrder[currentQuizPos] ?? 0;
     if (usedSkip[qIndex]) return;
-    const cost = 20;
+    // Membership skip cost: Ultra/Pro = free, Plus = 10 XP, Free = 20 XP
+    const cost = (memTier === "ultra" || memTier === "pro") ? 0 : memTier === "plus" ? 10 : 20;
     if (userXP < cost) {
-      setSaveStatus("Need 20 XP to skip");
+      setSaveStatus(`Need ${cost} XP to skip`);
       setTimeout(() => setSaveStatus(""), 1500);
       return;
     }
@@ -2175,7 +2198,7 @@ function AppContent() {
     const q = quiz[qIndex];
     if (!q) return;
     try {
-      await setDoc(doc(db, "users", user.uid), { xp: Math.max(0, userXP - cost) }, { merge: true });
+      if (cost > 0) await setDoc(doc(db, "users", user.uid), { xp: Math.max(0, userXP - cost) }, { merge: true });
       if (q.type === "mcq") {
         setQuizAnswers((prev) => ({ ...prev, [qIndex]: q.correctIndex }));
       } else {
@@ -2183,8 +2206,8 @@ function AppContent() {
         setQuizAnswers((prev) => ({ ...prev, [qIndex]: bestAnswer }));
       }
       setUsedSkip((prev) => ({ ...prev, [qIndex]: true }));
-      setSaveStatus("Skipped this question (-20 XP)");
-      setTimeout(() => setSaveStatus(""), 1500);
+      setSaveStatus(cost === 0 ? "Skipped! (Free with your membership 🎉)" : `Skipped this question (-${cost} XP)`);
+      setTimeout(() => setSaveStatus(""), 1800);
     } catch {
       setSaveStatus("Skip failed");
       setTimeout(() => setSaveStatus(""), 1500);
@@ -4143,7 +4166,61 @@ function AppContent() {
               </div>
               <div>
                 <p style={{ fontSize: "10px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Rank: {userLevel >= 10 ? "ELITE" : "NOVICE"}</p>
-                <h3 style={{ fontSize: "15px", fontWeight: "800" }}>{getUserName(user).split(' ')[0]}</h3>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <h3 style={{ fontSize: "15px", fontWeight: "800" }}>{getUserName(user).split(' ')[0]}</h3>
+                  {(() => {
+                    const mem = (membership || "").toUpperCase().replace(/[\s_]+/g, "");
+                    return (
+                      <>
+                        {mem === "PAJJIPLUS" && (
+                          <span style={{ 
+                            background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)", 
+                            WebkitBackgroundClip: "text", 
+                            WebkitTextFillColor: "transparent", 
+                            filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))", 
+                            fontWeight: "900", 
+                            fontSize: "18px", 
+                            position: "relative",
+                            top: "-2px",
+                            marginLeft: "6px" 
+                          }}>+</span>
+                        )}
+                        {mem === "PAJJIPRO" && (
+                          <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#goldGrad)" stroke="url(#goldGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <defs>
+                                <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor="#ffd700" />
+                                  <stop offset="50%" stopColor="#ffb300" />
+                                  <stop offset="100%" stopColor="#fff8b0" />
+                                </linearGradient>
+                              </defs>
+                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+                            </svg>
+                          </span>
+                        )}
+                        {mem === "PAJJIULTRA" && (
+                          <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                               <defs>
+                                 <linearGradient id="goldGradU" x1="0" y1="0" x2="1" y2="1">
+                                   <stop offset="0%" stopColor="#ffd700" />
+                                   <stop offset="50%" stopColor="#ffb300" />
+                                   <stop offset="100%" stopColor="#fff8b0" />
+                                 </linearGradient>
+                                 <mask id="u-slit-mask">
+                                   <rect width="24" height="24" fill="white" />
+                                   <line x1="2" y1="4" x2="10" y2="12" stroke="black" strokeWidth="4" />
+                                 </mask>
+                               </defs>
+                               <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGradU)" strokeWidth="4" strokeLinecap="round" mask="url(#u-slit-mask)" />
+                            </svg>
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
             <div style={{ height: "6px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
@@ -4158,6 +4235,17 @@ function AppContent() {
               <p style={{ fontSize: "11px", fontWeight: "800", opacity: 0.6 }}>{userXP} XP</p>
               <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>Lvl {userLevel + 1}</p>
             </div>
+            {memTier !== "free" && (
+              <div style={{ marginTop: "10px", padding: "6px 10px", borderRadius: "8px", background: "rgba(255,215,0,0.1)", border: "1px solid rgba(255,215,0,0.25)", fontSize: "10px", fontWeight: "800", color: "#f59e0b", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  {memTier === "ultra" ? "⚡" : memTier === "pro" ? "👑" : "+"}
+                  {memTier === "ultra" ? "PAJJI ULTRA — 2× XP · Free Skips" : memTier === "pro" ? "PAJJI PRO — Free Skips · God Mode" : "PAJJI PLUS — 50% Skip Discount"}
+                </span>
+                {membershipExpiry && (
+                  <span style={{ fontSize: "9px", opacity: 0.7, fontWeight: "600" }}>Expires {new Date(membershipExpiry).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                )}
+              </div>
+            )}
           </motion.div>
         </div>
 
@@ -4741,7 +4829,16 @@ function AppContent() {
                     className="card" style={{ display: "flex", alignItems: "center", padding: "16px 24px", background: p.id === user.uid ? "rgba(var(--accent-rgb), 0.15)" : "var(--card)", border: p.id === user.uid ? "1px solid var(--accent)" : "1px solid var(--border)" }}
                   >
                     <span style={{ width: "40px", fontWeight: "900", color: i < 3 ? "var(--accent)" : "var(--muted)", fontSize: i < 3 ? "20px" : "16px" }}>#{i + 1}</span>
-                    <span style={{ flex: 1, fontWeight: "700" }}>{p.email?.split('@')[0]}</span>
+                    <span style={{ flex: 1, fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}>
+                      {p.email?.split('@')[0]}
+                      {(() => {
+                        const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
+                        if (pt === "ultra") return <span style={{ fontSize: "13px", filter: "drop-shadow(0 1px 4px rgba(255,215,0,0.5))" }}>⚡</span>;
+                        if (pt === "pro") return <span style={{ fontSize: "13px", filter: "drop-shadow(0 1px 4px rgba(255,215,0,0.5))" }}>👑</span>;
+                        if (pt === "plus") return <span style={{ fontSize: "12px", fontWeight: "900", background: "linear-gradient(135deg,#ffd700,#ffb300)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>+</span>;
+                        return null;
+                      })()}
+                    </span>
                     <span className="xp-badge" style={{ padding: "8px 16px" }}>{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
                   </motion.div>
                 ))}
@@ -4890,6 +4987,118 @@ function AppContent() {
                       <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
                       <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
                     </div>
+                  </div>
+
+                  <div className="card">
+                    <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "4px" }}>🏅 Membership Manager</h3>
+                    <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "16px" }}>Assign a membership tier to any user. Search by email, pick a tier, and save.</p>
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
+                      <input
+                        type="text"
+                        placeholder="Search user by email..."
+                        value={giftUserSearch}
+                        onChange={async (e) => {
+                          setGiftUserSearch(e.target.value);
+                          const val = e.target.value.trim().toLowerCase();
+                          if (val.length < 2) { setGiftUserResults([]); return; }
+                          try {
+                            const snap = await getDocs(collection(db, "users"));
+                            const res: any[] = [];
+                            snap.forEach(d => {
+                              const data = d.data();
+                              if ((data.email || "").toLowerCase().includes(val)) {
+                                res.push({ id: d.id, email: data.email, membership: data.membership || "" });
+                              }
+                            });
+                            setGiftUserResults(res as any);
+                          } catch (err) {
+                            console.error("Membership search error:", err);
+                          }
+                        }}
+                        style={{ flex: 1, minWidth: "200px", padding: "10px 14px", borderRadius: "12px" }}
+                      />
+                    </div>
+                    {giftUserResults.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {(giftUserResults as any[]).map((u: any) => {
+                          const tierLabel = (t: string) => {
+                            const n = (t || "").toUpperCase().replace(/[\s_]+/g, "");
+                            if (n === "PAJJIPLUS") return "Pajji Plus";
+                            if (n === "PAJJIPRO") return "Pajji Pro";
+                            if (n === "PAJJIULTRA") return "Pajji Ultra";
+                            return "None";
+                          };
+                          const isExpired = u.membershipExpiry && new Date(u.membershipExpiry) < new Date();
+                          const defaultExpiry = () => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split('T')[0]; };
+                          return (
+                            <div key={u.id} style={{ padding: "14px", borderRadius: "14px", background: "var(--input-bg)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "10px" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                                <div>
+                                  <p style={{ fontWeight: "800", fontSize: "14px" }}>{u.email}</p>
+                                  <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
+                                    Tier: <span style={{ color: "var(--accent)", fontWeight: "800" }}>{tierLabel(u.membership)}</span>
+                                    {u.membershipExpiry && (
+                                      <span style={{ marginLeft: "8px", color: isExpired ? "#ef4444" : "var(--muted)" }}>
+                                        {isExpired ? "⚠ Expired" : `Until ${new Date(u.membershipExpiry).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                  {["", "PAJJIPLUS", "PAJJIPRO", "PAJJIULTRA"].map(tier => (
+                                    <button
+                                      key={tier}
+                                      onClick={async () => {
+                                        const expiry = tier === "" ? "" : (u._pendingExpiry || defaultExpiry());
+                                        await setDoc(doc(db, "users", u.id), { membership: tier, membershipExpiry: expiry }, { merge: true });
+                                        setSaveStatus(`✅ ${tier || "Removed"} → ${u.email}`);
+                                        setTimeout(() => setSaveStatus(""), 2500);
+                                        setGiftUserResults(prev => (prev as any[]).map((r: any) => r.id === u.id ? { ...r, membership: tier, membershipExpiry: expiry } : r) as any);
+                                      }}
+                                      style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "10px",
+                                        border: "1px solid var(--border)",
+                                        background: (u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier ? "var(--accent)" : "var(--card)",
+                                        color: (u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier ? "white" : "var(--text)",
+                                        fontWeight: "700",
+                                        fontSize: "11px",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      {tier === "" ? "❌ Remove" : tier === "PAJJIPLUS" ? "+ Plus" : tier === "PAJJIPRO" ? "👑 Pro" : "⚡ Ultra"}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                                <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--muted)", whiteSpace: "nowrap" }}>Expires on:</label>
+                                <input
+                                  type="date"
+                                  value={u._pendingExpiry || u.membershipExpiry || ""}
+                                  min={new Date().toISOString().split('T')[0]}
+                                  onChange={(e) => setGiftUserResults(prev => (prev as any[]).map((r: any) => r.id === u.id ? { ...r, _pendingExpiry: e.target.value } : r) as any)}
+                                  style={{ padding: "6px 10px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)", fontSize: "12px", fontWeight: "700" }}
+                                />
+                                <button
+                                  onClick={async () => {
+                                    const expiry = u._pendingExpiry || u.membershipExpiry || "";
+                                    await setDoc(doc(db, "users", u.id), { membershipExpiry: expiry }, { merge: true });
+                                    setSaveStatus(`📅 Expiry updated for ${u.email}`);
+                                    setTimeout(() => setSaveStatus(""), 2000);
+                                    setGiftUserResults(prev => (prev as any[]).map((r: any) => r.id === u.id ? { ...r, membershipExpiry: expiry } : r) as any);
+                                  }}
+                                  className="btn btn-secondary"
+                                  style={{ fontSize: "11px", padding: "6px 12px" }}
+                                >
+                                  Save Date
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="card">
@@ -5407,8 +5616,8 @@ function AppContent() {
                           setFlashcardReveal(!flashcardReveal);
                           if (soundEnabled) {
                             try {
-                              new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3").play().catch(() => {});
-                            } catch (e) {}
+                              new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3").play().catch(() => { });
+                            } catch (e) { }
                           }
                         }}
                       >
