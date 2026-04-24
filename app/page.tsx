@@ -212,6 +212,7 @@ function AppContent() {
   const [allFeedback, setAllFeedback] = useState<any[]>([]);
   const [membership, setMembership] = useState<string>("");
   const [membershipExpiry, setMembershipExpiry] = useState<string>("");
+  const [userData, setUserData] = useState<any>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
 
@@ -916,6 +917,7 @@ function AppContent() {
     const unsubUserData = onSnapshot(doc(db, "users", user.uid), (ds) => {
       if (ds.exists()) {
         const data = ds.data();
+        setUserData(data);
         if (data?.isAdmin === true) setIsOwner(true);
         if (data && data.membership === undefined) {
           setDoc(doc(db, "users", user.uid), { membership: "" }, { merge: true }).catch(() => { });
