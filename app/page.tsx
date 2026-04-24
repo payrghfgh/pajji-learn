@@ -204,6 +204,7 @@ function AppContent() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [profilePic, setProfilePic] = useState<string>("");
   const [customAccent, setCustomAccent] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
   const [prevLevel, setPrevLevel] = useState<number | null>(null);
   const [konamiProgress, setKonamiProgress] = useState<string[]>([]);
   const [godMode, setGodMode] = useState(false);
@@ -874,10 +875,11 @@ function AppContent() {
         mobileQuickSettings,
         soundEnabled,
         profilePic,
-        customAccent
+        customAccent,
+        displayName
       }
     }, { merge: true }).catch(() => { });
-  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled, profilePic, customAccent, membership]);
+  }, [user, theme, uiTheme, textSize, reduceMotion, highContrast, sidebarDensity, mobileQuickSettings, soundEnabled, profilePic, customAccent, displayName, membership]);
 
   useEffect(() => {
     if (!user) return;
@@ -954,6 +956,7 @@ function AppContent() {
         if (typeof prefs.soundEnabled === "boolean") setSoundEnabled(prefs.soundEnabled);
         if (typeof prefs.profilePic === "string") setProfilePic(prefs.profilePic);
         if (typeof prefs.customAccent === "string") setCustomAccent(prefs.customAccent);
+        if (typeof prefs.displayName === "string") setDisplayName(prefs.displayName);
       } else {
         setDoc(doc(db, "users", user.uid), {
           completed: [],
@@ -989,7 +992,8 @@ function AppContent() {
             mobileQuickSettings,
             soundEnabled,
             profilePic: "",
-            customAccent: ""
+            customAccent: "",
+            displayName: user.displayName || user.email?.split('@')[0] || "User"
           }
         }, { merge: true });
         setUserXP(0);
@@ -2703,7 +2707,10 @@ function AppContent() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [view, activeTab, curChapter, quizActiveIndices, quizQuestionOrder, submitQuiz]);
 
-  const getUserName = (u: any) => u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
+  const getUserName = (u: any) => {
+    if (userData?.uiSettings?.displayName) return userData.uiSettings.displayName;
+    return u?.isAnonymous ? "Guest User" : u?.email?.split('@')[0] || "User";
+  };
   const userLevel = Math.floor(userXP / 500) + 1;
 
   const IconHome = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
@@ -5038,7 +5045,7 @@ function AppContent() {
                             <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#C0C0C0", color: "white", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>2nd</div>
                           </div>
                           <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                            {p2.email?.split('@')[0]}
+                            {p2.uiSettings?.displayName || p2.email?.split('@')[0]}
                             {getBadge(p2)}
                           </p>
                           <p style={{ fontFamily: "var(--font-syne)", fontWeight: "800", fontSize: "13px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p2.weeklyXP || 0) : (p2.xp || 0)} XP</p>
@@ -5056,7 +5063,7 @@ function AppContent() {
                             <Crown size={28} fill="#FFD700" color="#FFD700" style={{ position: "absolute", top: "-24px", left: "50%", transform: "translateX(-50%) rotate(-15deg)" }} />
                           </div>
                           <p style={{ fontWeight: "800", fontSize: "16px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                            {p1.email?.split('@')[0]}
+                            {p1.uiSettings?.displayName || p1.email?.split('@')[0]}
                             {getBadge(p1)}
                           </p>
                           <p style={{ fontFamily: "var(--font-syne)", fontWeight: "900", fontSize: "16px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p1.weeklyXP || 0) : (p1.xp || 0)} XP</p>
@@ -5073,7 +5080,7 @@ function AppContent() {
                             <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#CD7F32", color: "white", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>3rd</div>
                           </div>
                           <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                            {p3.email?.split('@')[0]}
+                            {p3.uiSettings?.displayName || p3.email?.split('@')[0]}
                             {getBadge(p3)}
                           </p>
                           <p style={{ fontFamily: "var(--font-syne)", fontWeight: "800", fontSize: "13px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p3.weeklyXP || 0) : (p3.xp || 0)} XP</p>
@@ -5098,7 +5105,7 @@ function AppContent() {
                       <span style={{ width: "40px", fontWeight: "900", color: "var(--muted)", fontSize: "14px", fontFamily: "var(--font-syne)" }}>#{i + 4}</span>
                       <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--input-bg)", border: "1px solid var(--border)", display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", marginRight: "16px" }}>{p.email?.[0].toUpperCase()}</div>
                       <span style={{ flex: 1, fontWeight: "700", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                        {p.email?.split('@')[0]}
+                        {p.uiSettings?.displayName || p.email?.split('@')[0]}
                         {pt === "ultra" && (
                           <span style={{ display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -5144,6 +5151,11 @@ function AppContent() {
                     </div>
                     <input type="text" placeholder="Avatar URL (https://...)" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
                   </div>
+                </div>
+
+                <div>
+                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Username</p>
+                  <input type="text" placeholder="Your Display Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={{ width: "100%", padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)" }} />
                 </div>
 
                 <div>
@@ -5576,7 +5588,7 @@ function AppContent() {
                           </p>
                         </div>
                         <div>
-                          <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase" }}>{user?.email?.split('@')[0] || "Member"}</p>
+                          <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase" }}>{getUserName(user)}</p>
                         </div>
                       </div>
                     </motion.div>
