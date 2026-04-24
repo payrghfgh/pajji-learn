@@ -2,10 +2,10 @@
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { useEffect, useState, useRef, useMemo } from "react";
 import Head from "next/head";
-import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring, useTransform, useMotionTemplate } from "framer-motion";
 import {
   Trophy, BookOpen, Zap, Settings, Flame,
-  ChevronRight, ChevronLeft, Search, Plus, Star, Map,
+  ChevronRight, ChevronLeft, Search, Plus, Star, Map, Crown,
   Clock, CheckCircle2, AlertCircle, FileText,
   MessageSquare, LayoutDashboard, LogOut, User, Volume2,
   X, Moon, Sun, CloudRain, Waves, Coffee, Brain, Music, Sparkles, Wind, Info, Heart, Send
@@ -83,6 +83,31 @@ export default function Home() {
 }
 
 function AppContent() {
+  // Card Tilt & Shine Motion Values
+  const cardX = useMotionValue(0);
+  const cardY = useMotionValue(0);
+  const springX = useSpring(cardX, { stiffness: 300, damping: 30 });
+  const springY = useSpring(cardY, { stiffness: 300, damping: 30 });
+  const rotateX = useTransform(springY, [-0.5, 0.5], ["15deg", "-15deg"]);
+  const rotateY = useTransform(springX, [-0.5, 0.5], ["-15deg", "15deg"]);
+  
+  const shineX = useTransform(springX, [-0.5, 0.5], ["0%", "100%"]);
+  const shineY = useTransform(springY, [-0.5, 0.5], ["0%", "100%"]);
+  
+  const shineXPct = useTransform(springX, (v) => (v + 0.5) * 100);
+  const shineYPct = useTransform(springY, (v) => (v + 0.5) * 100);
+  const shineBackground = useMotionTemplate`radial-gradient(circle at ${shineXPct}% ${shineYPct}%, rgba(255,255,255,0.3) 0%, transparent 80%)`;
+
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    cardX.set((e.clientX - rect.left) / rect.width - 0.5);
+    cardY.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+
+  const handleCardMouseLeave = () => {
+    cardX.set(0);
+    cardY.set(0);
+  };
   const [user, setUser] = useState<any>(null);
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
@@ -865,7 +890,7 @@ function AppContent() {
         const data = ds.data();
         if (data?.isAdmin === true) setIsOwner(true);
         if (data && data.membership === undefined) {
-          setDoc(doc(db, "users", user.uid), { membership: "" }, { merge: true }).catch(() => {});
+          setDoc(doc(db, "users", user.uid), { membership: "" }, { merge: true }).catch(() => { });
         }
         setCompletedLessons(data.completed || []);
         setUserXP(data.xp || 0);
@@ -4173,16 +4198,16 @@ function AppContent() {
                     return (
                       <>
                         {mem === "PAJJIPLUS" && (
-                          <span style={{ 
-                            background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)", 
-                            WebkitBackgroundClip: "text", 
-                            WebkitTextFillColor: "transparent", 
-                            filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))", 
-                            fontWeight: "900", 
-                            fontSize: "18px", 
+                          <span style={{
+                            background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))",
+                            fontWeight: "900",
+                            fontSize: "18px",
                             position: "relative",
                             top: "-2px",
-                            marginLeft: "6px" 
+                            marginLeft: "6px"
                           }}>+</span>
                         )}
                         {mem === "PAJJIPRO" && (
@@ -4202,18 +4227,18 @@ function AppContent() {
                         {mem === "PAJJIULTRA" && (
                           <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                               <defs>
-                                 <linearGradient id="goldGradU" x1="0" y1="0" x2="1" y2="1">
-                                   <stop offset="0%" stopColor="#ffd700" />
-                                   <stop offset="50%" stopColor="#ffb300" />
-                                   <stop offset="100%" stopColor="#fff8b0" />
-                                 </linearGradient>
-                                 <mask id="u-slit-mask">
-                                   <rect width="24" height="24" fill="white" />
-                                   <line x1="2" y1="4" x2="10" y2="12" stroke="black" strokeWidth="4" />
-                                 </mask>
-                               </defs>
-                               <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGradU)" strokeWidth="4" strokeLinecap="round" mask="url(#u-slit-mask)" />
+                              <defs>
+                                <linearGradient id="goldGradU" x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor="#ffd700" />
+                                  <stop offset="50%" stopColor="#ffb300" />
+                                  <stop offset="100%" stopColor="#fff8b0" />
+                                </linearGradient>
+                                <mask id="u-slit-mask">
+                                  <rect width="24" height="24" fill="white" />
+                                  <line x1="2" y1="4" x2="10" y2="12" stroke="black" strokeWidth="4" />
+                                </mask>
+                              </defs>
+                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGradU)" strokeWidth="4" strokeLinecap="round" mask="url(#u-slit-mask)" />
                             </svg>
                           </span>
                         )}
@@ -4235,17 +4260,6 @@ function AppContent() {
               <p style={{ fontSize: "11px", fontWeight: "800", opacity: 0.6 }}>{userXP} XP</p>
               <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>Lvl {userLevel + 1}</p>
             </div>
-            {memTier !== "free" && (
-              <div style={{ marginTop: "10px", padding: "6px 10px", borderRadius: "8px", background: "rgba(255,215,0,0.1)", border: "1px solid rgba(255,215,0,0.25)", fontSize: "10px", fontWeight: "800", color: "#f59e0b", display: "flex", flexDirection: "column", gap: "2px" }}>
-                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  {memTier === "ultra" ? "⚡" : memTier === "pro" ? "👑" : "+"}
-                  {memTier === "ultra" ? "PAJJI ULTRA — 2× XP · Free Skips" : memTier === "pro" ? "PAJJI PRO — Free Skips · God Mode" : "PAJJI PLUS — 50% Skip Discount"}
-                </span>
-                {membershipExpiry && (
-                  <span style={{ fontSize: "9px", opacity: 0.7, fontWeight: "600" }}>Expires {new Date(membershipExpiry).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
-                )}
-              </div>
-            )}
           </motion.div>
         </div>
 
@@ -4833,9 +4847,49 @@ function AppContent() {
                       {p.email?.split('@')[0]}
                       {(() => {
                         const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-                        if (pt === "ultra") return <span style={{ fontSize: "13px", filter: "drop-shadow(0 1px 4px rgba(255,215,0,0.5))" }}>⚡</span>;
-                        if (pt === "pro") return <span style={{ fontSize: "13px", filter: "drop-shadow(0 1px 4px rgba(255,215,0,0.5))" }}>👑</span>;
-                        if (pt === "plus") return <span style={{ fontSize: "12px", fontWeight: "900", background: "linear-gradient(135deg,#ffd700,#ffb300)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>+</span>;
+                        if (pt === "ultra") return (
+                          <span style={{ marginLeft: "4px", display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                              <defs>
+                                <linearGradient id={`goldGradU-${p.id}`} x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor="#ffd700" />
+                                  <stop offset="50%" stopColor="#ffb300" />
+                                  <stop offset="100%" stopColor="#fff8b0" />
+                                </linearGradient>
+                                <mask id={`u-slit-mask-${p.id}`}>
+                                  <rect width="24" height="24" fill="white" />
+                                  <line x1="2" y1="4" x2="10" y2="12" stroke="black" strokeWidth="4" />
+                                </mask>
+                              </defs>
+                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke={`url(#goldGradU-${p.id})`} strokeWidth="4" strokeLinecap="round" mask={`url(#u-slit-mask-${p.id})`} />
+                            </svg>
+                          </span>
+                        );
+                        if (pt === "pro") return (
+                          <span style={{ marginLeft: "4px", display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="url(#goldGradL)" stroke="url(#goldGradL)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <defs>
+                                <linearGradient id="goldGradL" x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor="#ffd700" />
+                                  <stop offset="50%" stopColor="#ffb300" />
+                                  <stop offset="100%" stopColor="#fff8b0" />
+                                </linearGradient>
+                              </defs>
+                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+                            </svg>
+                          </span>
+                        );
+                        if (pt === "plus") return (
+                          <span style={{
+                            background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))",
+                            fontWeight: "900",
+                            fontSize: "14px",
+                            marginLeft: "4px"
+                          }}>+</span>
+                        );
                         return null;
                       })()}
                     </span>
@@ -4899,6 +4953,13 @@ function AppContent() {
                   <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
                 </button>
                 <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+                <button onClick={() => setView("membership")} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <Star size={20} />
+                    <span>My Membership</span>
+                  </div>
+                  <ChevronRight size={18} color="var(--muted)" />
+                </button>
                 <button onClick={() => setView("credits")} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <Info size={20} />
@@ -5171,6 +5232,152 @@ function AppContent() {
                 <p style={{ fontSize: "14px", fontWeight: "700", fontStyle: "italic", opacity: 0.8 }}>
 
                 </p>
+              </div>
+            </motion.div>
+          )}
+
+          {view === "membership" && (
+            <motion.div
+              key="membership"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: -20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="page-shell" style={{ maxWidth: "600px" }}
+            >
+              <button onClick={() => setView("settings")} className="btn-link" style={{ marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <ChevronLeft size={18} /> Back to Settings
+              </button>
+
+              <h1 className="page-title" style={{ marginBottom: "32px" }}>Membership 🏅</h1>
+
+              <div className="card" style={{ padding: "32px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
+                {memTier !== "free" ? (
+                  <>
+                    <motion.div 
+                      onMouseMove={handleCardMouseMove}
+                      onMouseLeave={handleCardMouseLeave}
+                      style={{ 
+                        width: "100%", 
+                        maxWidth: "380px", 
+                        aspectRatio: "1.586", 
+                        background: memTier === "ultra" ? "linear-gradient(135deg, #FFD700, #F59E0B)" : memTier === "pro" ? "linear-gradient(135deg, #3B82F6, #1D4ED8)" : "linear-gradient(135deg, #8B5CF6, #6D28D9)", 
+                        borderRadius: "20px", 
+                        padding: "24px", 
+                        display: "flex", 
+                        flexDirection: "column", 
+                        justifyContent: "space-between", 
+                        boxShadow: memTier === "ultra" ? "0 20px 40px rgba(245, 158, 11, 0.3)" : "0 20px 40px rgba(59, 130, 246, 0.3)", 
+                        position: "relative", 
+                        overflow: "hidden", 
+                        color: memTier === "ultra" ? "#000" : "#FFF",
+                        margin: "0 auto 8px auto",
+                        perspective: "1000px",
+                        rotateX,
+                        rotateY,
+                        transformStyle: "preserve-3d"
+                      }}
+                    >
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)", pointerEvents: "none" }} />
+                      
+                      <motion.div 
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: shineBackground,
+                          pointerEvents: "none",
+                          zIndex: 2
+                        }}
+                      />
+
+                      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", transform: "translateZ(20px)" }}>
+                        <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: "800", fontSize: "16px", margin: 0, letterSpacing: "0.5px" }}>PAJJI SERVICES</h3>
+                        <div style={{ opacity: 0.8 }}>
+                          {memTier === "ultra" ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                            </svg>
+                          ) : memTier === "pro" ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
+                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+                            </svg>
+                          ) : (
+                            <span style={{ fontWeight: "900", fontSize: "24px", lineHeight: "20px" }}>+</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div style={{ position: "relative", zIndex: 1, textAlign: "center", transform: "translateZ(40px)" }}>
+                        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: "800", margin: 0, letterSpacing: "1px", textTransform: "uppercase" }}>
+                          {memTier === "ultra" ? "Pajji Ultra" : memTier === "pro" ? "Pajji Pro" : "Pajji Plus"}
+                        </h2>
+                      </div>
+
+                      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end", transform: "translateZ(20px)" }}>
+                        <div>
+                          <p style={{ fontSize: "10px", fontWeight: "700", opacity: 0.7, textTransform: "uppercase", marginBottom: "2px" }}>Valid Thru</p>
+                          <p style={{ fontSize: "14px", fontWeight: "800", fontFamily: "monospace", letterSpacing: "1px" }}>
+                            {membershipExpiry ? new Date(membershipExpiry).toLocaleDateString("en-IN", { month: "2-digit", year: "2-digit" }) : "LIFETIME"}
+                          </p>
+                        </div>
+                        <div>
+                          <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase" }}>{user?.email?.split('@')[0] || "Member"}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <div style={{ width: "100%", background: "var(--input-bg)", borderRadius: "16px", padding: "20px", textAlign: "left", border: "1px solid var(--border)", marginTop: "16px" }}>
+                      <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "12px", letterSpacing: "1px" }}>Benefits Included</p>
+                      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {memTier === "ultra" && (
+                          <>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 2× XP Multiplier (Level up twice as fast)</li>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Full Access to All Premium Themes</li>
+                          </>
+                        )}
+                        {memTier === "pro" && (
+                          <>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Exclusive Profile Badges & Highlights</li>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Premium Badge Appearance</li>
+                          </>
+                        )}
+                        {memTier === "plus" && (
+                          <>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 50% Discount on Quiz Skips</li>
+                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Early Access to New Features</li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                    <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "700", marginTop: "16px", fontStyle: "italic", opacity: 0.8 }}>
+                      Please contact Rushan either on WhatsApp or face to face if applied
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "var(--input-bg)", display: "grid", placeItems: "center", border: "1px dashed var(--border)" }}>
+                      <Star size={32} color="var(--muted)" />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "8px" }}>No Active Membership</h2>
+                      <p style={{ fontSize: "14px", color: "var(--accent)", fontWeight: "700", lineHeight: "1.6", maxWidth: "300px", margin: "12px auto 0", fontStyle: "italic" }}>
+                        Please contact Rushan either on WhatsApp or face to face if applied
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => window.open('https://fffffffoajju.my.canva.site/pajji-services/memberships', '_blank')}
+                      className="btn btn-primary"
+                      style={{ width: "100%", padding: "16px", borderRadius: "16px", fontSize: "16px", fontWeight: "800", marginTop: "12px", boxShadow: "0 10px 25px -5px rgba(var(--accent-rgb), 0.4)" }}
+                    >
+                      Explore Memberships
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
