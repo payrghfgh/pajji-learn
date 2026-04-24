@@ -139,8 +139,22 @@ function AppContent() {
   const [adminOnlyThemeIds, setAdminOnlyThemeIds] = useState<string[]>([]);
   const [giftedThemes, setGiftedThemes] = useState<string[]>([]);
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [sidebarStyle, setSidebarStyle] = useState<"default" | "floating" | "minimal">("default");
+  const [aiPersonality, setAiPersonality] = useState<"coach" | "mentor" | "chill">("mentor");
   const [giftUserSearch, setGiftUserSearch] = useState("");
   const [giftUserResults, setGiftUserResults] = useState<Array<{ id: string; email: string }>>([]);
+  const [showLegendaryOverlay, setShowLegendaryOverlay] = useState(false);
+  const smartRecommendation = useMemo(() => {
+    if (!books.length) return null;
+    // Prioritize lessons not yet mastered
+    for (const book of books) {
+      if (!book.chapters) continue;
+      for (const chapter of book.chapters) {
+        if (!completedLessons.includes(chapter.id)) return { book, chapter };
+      }
+    }
+    return null;
+  }, [books, completedLessons]);
   const [giftTargetUserId, setGiftTargetUserId] = useState("");
   const [giftThemeId, setGiftThemeId] = useState("");
   const [newThemeName, setNewThemeName] = useState("");
@@ -317,17 +331,23 @@ function AppContent() {
   // Components for animations
   const FocusGarden = () => (
     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", padding: "20px" }}>
-      {[...Array(gardenPlants)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="leaf-grow"
-          style={{ width: "24px", height: "40px", color: "var(--accent)" }}
-        >
-          <svg viewBox="0 0 100 100">
-            <path d="M 50 100 C 20 70 20 30 50 0 C 80 30 80 70 50 100" fill="currentColor" />
-          </svg>
-        </motion.div>
-      ))}
+      {[...Array(gardenPlants)].map((_, i) => {
+        const isUltra = memTier === "ultra";
+        return (
+          <motion.div
+            key={i}
+            className={`leaf-grow ${isUltra ? "ultra-glow" : ""}`}
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            whileHover={{ scale: 1.2, rotate: 10 }}
+            style={{ width: "24px", height: "40px", color: isUltra ? "#FFD700" : "var(--accent)", filter: isUltra ? "drop-shadow(0 0 8px rgba(255,215,0,0.5))" : "none" }}
+          >
+            <svg viewBox="0 0 100 100">
+              <path d="M 50 100 C 20 70 20 30 50 0 C 80 30 80 70 50 100" fill="currentColor" />
+            </svg>
+          </motion.div>
+        );
+      })}
       {gardenPlants === 0 && (
         <div style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "700" }}>
           Start focusing to grow your garden...
@@ -570,9 +590,15 @@ function AppContent() {
         }
       ];
 
+      const finalAnswer = (ans: string) => {
+        if (aiPersonality === "coach") return `💪 LISTEN UP! ${ans}\n\nNow get back to work and CRUSH those goals! 🎯`;
+        if (aiPersonality === "chill") return `🤙 Hey friend, don't sweat it. ${ans}\n\nTake it easy, you're doing great. 🌊`;
+        return `🎓 Greetings scholar. ${ans}\n\nMay your wisdom continue to grow. ✨`;
+      };
+
       for (const item of localAnswers) {
         if (item.keywords.some(k => lowerQ.includes(k))) {
-          setAiExplainAnswer(item.answer + "\n\n(Generated instantly by Pajji Assistant ⚡)");
+          setAiExplainAnswer(finalAnswer(item.answer) + "\n\n(Generated instantly by Pajji Assistant ⚡)");
           setAiExplainLoading(false);
           setAiExplainQuestion("");
           return;
@@ -587,7 +613,8 @@ function AppContent() {
       });
 
       if (matchedSentences.length > 0) {
-        setAiExplainAnswer("Based on the material in this chapter:\n\n" + matchedSentences.slice(0, 3).join(". ").trim() + "." + "\n\n(Found instantly in chapter material 📚)");
+        const ans = "Based on the material in this chapter:\n\n" + matchedSentences.slice(0, 3).join(". ").trim() + ".";
+        setAiExplainAnswer(finalAnswer(ans) + "\n\n(Found instantly in chapter material 📚)");
         setAiExplainLoading(false);
         setAiExplainQuestion("");
         return;
@@ -605,7 +632,8 @@ function AppContent() {
         if (wikiData.query?.search?.length > 0) {
           const firstResult = wikiData.query.search[0];
           const cleanSnippet = firstResult.snippet.replace(/<[^>]*>?/gm, '');
-          setAiExplainAnswer(`Here is what I found about "${firstResult.title}":\n\n${cleanSnippet}...\n\n(Generated via World Knowledge 🌍)`);
+          const ans = `Here is what I found about "${firstResult.title}":\n\n${cleanSnippet}...`;
+          setAiExplainAnswer(finalAnswer(ans) + "\n\n(Generated via World Knowledge 🌍)");
           setAiExplainLoading(false);
           setAiExplainQuestion("");
           return;
@@ -613,7 +641,7 @@ function AppContent() {
       }
 
       // 4. --- FINAL FALLBACK ---
-      setAiExplainAnswer("I'm not quite sure about that! Try rephrasing your question or checking the chapter summary. \n\n(Pajji Assistant 🤖)");
+      setAiExplainAnswer(finalAnswer("I'm not quite sure about that! Try rephrasing your question or checking the chapter summary.") + " \n\n(Pajji Assistant 🤖)");
     } catch (e: any) {
       setAiExplainAnswer("Note: I'm currently running in Offline Mode. Ask me about the lesson or platform features!");
     } finally {
@@ -1168,6 +1196,10 @@ function AppContent() {
         dailyGoalHits: nextDailyGoalHits,
         [`activityHistory.${today}`]: true
       }, { merge: true });
+      if (membership === "ultra") {
+        setShowLegendaryOverlay(true);
+        setTimeout(() => setShowLegendaryOverlay(false), 4500);
+      }
       setMasteryConfetti(true);
       playVictoryTone();
       setSaveStatus(
@@ -1684,7 +1716,11 @@ function AppContent() {
           xp: nextXP,
           [`activityHistory.${today}`]: true
         }, { merge: true });
-        setSaveStatus(`+${xpGain} XP earned! 📚`);
+        if (memTier === "ultra") {
+          setSaveStatus(`+${xpGain} XP (2× Ultra Bonus! 🚀)`);
+        } else {
+          setSaveStatus(`+${xpGain} XP earned! 📚`);
+        }
         setTimeout(() => setSaveStatus(""), 2000);
       } catch (e) {
         console.error(e);
@@ -2706,11 +2742,13 @@ function AppContent() {
   const getAchievementTitleById = (achievementId: string) =>
     achievementCatalog.find((a) => a.id === achievementId)?.title || achievementId;
   const isThemeAdminOnly = (themeId: string) => adminOnlyThemeIds.includes(themeId);
+  const isPremiumTheme = (themeId: string) => ["zenith", "midnight"].includes(themeId);
   const hasThemeAccess = (themeId: string) => {
     const adminAccess = !isThemeAdminOnly(themeId) || isOwner || giftedThemes.includes(themeId);
     const requiredAchievementId = getThemeAchievementRequirement(themeId);
     const achievementAccess = !requiredAchievementId || isOwner || allUnlockedAchievementIds.includes(requiredAchievementId);
-    return adminAccess && achievementAccess;
+    const membershipAccess = !isPremiumTheme(themeId) || memTier === "ultra" || isOwner;
+    return adminAccess && achievementAccess && membershipAccess;
   };
   const builtInThemeCards: ThemePreview[] = [
     { key: "default", label: "Default", accent: "#10b981", bg: "linear-gradient(135deg,#f8fafc,#ecfeff)", source: "builtIn" },
@@ -2726,6 +2764,8 @@ function AppContent() {
     { key: "emerald", label: "Emerald", accent: "#22c55e", bg: "linear-gradient(135deg,#022c22,#14532d)", source: "builtIn" },
     { key: "arctic", label: "Arctic", accent: "#38bdf8", bg: "linear-gradient(135deg,#dbeafe,#ecfeff)", source: "builtIn" },
     { key: "williams", label: "Williams Blue", accent: "#3267D4", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)", source: "builtIn" },
+    { key: "zenith", label: "Zenith Gold 💎", accent: "#FFD700", bg: "linear-gradient(135deg,#0f0f10,#2a2100)", source: "builtIn" },
+    { key: "midnight", label: "Midnight 🌌", accent: "#A855F7", bg: "linear-gradient(135deg,#000,#1a0b2e)", source: "builtIn" },
   ];
   const customThemeCards: ThemePreview[] = customThemes.map((t) => ({
     key: t.id,
@@ -2738,9 +2778,7 @@ function AppContent() {
     ...item,
     isAdminOnly: isThemeAdminOnly(item.key),
   }));
-  const visibleThemePreviewCards = isOwner
-    ? themePreviewCards
-    : themePreviewCards.filter((item) => !isThemeAdminOnly(item.key) || giftedThemes.includes(item.key));
+  const visibleThemePreviewCards = themePreviewCards;
   const selectedThemeCard = themePreviewCards.find((t) => t.key === uiTheme);
   const selectedThemeAchievementId = getThemeAchievementRequirement(uiTheme);
   const uiThemeLabel = selectedThemeCard
@@ -2770,7 +2808,11 @@ function AppContent() {
                         ? "theme-arctic"
                         : uiTheme === "williams"
                           ? "theme-williams"
-                          : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
+                          : uiTheme === "zenith"
+                            ? "theme-zenith"
+                            : uiTheme === "midnight"
+                              ? "theme-midnight"
+                              : themePreviewCards.some((t) => t.key === uiTheme && t.source === "custom")
                             ? "theme-custom"
                             : "theme-default";
   const textSizeClass = textSize === "compact" ? "text-size-compact" : textSize === "large" ? "text-size-large" : "text-size-default";
@@ -2813,7 +2855,7 @@ function AppContent() {
   useEffect(() => {
     const root = document.documentElement;
     // Remove old theme classes
-    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "default"];
+    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "zenith", "midnight", "default"];
     themes.forEach(t => root.classList.remove(`theme-${t}`));
     root.classList.remove("dark", "light");
 
@@ -3391,6 +3433,16 @@ function AppContent() {
           border: 1px solid rgba(168, 85, 247, 0.6) !important;
         }
 
+        @keyframes ultra-glow {
+          0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2), inset 0 0 5px rgba(255, 215, 0, 0.1); }
+          50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5), inset 0 0 15px rgba(255, 215, 0, 0.3); }
+          100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.2), inset 0 0 5px rgba(255, 215, 0, 0.1); }
+        }
+        .ultra-glow {
+          animation: ultra-glow 3s infinite ease-in-out !important;
+          border-color: rgba(255, 215, 0, 0.6) !important;
+        }
+
         .streak-aura {
           position: relative;
         }
@@ -3958,6 +4010,67 @@ function AppContent() {
           box-shadow: var(--card-shadow);
           position: relative;
         }
+        .theme-zenith {
+          --accent: #FFD700;
+          --accent-rgb: 255, 215, 0;
+          --accent-soft: rgba(255, 215, 0, 0.15);
+          --accent-grad: linear-gradient(135deg, #FFD700, #F59E0B);
+          --brand-gradient: linear-gradient(135deg, #2a2100, #FFD700);
+        }
+        .theme-zenith.dark {
+          --bg: #0a0a05;
+          --side: #1a1a0f;
+          --card: #2a2a1a;
+          --text: #fffcf0;
+          --muted: #a69c7d;
+          --border: rgba(255, 215, 0, 0.2);
+          --input-bg: #1f1f0a;
+        }
+        .theme-zenith.light {
+          --bg: #fffdf5;
+          --side: #ffffff;
+          --card: #ffffff;
+          --text: #4a3b00;
+          --muted: #8a7d4d;
+          --border: rgba(255, 215, 0, 0.2);
+          --input-bg: #fff9e6;
+        }
+        .theme-zenith .app-container, .theme-zenith.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(255, 215, 0, 0.15), transparent 40%),
+            radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.1), transparent 40%);
+        }
+
+        .theme-midnight {
+          --accent: #A855F7;
+          --accent-rgb: 168, 85, 247;
+          --accent-soft: rgba(168, 85, 247, 0.15);
+          --accent-grad: linear-gradient(135deg, #7C3AED, #A855F7);
+          --brand-gradient: linear-gradient(135deg, #1a0b2e, #A855F7);
+        }
+        .theme-midnight.dark {
+          --bg: #020105;
+          --side: #0a0515;
+          --card: #150a25;
+          --text: #f5f0ff;
+          --muted: #948bb8;
+          --border: rgba(168, 85, 247, 0.2);
+          --input-bg: #0d051a;
+        }
+        .theme-midnight.light {
+          --bg: #fcfaff;
+          --side: #ffffff;
+          --card: #ffffff;
+          --text: #2e1065;
+          --muted: #6b7280;
+          --border: rgba(168, 85, 247, 0.12);
+          --input-bg: #f5f0ff;
+        }
+        .theme-midnight .app-container, .theme-midnight.app-container {
+          background-image:
+            radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.15), transparent 40%),
+            radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.1), transparent 40%);
+        }
         .theme-f1 .card {
           backdrop-filter: saturate(1.08);
         }
@@ -4160,29 +4273,44 @@ function AppContent() {
             width: 54px;
             height: 54px;
           }
+          .desktop-only { display: none !important; }
         }
       `}</style>
 
       <motion.div
-        className="sidebar"
+        className={`sidebar style-${sidebarStyle}`}
+        style={{
+          ...(sidebarStyle === "floating" ? {
+            height: "calc(100vh - 40px)",
+            margin: "20px",
+            borderRadius: "24px",
+            border: "1px solid var(--border)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.3)"
+          } : sidebarStyle === "minimal" ? {
+            width: "80px",
+            padding: "32px 10px",
+            alignItems: "center"
+          } : {})
+        }}
       >
         <div className="sidebar-extras" style={{ marginBottom: "40px" }}>
           <motion.h1
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            style={{ fontSize: "24px", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)" }}
+            style={{ fontSize: sidebarStyle === "minimal" ? "14px" : "24px", textAlign: "center", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)" }}
           >
-            PAJJI <span style={{ color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)" }}>LEARN</span>
+            P{sidebarStyle !== "minimal" && <span>AJJI <span style={{ color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)" }}>LEARN</span></span>}
           </motion.h1>
 
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="card"
-            style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
-          >
+          {sidebarStyle !== "minimal" && (
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className={`card ${memTier === "ultra" ? "ultra-glow" : ""}`}
+              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
+            >
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-              <div className={streakCount >= 7 ? "streak-aura" : ""} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
+              <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
                 {profilePic ? (
                   <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
@@ -4261,24 +4389,25 @@ function AppContent() {
               <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>Lvl {userLevel + 1}</p>
             </div>
           </motion.div>
-        </div>
+        )}
+      </div>
 
         <nav className="sidebar-nav">
           <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
             <LayoutDashboard size={20} />
-            <span>Dashboard</span>
+            {sidebarStyle !== "minimal" && <span>Dashboard</span>}
           </button>
           <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}>
             <BookOpen size={20} />
-            <span>Library</span>
+            {sidebarStyle !== "minimal" && <span>Library</span>}
           </button>
           <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}>
             <Trophy size={20} />
-            <span>Leaderboard</span>
+            {sidebarStyle !== "minimal" && <span>Leaderboard</span>}
           </button>
           <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}>
             <Settings size={20} />
-            <span>Settings</span>
+            {sidebarStyle !== "minimal" && <span>Settings</span>}
           </button>
         </nav>
 
@@ -4289,7 +4418,7 @@ function AppContent() {
             style={{ color: "#ef4444" }}
           >
             <LogOut size={20} />
-            <span>Logout</span>
+            {sidebarStyle !== "minimal" && <span>Logout</span>}
           </button>
         </div>
       </motion.div>
@@ -4353,31 +4482,36 @@ function AppContent() {
                 { id: "synth", icon: <Zap size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", label: "Synth Night" },
                 { id: "wind", icon: <Wind size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", label: "Forest Wind" },
                 { id: "waves", icon: <Waves size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", label: "Deep Sea" },
-              ].map(track => (
-                <button
-                  key={track.id}
-                  title={track.label}
-                  onClick={() => setActiveAudio(activeAudio === track.url ? null : track.url)}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)",
-                    cursor: "pointer",
-                    display: "grid",
-                    placeItems: "center",
-                    transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                    transform: activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)",
-                    animation: activeAudio === track.url ? "music-pulse 2s infinite ease-in-out" : "none"
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "white"; if (activeAudio !== track.url) e.currentTarget.style.transform = "scale(1.3) translateY(-2px)"; }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : "rgba(255,255,255,0.6)";
-                    e.currentTarget.style.transform = activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)";
-                  }}
-                >
-                  {track.icon}
-                </button>
-              ))}
+                { id: "zen", icon: <Sparkles size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", label: "Ultra Zen 💎", premium: true },
+                { id: "ocean", icon: <Heart size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3", label: "Ocean Mist 💎", premium: true },
+              ].map(track => {
+                const hasAccess = !track.premium || memTier === "ultra" || memTier === "pro";
+                return (
+                  <button
+                    key={track.id}
+                    title={hasAccess ? track.label : "Premium Only 💎"}
+                    onClick={() => hasAccess && setActiveAudio(activeAudio === track.url ? null : track.url)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: activeAudio === track.url ? "var(--accent)" : hasAccess ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
+                      cursor: hasAccess ? "pointer" : "not-allowed",
+                      display: "grid",
+                      placeItems: "center",
+                      transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                      transform: activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)",
+                      animation: activeAudio === track.url ? "music-pulse 2s infinite ease-in-out" : "none"
+                    }}
+                    onMouseEnter={(e) => { if (hasAccess) { e.currentTarget.style.color = "white"; if (activeAudio !== track.url) e.currentTarget.style.transform = "scale(1.3) translateY(-2px)"; } }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : hasAccess ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)";
+                      e.currentTarget.style.transform = activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)";
+                    }}
+                  >
+                    {track.icon}
+                  </button>
+                );
+              })}
               <div style={{ width: "1px", height: "12px", background: "var(--border)", margin: "0 4px" }} />
               <button
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -4483,6 +4617,23 @@ function AppContent() {
                   </motion.div>
                   <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{ fontSize: "13px", opacity: 0.5 }}>Streak {streakCount > 0 ? "🔥" : ""}</p></div>
                 </motion.div>
+
+
+
+                {smartRecommendation && (
+                  <motion.div
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                    whileHover={{ y: -5 }}
+                    className="card ultra-shine"
+                    onClick={() => { setCurBook(smartRecommendation.book); setCurChapter(smartRecommendation.chapter); setView("study"); }}
+                    style={{ gridColumn: "span 8", display: "flex", flexDirection: "row", alignItems: "center", gap: "24px", cursor: "pointer", background: "var(--accent-grad)", color: "white", position: "relative", overflow: "hidden" }}
+                  >
+                    <div style={{ position: "absolute", top: "10px", right: "10px", opacity: 0.3 }}><Zap size={32} fill="white" /></div>
+                    <p style={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", opacity: 0.9, letterSpacing: "1px" }}>Smart Review</p>
+                    <h3 style={{ fontSize: "16px", fontWeight: "800", marginTop: "4px", lineHeight: "1.2" }}>{smartRecommendation.chapter.title}</h3>
+                    <p style={{ fontSize: "11px", opacity: 0.8, marginTop: "4px" }}>Resume in {smartRecommendation.book.title}</p>
+                  </motion.div>
+                )}
 
                 <motion.div
                   variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
@@ -5040,6 +5191,33 @@ function AppContent() {
                   <ChevronRight size={18} color="var(--muted)" />
                 </button>
                 <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+
+                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
+                  <div className="desktop-only">
+                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Interface Style</p>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {(["default", "floating", "minimal"] as const).map(s => (
+                        <button key={s} onClick={() => setSidebarStyle(s)} className="btn btn-secondary" style={{ flex: "1 1 80px", fontSize: "10px", padding: "8px", background: sidebarStyle === s ? "var(--accent)" : "var(--input-bg)", border: sidebarStyle === s ? "1px solid var(--accent)" : "1px solid var(--border)", color: sidebarStyle === s ? "white" : "var(--text)" }}>
+                          {s.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>AI Personality</p>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {(["coach", "mentor", "chill"] as const).map(p => (
+                        <button key={p} onClick={() => setAiPersonality(p)} className="btn btn-secondary" style={{ flex: "1 1 80px", fontSize: "10px", padding: "8px", background: aiPersonality === p ? "var(--accent)" : "var(--input-bg)", border: aiPersonality === p ? "1px solid var(--accent)" : "1px solid var(--border)", color: aiPersonality === p ? "white" : "var(--text)" }}>
+                          {p.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
+                </div>
+
                 <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
                   <LogOut size={20} />
                   <span>Terminate Session</span>
@@ -5404,28 +5582,58 @@ function AppContent() {
                     <div style={{ width: "100%", background: "var(--input-bg)", borderRadius: "16px", padding: "20px", textAlign: "left", border: "1px solid var(--border)", marginTop: "16px" }}>
                       <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "12px", letterSpacing: "1px" }}>Benefits Included</p>
                       <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {memTier === "ultra" && (
-                          <>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 2× XP Multiplier (Level up twice as fast)</li>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Full Access to All Premium Themes</li>
-                          </>
-                        )}
-                        {memTier === "pro" && (
-                          <>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Exclusive Profile Badges & Highlights</li>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Premium Badge Appearance</li>
-                          </>
-                        )}
-                        {memTier === "plus" && (
-                          <>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 50% Discount on Quiz Skips</li>
-                            <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Early Access to New Features</li>
-                          </>
-                        )}
+                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 2× XP Multiplier (Level up twice as fast)</li>
+                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
+                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Full Access to All Premium Themes</li>
+                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Custom Badge Appearance</li>
                       </ul>
                     </div>
+
+                    {(memTier === "ultra" || true) && (
+                      <div className="card" style={{ width: "100%", marginTop: "32px", textAlign: "left" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+                          <Sparkles size={20} color="var(--accent)" />
+                          <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Custom Icon Status</h3>
+                        </div>
+                        <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "20px" }}>Select an exclusive badge to display next to your name across the platform.</p>
+                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                          {[
+                            { id: "crown", icon: <Crown size={18} /> },
+                            { id: "zap", icon: <Zap size={18} /> },
+                            { id: "sparkles", icon: <Sparkles size={18} /> },
+                            { id: "flame", icon: <Flame size={18} /> },
+                            { id: "star", icon: <Star size={18} /> },
+                          ].map(badge => {
+                            const isSelected = (userData?.selectedBadge || "crown") === badge.id;
+                            return (
+                              <button
+                                key={badge.id}
+                                onClick={async () => {
+                                  if (!user) return;
+                                  await setDoc(doc(db, "users", user.uid), { selectedBadge: badge.id }, { merge: true });
+                                  setSaveStatus(`✨ Badge updated to ${badge.id}!`);
+                                  setTimeout(() => setSaveStatus(""), 2000);
+                                }}
+                                style={{
+                                  padding: "12px",
+                                  borderRadius: "14px",
+                                  background: isSelected ? "var(--accent-grad)" : "var(--input-bg)",
+                                  border: "1px solid var(--border)",
+                                  color: isSelected ? "white" : "var(--text)",
+                                  cursor: "pointer",
+                                  transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                  transform: isSelected ? "scale(1.1)" : "scale(1)",
+                                  boxShadow: isSelected ? "0 8px 20px rgba(var(--accent-rgb), 0.3)" : "none"
+                                }}
+                              >
+                                {badge.icon}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "700", marginTop: "16px", fontStyle: "italic", opacity: 0.8 }}>
                       Please contact Rushan either on WhatsApp or face to face if applied
                     </p>
@@ -5451,6 +5659,44 @@ function AppContent() {
                   </>
                 )}
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showLegendaryOverlay && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(0,0,0,0.92)", display: "grid", placeItems: "center", backdropFilter: "blur(20px)" }}
+            >
+              <motion.div
+                initial={{ scale: 0.5, y: 50, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 1.2, opacity: 0 }}
+                transition={{ type: "spring", damping: 12, stiffness: 200 }}
+                style={{ textAlign: "center" }}
+              >
+                <div style={{ marginBottom: "24px", display: "inline-block", position: "relative" }}>
+                  <Sparkles size={140} color="#FFD700" />
+                  <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                    style={{ position: "absolute", inset: -20, border: "2px dashed #FFD700", borderRadius: "50%", opacity: 0.3 }} 
+                  />
+                </div>
+                <h1 style={{ fontSize: "min(80px, 12vw)", fontWeight: "900", color: "#FFD700", fontFamily: "var(--font-syne)", letterSpacing: "-3px", textShadow: "0 0 40px rgba(255,215,0,0.5)", margin: 0 }}>LEGENDARY MASTER</h1>
+                <p style={{ fontSize: "28px", color: "white", opacity: 0.9, fontWeight: "800", marginTop: "16px" }}>+200 XP (Ultra 2× Bonus ⚡)</p>
+                <motion.p 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  transition={{ delay: 1 }}
+                  style={{ fontSize: "14px", color: "var(--accent)", fontWeight: "700", marginTop: "40px", textTransform: "uppercase" }}
+                >
+                  Your wisdom grows exponentially
+                </motion.p>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
