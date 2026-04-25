@@ -5664,7 +5664,7 @@ function AppContent() {
                       </p>
                     </div>
                     <button
-                      onClick={() => window.open('https://fffffffoajju.my.canva.site/pajji-services/memberships', '_blank')}
+                      onClick={() => window.open('https://pajji-services.netlify.app/#memberships', '_blank')}
                       className="btn btn-primary"
                       style={{ width: "100%", padding: "16px", borderRadius: "16px", fontSize: "16px", fontWeight: "800", marginTop: "12px", boxShadow: "0 10px 25px -5px rgba(var(--accent-rgb), 0.4)" }}
                     >
