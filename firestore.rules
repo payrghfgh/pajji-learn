@@ -4,9 +4,12 @@ service cloud.firestore {
     // Helper to check if user is an admin
     function isAdmin() {
       return request.auth != null && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true ||
-         request.auth.token.email.matches('.*rushan.*') ||
-         request.auth.token.email.matches('.*arjun.*'));
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true) ||
+          (request.auth.token.keys().contains('email') && 
+           (request.auth.token.email.matches('.*rushan.*') || request.auth.token.email.matches('.*arjun.*')))
+        );
     }
 
     // Individual user records

@@ -2227,9 +2227,9 @@ function AppContent() {
   const getMemberTier = (mem: string, expiry: string) => {
     if (expiry && new Date(expiry) < new Date()) return "free"; // expired
     const n = (mem || "").toUpperCase().replace(/[\s_]+/g, "");
-    if (n === "PAJJIULTRA") return "ultra";
-    if (n === "PAJJIPRO") return "pro";
-    if (n === "PAJJIPLUS") return "plus";
+    if (n === "PAJJIULTRA" || n === "ULTRA") return "ultra";
+    if (n === "PAJJIPRO" || n === "PRO") return "pro";
+    if (n === "PAJJIPLUS" || n === "PLUS") return "plus";
     return "free";
   };
   const memTier = getMemberTier(membership, membershipExpiry);
@@ -4334,7 +4334,7 @@ function AppContent() {
                     const mem = (membership || "").toUpperCase().replace(/[\s_]+/g, "");
                     return (
                       <>
-                        {mem === "PAJJIPLUS" && (
+                        {(mem === "PAJJIPLUS" || mem === "PLUS") && (
                           <span style={{
                             background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)",
                             WebkitBackgroundClip: "text",
@@ -4347,7 +4347,7 @@ function AppContent() {
                             marginLeft: "6px"
                           }}>+</span>
                         )}
-                        {mem === "PAJJIPRO" && (
+                        {(mem === "PAJJIPRO" || mem === "PRO") && (
                           <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#goldGrad)" stroke="url(#goldGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <defs>
@@ -4361,7 +4361,7 @@ function AppContent() {
                             </svg>
                           </span>
                         )}
-                        {mem === "PAJJIULTRA" && (
+                        {(mem === "PAJJIULTRA" || mem === "ULTRA") && (
                           <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                               <defs>
@@ -5392,8 +5392,8 @@ function AppContent() {
                                         padding: "6px 12px",
                                         borderRadius: "10px",
                                         border: "1px solid var(--border)",
-                                        background: (u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier ? "var(--accent)" : "var(--card)",
-                                        color: (u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier ? "white" : "var(--text)",
+                                        background: ((u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier || (u.membership || "").toUpperCase() === tier) ? "var(--accent)" : "var(--card)",
+                                        color: ((u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier || (u.membership || "").toUpperCase() === tier) ? "white" : "var(--text)",
                                         fontWeight: "700",
                                         fontSize: "11px",
                                         cursor: "pointer",

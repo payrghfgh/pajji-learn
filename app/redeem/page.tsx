@@ -79,8 +79,10 @@ export default function RedeemPage() {
       expiryDate.setDate(expiryDate.getDate() + durationDays);
       const expiryString = expiryDate.toISOString();
 
+      const membershipValue = `PAJJI${tier.toUpperCase()}`;
+
       await setDoc(doc(db, 'users', user.uid), {
-        membership: tier.toLowerCase(),
+        membership: membershipValue,
         membershipExpiry: expiryString
       }, { merge: true });
 
