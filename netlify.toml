@@ -5,9 +5,6 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# Netlify handles Next.js routing automatically with the plugin.
-# Manual redirects can sometimes interfere with Next.js internal API/routing.
-
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
