@@ -29,6 +29,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Promo Codes
+    match /promo_codes/{codeId} {
+      // Admins can manage all codes
+      allow read, write: if isAdmin();
+      
+      // Logged in users can read a code if they know it (to check validity)
+      // and update it to mark as used.
+      allow read: if request.auth != null;
+      allow update: if request.auth != null 
+                    && resource.data.isUsed == false 
+                    && request.resource.data.isUsed == true
+                    && request.resource.data.usedBy == request.auth.uid;
+    }
+
     // Default: Admins can do everything
     match /{document=**} {
       allow read, write: if isAdmin();

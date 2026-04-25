@@ -5197,6 +5197,13 @@ function AppContent() {
                   </div>
                   <ChevronRight size={18} color="var(--muted)" />
                 </button>
+                <button onClick={() => window.location.href = '/redeem'} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <Zap size={20} />
+                    <span>Redeem a Gift Code 🎟️</span>
+                  </div>
+                  <ChevronRight size={18} color="var(--muted)" />
+                </button>
                 <button onClick={() => setView("credits")} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     <Info size={20} />
@@ -5308,9 +5315,10 @@ function AppContent() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "24px" }}>
                   <div className="card">
                     <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1 }}>Manage Content</button>
-                      <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1 }}>Toggle Quick Settings</button>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1, minWidth: "120px" }}>Manage Content</button>
+                      <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1, minWidth: "120px" }}>Toggle Settings</button>
+                      <button onClick={() => window.location.href = '/admin'} className="btn btn-primary" style={{ flex: 1, minWidth: "120px" }}>Promo Codes 🎟️</button>
                     </div>
                   </div>
 
