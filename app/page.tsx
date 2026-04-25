@@ -5013,24 +5013,31 @@ function AppContent() {
                   
                   const getBadge = (p: any) => {
                     const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-                    if (pt === "ultra") return (
-                      <span style={{ display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                          <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" />
-                        </svg>
+                    if (pt === "free") return null;
+                    
+                    const selected = p.selectedBadge || "crown";
+                    const color = pt === "ultra" ? "#FFD700" : pt === "pro" ? "#3B82F6" : "#A78BFA";
+                    
+                    const icons: Record<string, any> = {
+                      crown: <Crown size={14} fill={color} stroke={color} />,
+                      zap: <Zap size={14} fill={color} stroke={color} />,
+                      sparkles: <Sparkles size={14} fill={color} stroke={color} />,
+                      flame: <Flame size={14} fill={color} stroke={color} />,
+                      star: <Star size={14} fill={color} stroke={color} />,
+                      heart: <Heart size={14} fill={color} stroke={color} />,
+                      brain: <Brain size={14} fill={color} stroke={color} />,
+                      rocket: <Send size={12} fill={color} stroke={color} style={{ transform: "rotate(-45deg)" }} />,
+                    };
+
+                    return (
+                      <span style={{ 
+                        display: "inline-flex", 
+                        filter: pt === "ultra" ? "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.4))" : "none",
+                        marginLeft: "4px"
+                      }}>
+                        {icons[selected] || icons.crown}
                       </span>
                     );
-                    if (pt === "pro") return (
-                      <span style={{ display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="url(#goldGrad)" stroke="url(#goldGrad)" strokeWidth="1.5">
-                          <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-                        </svg>
-                      </span>
-                    );
-                    if (pt === "plus") return (
-                      <span style={{ color: "#ffd700", fontWeight: "900", fontSize: "12px" }}>+</span>
-                    );
-                    return null;
                   };
 
                   return (
@@ -5093,6 +5100,34 @@ function AppContent() {
 
               <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).slice(3).map((p, i) => {
+                  const getBadge = (p: any) => {
+                    const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
+                    if (pt === "free") return null;
+                    
+                    const selected = p.selectedBadge || "crown";
+                    const color = pt === "ultra" ? "#FFD700" : pt === "pro" ? "#3B82F6" : "#A78BFA";
+                    
+                    const icons: Record<string, any> = {
+                      crown: <Crown size={14} fill={color} stroke={color} />,
+                      zap: <Zap size={14} fill={color} stroke={color} />,
+                      sparkles: <Sparkles size={14} fill={color} stroke={color} />,
+                      flame: <Flame size={14} fill={color} stroke={color} />,
+                      star: <Star size={14} fill={color} stroke={color} />,
+                      heart: <Heart size={14} fill={color} stroke={color} />,
+                      brain: <Brain size={14} fill={color} stroke={color} />,
+                      rocket: <Send size={12} fill={color} stroke={color} style={{ transform: "rotate(-45deg)" }} />,
+                    };
+
+                    return (
+                      <span style={{ 
+                        display: "inline-flex", 
+                        filter: pt === "ultra" ? "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.4))" : "none",
+                        marginLeft: "4px"
+                      }}>
+                        {icons[selected] || icons.crown}
+                      </span>
+                    );
+                  };
                   const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
                   return (
                     <motion.div
@@ -5552,6 +5587,29 @@ function AppContent() {
                     >
                       <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)", pointerEvents: "none" }} />
                       
+                      {/* Holographic Refraction Layer for Ultra */}
+                      {memTier === "ultra" && (
+                        <motion.div 
+                          style={{
+                            position: "absolute",
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            background: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.05) 55%, transparent 100%)",
+                            backgroundSize: "200% 200%",
+                            zIndex: 2,
+                            pointerEvents: "none",
+                            mixBlendMode: "overlay"
+                          }}
+                          animate={{
+                            backgroundPosition: ["0% 0%", "200% 200%"]
+                          }}
+                          transition={{
+                            duration: 4,
+                            repeat: Infinity,
+                            ease: "linear"
+                          }}
+                        />
+                      )}
+                      
                       <motion.div 
                         style={{
                           position: "absolute",
@@ -5561,7 +5619,7 @@ function AppContent() {
                           bottom: 0,
                           background: shineBackground,
                           pointerEvents: "none",
-                          zIndex: 2
+                          zIndex: 3
                         }}
                       />
 
@@ -5594,9 +5652,23 @@ function AppContent() {
                           <p style={{ fontSize: "14px", fontWeight: "800", fontFamily: "monospace", letterSpacing: "1px" }}>
                             {membershipExpiry ? new Date(membershipExpiry).toLocaleDateString("en-IN", { month: "2-digit", year: "2-digit" }) : "LIFETIME"}
                           </p>
+                          {membershipExpiry && (
+                            (() => {
+                              const expired = new Date(membershipExpiry) < new Date();
+                              return !expired && (
+                                <p style={{ fontSize: "8px", fontWeight: "900", color: "var(--accent)", marginTop: "4px", opacity: 0.8 }}>
+                                  Expires in {Math.max(0, getDayDiff(getLocalDateKey(), membershipExpiry.split('T')[0]))} days
+                                </p>
+                              );
+                            })()
+                          )}
                         </div>
-                        <div>
-                          <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase" }}>{getUserName(user)}</p>
+                        <div style={{ textAlign: "right" }}>
+                          <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase", marginBottom: "2px" }}>{getUserName(user)}</p>
+                          <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
+                            {memTier === "ultra" && <Sparkles size={12} color="#FFD700" />}
+                            <CheckCircle2 size={12} color="rgba(255,255,255,0.5)" />
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -5618,13 +5690,16 @@ function AppContent() {
                           <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Custom Icon Status</h3>
                         </div>
                         <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "20px" }}>Select an exclusive badge to display next to your name across the platform.</p>
-                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                           {[
-                            { id: "crown", icon: <Crown size={18} /> },
-                            { id: "zap", icon: <Zap size={18} /> },
-                            { id: "sparkles", icon: <Sparkles size={18} /> },
-                            { id: "flame", icon: <Flame size={18} /> },
-                            { id: "star", icon: <Star size={18} /> },
+                            { id: "crown", icon: <Crown size={18} />, label: "Royalty" },
+                            { id: "zap", icon: <Zap size={18} />, label: "Flash" },
+                            { id: "sparkles", icon: <Sparkles size={18} />, label: "Magic" },
+                            { id: "flame", icon: <Flame size={18} />, label: "Hot" },
+                            { id: "star", icon: <Star size={18} />, label: "Elite" },
+                            { id: "heart", icon: <Heart size={18} />, label: "Love" },
+                            { id: "brain", icon: <Brain size={18} />, label: "Genius" },
+                            { id: "rocket", icon: <Send size={18} style={{ transform: "rotate(-45deg)" }} />, label: "Rocket" },
                           ].map(badge => {
                             const isSelected = (userData?.selectedBadge || "crown") === badge.id;
                             return (
