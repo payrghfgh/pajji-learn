@@ -29,7 +29,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
     if (pt === "free" || !pt) return null;
     
-    const color = pt === "ultra" ? "#FFD700" : pt === "pro" ? "#3B82F6" : "#A78BFA";
+    const color = "#FFD700"; // All unified to Premium Gold/Yellow
     
     if (pt === "ultra") {
       return (
@@ -37,12 +37,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
           display: "inline-flex", 
           alignItems: "center",
           justifyContent: "center",
-          filter: "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.4))",
-          marginLeft: "4px",
+          filter: "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.5))",
+          marginLeft: "6px",
           fontWeight: "900",
           fontFamily: "var(--font-syne)",
           color: color,
-          fontSize: "15px",
+          fontSize: "16px",
           lineHeight: "1"
         }}>
           U
@@ -51,12 +51,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     }
     
     if (pt === "pro") {
-      return <Crown size={16} fill={color} stroke={color} style={{ marginLeft: "4px" }} />;
+      return <Crown size={16} fill={color} stroke={color} style={{ marginLeft: "6px", filter: "drop-shadow(0px 0px 3px rgba(255, 215, 0, 0.3))" }} />;
     }
     
     return (
-      <span style={{ marginLeft: "4px", display: "inline-flex", alignItems: "center" }}>
-        <Plus size={16} color={color} strokeWidth={3} />
+      <span style={{ marginLeft: "6px", display: "inline-flex", alignItems: "center", filter: "drop-shadow(0px 0px 3px rgba(255, 215, 0, 0.3))" }}>
+        <Plus size={16} color={color} strokeWidth={4} />
       </span>
     );
   };
