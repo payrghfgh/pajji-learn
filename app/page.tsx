@@ -1,7 +1,8 @@
 "use client";
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Head from "next/head";
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring, useTransform, useMotionTemplate } from "framer-motion";
 import {
   Trophy, BookOpen, Zap, Settings, Flame,
@@ -31,6 +32,41 @@ const firebaseConfig = {
 };
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const DynamicLeaderboard = dynamic(() => import("./components/LeaderboardView").then(mod => mod.LeaderboardView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Leaderboard...</div>,
+  ssr: false
+});
+
+const DynamicSettings = dynamic(() => import("./components/SettingsView").then(mod => mod.SettingsView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Settings...</div>,
+  ssr: false
+});
+
+const DynamicLibrary = dynamic(() => import("./components/LibraryView").then(mod => mod.LibraryView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Vault...</div>,
+  ssr: false
+});
+
+const DynamicDashboard = dynamic(() => import("./components/DashboardView").then(mod => mod.DashboardView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Dashboard...</div>,
+  ssr: false
+});
+
+const DynamicStudy = dynamic(() => import("./components/StudyView").then(mod => mod.StudyView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Lesson...</div>,
+  ssr: false
+});
+
+const DynamicEdit = dynamic(() => import("./components/EditView").then(mod => mod.EditView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Editor...</div>,
+  ssr: false
+});
+
+const DynamicMembership = dynamic(() => import("./components/MembershipView").then(mod => mod.MembershipView), {
+  loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Membership...</div>,
+  ssr: false
+});
+
 const db = getFirestore(app);
 const auth = getAuth(app);
 
@@ -121,7 +157,8 @@ function AppContent() {
 
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
-  const [view, setView] = useState("dashboard");
+  const [view, _setView] = useState("dashboard");
+  const setView = useCallback((v: string) => _setView(v), []);
   const [curBook, setCurBook] = useState<any>(null);
   const [curChapter, setCurChapter] = useState<any>(null);
   const [tempChapter, setTempChapter] = useState<any>(null);
@@ -309,14 +346,14 @@ function AppContent() {
   }, [userXP, prevUserXP]);
 
   // Motivational Quotes
-  const quotes = [
+  const quotes = useMemo(() => [
     "Focus on progress, not perfection. 🚀",
     "Small steps every day lead to big results. 📈",
     "You're becoming a master of your craft. 🧠",
     "Don't stop until you're proud. ✨",
     "Consistency is the cheat code to success. 🔥",
     "The secret of getting ahead is getting started. 💎"
-  ];
+  ], []);
   const [quote] = useState(() => quotes[Math.floor(Math.random() * quotes.length)]);
 
   // Level Up Detection
@@ -382,50 +419,52 @@ function AppContent() {
     return <span>{displayValue}</span>;
   };
 
-  const FloatingParticles = () => (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-      {[...Array(12)].map((_, i) => (
-        <motion.div
-          key={i}
-          initial={{
-            x: Math.random() * 100 + "%",
-            y: Math.random() * 100 + "%",
-            opacity: 0.1
-          }}
-          animate={{
-            y: [null, "-20%", "120%"],
-            x: [null, `${Math.random() * 100}%`],
-            opacity: [0.1, 0.3, 0.1]
-          }}
-          transition={{
-            duration: 20 + Math.random() * 20,
-            repeat: Infinity,
-            ease: "linear",
-            delay: i * -5
-          }}
-          style={{
-            position: "absolute",
-            width: Math.random() * 300 + 100 + "px",
-            height: Math.random() * 300 + 100 + "px",
-            background: "radial-gradient(circle, var(--accent-soft) 0%, transparent 70%)",
-            borderRadius: "50%",
-            filter: "blur(40px)"
-          }}
-        />
-      ))}
-    </div>
-  );
+  const FloatingParticles = useMemo(() => {
+    return () => (
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{
+              x: Math.random() * 100 + "%",
+              y: Math.random() * 100 + "%",
+              opacity: 0.1
+            }}
+            animate={{
+              y: [null, "-20%", "120%"],
+              x: [null, `${Math.random() * 100}%`],
+              opacity: [0.1, 0.2, 0.1]
+            }}
+            transition={{
+              duration: 25 + Math.random() * 25,
+              repeat: Infinity,
+              ease: "linear",
+              delay: i * -8
+            }}
+            style={{
+              position: "absolute",
+              width: Math.random() * 200 + 100 + "px",
+              height: Math.random() * 200 + 100 + "px",
+              background: "radial-gradient(circle, var(--accent-soft) 0%, transparent 70%)",
+              borderRadius: "50%",
+              filter: "blur(60px)",
+              willChange: "transform, opacity",
+              transform: "translateZ(0)"
+            }}
+          />
+        ))}
+      </div>
+    );
+  }, []);
 
-  // Time-based greeting
-  const getGreeting = () => {
+  const greeting = useMemo(() => {
     const h = new Date().getHours();
     if (h < 5) return { text: "Burning the midnight oil", emoji: "🌙" };
     if (h < 12) return { text: "Good morning", emoji: "☀️" };
     if (h < 17) return { text: "Good afternoon", emoji: "🌤️" };
     if (h < 21) return { text: "Good evening", emoji: "🌅" };
     return { text: "Late night grind", emoji: "🔥" };
-  };
-  const greeting = getGreeting();
+  }, []);
 
   // Scroll to top on view change
   useEffect(() => {
@@ -434,12 +473,12 @@ function AppContent() {
 
   // Keyboard shortcuts: 1-4 for nav
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
-      if (e.key === "1") setView("dashboard");
-      if (e.key === "2") setView("library");
-      if (e.key === "3") { setView("leaderboard"); fetchLeaderboard?.(); }
-      if (e.key === "4") setView("settings");
+    const handler = (eb: KeyboardEvent) => {
+      if ((eb.target as HTMLElement)?.tagName === "INPUT" || (eb.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      if (eb.key === "1") setView("dashboard");
+      if (eb.key === "2") setView("library");
+      if (eb.key === "3") { setView("leaderboard"); fetchLeaderboard?.(); }
+      if (eb.key === "4") setView("settings");
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -2190,7 +2229,7 @@ function AppContent() {
     return `Last edited ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   };
 
-  const filteredBooks = books.filter((book: any) => {
+  const filteredBooks = useMemo(() => books.filter((book: any) => {
     const chapters = book.chapters || [];
     const titleMatch = (book.title || "").toLowerCase().includes(normalizedLibraryQuery);
     const chapterMatch = chapters.some((ch: any) => (ch.title || "").toLowerCase().includes(normalizedLibraryQuery));
@@ -2201,13 +2240,14 @@ function AppContent() {
     if (libraryFilter === "mastered") return queryMatch && totalLessons > 0 && masteredLessons === totalLessons;
     if (libraryFilter === "inProgress") return queryMatch && masteredLessons > 0 && masteredLessons < totalLessons;
     return queryMatch;
-  });
-  const sortedFilteredBooks = [...filteredBooks].sort((a: any, b: any) => {
+  }), [books, normalizedLibraryQuery, libraryFilter, completedLessons]);
+
+  const sortedFilteredBooks = useMemo(() => [...filteredBooks].sort((a: any, b: any) => {
     if (librarySort !== "lastEdited") return 0;
     const aEdited = getBookLastEditedAt(a);
     const bEdited = getBookLastEditedAt(b);
     return bEdited.localeCompare(aEdited);
-  });
+  }), [filteredBooks, librarySort]);
 
   const startQuickReview = () => {
     const completedSet = new Set(completedLessons);
@@ -2232,7 +2272,7 @@ function AppContent() {
     if (n === "PAJJIPLUS" || n === "PLUS") return "plus";
     return "free";
   };
-  const memTier = getMemberTier(membership, membershipExpiry);
+  const memTier = useMemo(() => getMemberTier(membership, membershipExpiry), [membership, membershipExpiry]);
 
   const useFiftyFiftyPowerUp = () => {
     const quiz = normalizeQuiz(curChapter);
@@ -3227,6 +3267,104 @@ function AppContent() {
           color: white;
         }
 
+        /* ✨ FUN MODE - Micro-animations & Playful Effects ✨ */
+
+        @keyframes wiggle {
+          0%, 100% { transform: rotate(-2deg) scale(1.05); }
+          50% { transform: rotate(2deg) scale(1.08); }
+        }
+
+        @keyframes jelly {
+          0%   { transform: scale(1, 1); }
+          30%  { transform: scale(1.1, 0.9); }
+          40%  { transform: scale(0.9, 1.1); }
+          50%  { transform: scale(1.05, 0.95); }
+          65%  { transform: scale(0.98, 1.02); }
+          75%  { transform: scale(1.02, 0.98); }
+          100% { transform: scale(1, 1); }
+        }
+
+        @keyframes rainbow-text {
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float-up {
+          0%   { transform: translateY(0px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(-60px) rotate(20deg); opacity: 0; }
+        }
+
+        @keyframes pop-in {
+          0%   { transform: scale(0.85); opacity: 0; }
+          60%  { transform: scale(1.05); opacity: 1; }
+          100% { transform: scale(1); }
+        }
+
+        @keyframes bounce-in {
+          0%   { transform: translateY(20px); opacity: 0; }
+          60%  { transform: translateY(-6px); opacity: 1; }
+          80%  { transform: translateY(3px); }
+          100% { transform: translateY(0px); }
+        }
+
+        @keyframes wobble {
+          0%, 100% { transform: translateY(-8px) rotate(-1deg); }
+          50%       { transform: translateY(-12px) rotate(1deg); }
+        }
+
+        /* Nav buttons: wiggle on hover */
+        .nav-btn:hover svg {
+          animation: wiggle 0.4s ease-in-out;
+        }
+
+        /* Primary buttons: jelly on hover - GPU accelerated */
+        .btn-primary {
+          will-change: transform;
+        }
+        .btn-primary:hover {
+          animation: jelly 0.5s ease-in-out !important;
+          transform: translateZ(0);
+        }
+
+        /* Page titles: standard solid color to prevent emoji masking */
+        .page-title {
+          color: var(--text);
+        }
+
+        /* Cards: contain layout to reduce reflow scope, NO animation (re-fires on state change) */
+        .card {
+          contain: layout style;
+          transform: translateZ(0);
+        }
+
+
+        /* Stat values: simple accent color, no expensive background-clip animation */
+        .stat-value {
+          color: var(--accent);
+        }
+
+        /* XP / streak numbers: bounce in */
+        .xp-badge {
+          animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        /* Active nav dot: bounce */
+        .nav-btn.active::after {
+          animation: bounce-in 0.4s ease both, aura-pulse 2s infinite 0.4s !important;
+        }
+
+        /* Emoji floaters on the XP badge */
+        .xp-float-emoji {
+          position: fixed;
+          pointer-events: none;
+          font-size: 18px;
+          z-index: 9999;
+          animation: float-up 1s ease-out forwards;
+        }
+
+
+
         .bolt-button {
           position: fixed;
           bottom: 40px;
@@ -3242,6 +3380,9 @@ function AppContent() {
           place-items: center;
           box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.4);
           cursor: pointer;
+          animation: wobble 3s ease-in-out infinite;
+          will-change: transform;
+          transform: translateZ(0);
         }
 
         .status-bar-wrapper {
@@ -3267,6 +3408,8 @@ function AppContent() {
           pointer-events: auto;
           cursor: grab;
           white-space: nowrap;
+          will-change: transform;
+          transform: translateZ(0);
         }
 
         @keyframes music-pulse {
@@ -3362,16 +3505,20 @@ function AppContent() {
         .main-content {
           flex: 1;
           padding: 48px;
-          min-height: 100vh;
+          height: 100vh;
+          overflow-y: auto;
           overflow-x: hidden;
           display: flex;
           flex-direction: column;
           align-items: center;
+          scroll-behavior: smooth;
         }
 
         .page-shell {
           width: 100%;
           max-width: 980px;
+          content-visibility: auto;
+          contain-intrinsic-size: 1px 500px;
         }
 
         .card {
@@ -4321,7 +4468,7 @@ function AppContent() {
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
               <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
                 {profilePic ? (
-                  <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
                 ) : (
                   <User size={24} color="white" />
                 )}
@@ -4540,7 +4687,22 @@ function AppContent() {
         >
           <h1 style={{ fontSize: "18px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI <span style={{ color: "var(--accent)" }}>LEARN</span></h1>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div style={{ fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)" }}>{userXP} XP</div>
+            <div 
+              className="xp-badge"
+              onClick={(e) => {
+                const emojis = ["⭐", "✨", "🔥", "💥", "🎉", "🚀", "💫", "🏆"];
+                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                const el = document.createElement("div");
+                el.className = "xp-float-emoji";
+                el.textContent = emoji;
+                el.style.left = `${e.clientX - 10}px`;
+                el.style.top = `${e.clientY - 10}px`;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+              }}
+              style={{ fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)", cursor: "pointer", userSelect: "none", transition: "transform 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
+              ⚡ {userXP} XP
+            </div>
             {mobileQuickSettings && (
               <button onClick={() => setView("settings")} style={{ background: "var(--input-bg)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px", color: "var(--text)", cursor: "pointer" }}>
                 <Settings size={18} />
@@ -4551,948 +4713,124 @@ function AppContent() {
 
         <AnimatePresence mode="wait">
           {view === "dashboard" && (
-            <motion.div
-              key="dashboard"
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="page-shell"
-            >
-              <header style={{ marginBottom: "40px", textAlign: "left" }}>
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                  <h1 className="page-title syne-heading" style={{ marginBottom: "8px", fontSize: "min(36px, 8vw)", lineHeight: "1", color: "var(--text)" }}>
-                    {greeting.text},<br />{getUserName(user).split(' ')[0]}! {greeting.emoji}
-                  </h1>
-                  <p style={{ color: "var(--accent)", fontWeight: "700", fontSize: "14px", opacity: 0.8, maxWidth: "400px" }}>{quote}</p>
-                </motion.div>
-              </header>
-
-              <motion.div
-                initial="hidden"
-                animate="show"
-                variants={{
-                  show: { transition: { staggerChildren: 0.08 } }
-                }}
-                className="bento-grid"
-                style={{ marginBottom: "40px" }}
-              >
-                <motion.div
-                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                  whileHover={{ y: -5 }}
-                  className="card mesh-glow"
-                  style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}
-                >
-                  <div style={{ position: "absolute", top: "-10%", right: "-10%", opacity: 0.1 }}><Star size={120} fill="var(--accent)" color="var(--accent)" /></div>
-                  <p style={{ fontSize: "13px", fontWeight: "700", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Level {userLevel}</p>
-                  <h3 className="stat-value" style={{ marginTop: "12px", fontSize: "48px" }}>
-                    <AnimatedCounter value={userXP} />
-                  </h3>
-                  <div style={{ height: "8px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", marginTop: "16px", marginBottom: "8px" }}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(userXP % 1000) / 10}%` }}
-                      transition={{ duration: 1.5, type: "spring" }}
-                      style={{ height: "100%", background: "var(--accent-grad)", position: "relative" }}
-                    >
-                      <div className="shimmer" style={{ position: "absolute", inset: 0 }} />
-                    </motion.div>
-                  </div>
-                  <p style={{ fontSize: "12px", opacity: 0.5, fontWeight: "800" }}>{Math.max(0, 1000 - (userXP % 1000))} XP to Level {userLevel + 1}</p>
-                </motion.div>
-
-                <motion.div
-                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                  whileHover={{ y: -5 }}
-                  className="card"
-                  style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
-                >
-                  <div style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(59, 130, 246, 0.1)", display: "grid", placeItems: "center", color: "#3b82f6" }}><BookOpen size={28} /></div>
-                  <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{completedLessons.length}</h3><p style={{ fontSize: "13px", opacity: 0.5 }}>Mastered</p></div>
-                </motion.div>
-
-                <motion.div
-                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                  whileHover={{ y: -5 }}
-                  className="card"
-                  style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
-                >
-                  <motion.div
-                    animate={streakCount > 0 ? { scale: [1, 1.15, 1], filter: ["brightness(1)", "brightness(1.4)", "brightness(1)"] } : {}}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    style={{ width: "56px", height: "56px", borderRadius: "16px", background: "rgba(245, 158, 11, 0.1)", display: "grid", placeItems: "center", color: "#f59e0b" }}
-                  >
-                    <Flame size={28} />
-                  </motion.div>
-                  <div><h3 className="stat-value" style={{ fontSize: "28px" }}>{streakCount}</h3><p style={{ fontSize: "13px", opacity: 0.5 }}>Streak {streakCount > 0 ? "🔥" : ""}</p></div>
-                </motion.div>
-
-
-
-                {smartRecommendation && (
-                  <motion.div
-                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                    whileHover={{ y: -5 }}
-                    className="card ultra-shine"
-                    onClick={() => { setCurBook(smartRecommendation.book); setCurChapter(smartRecommendation.chapter); setView("study"); }}
-                    style={{ gridColumn: "span 8", display: "flex", flexDirection: "row", alignItems: "center", gap: "24px", cursor: "pointer", background: "var(--accent-grad)", color: "white", position: "relative", overflow: "hidden" }}
-                  >
-                    <div style={{ position: "absolute", top: "10px", right: "10px", opacity: 0.3 }}><Zap size={32} fill="white" /></div>
-                    <p style={{ fontSize: "10px", fontWeight: "900", textTransform: "uppercase", opacity: 0.9, letterSpacing: "1px" }}>Smart Review</p>
-                    <h3 style={{ fontSize: "16px", fontWeight: "800", marginTop: "4px", lineHeight: "1.2" }}>{smartRecommendation.chapter.title}</h3>
-                    <p style={{ fontSize: "11px", opacity: 0.8, marginTop: "4px" }}>Resume in {smartRecommendation.book.title}</p>
-                  </motion.div>
-                )}
-
-                <motion.div
-                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-                  whileHover={{ y: -5 }}
-                  className="card"
-                  style={{ gridColumn: "span 8", display: "flex", alignItems: "center", gap: "32px", padding: "32px" }}
-                >
-                  <div style={{ position: "relative", width: "80px", height: "80px", flexShrink: 0 }}>
-                    <svg style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
-                      <circle cx="40" cy="40" r="34" stroke="var(--input-bg)" strokeWidth="8" fill="transparent" />
-                      <motion.circle
-                        cx="40" cy="40" r="34" stroke="var(--accent)" strokeWidth="8" fill="transparent"
-                        strokeDasharray="213.6"
-                        initial={{ strokeDashoffset: 213.6 }}
-                        animate={{ strokeDashoffset: 213.6 * (1 - Math.min(1, goalProgressPct / 100)) }}
-                        transition={{ duration: 1.5, ease: "easeOut" }}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", color: "var(--accent)" }}>
-                      {Math.round(goalProgressPct)}%
-                    </div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: "20px", fontWeight: "900", marginBottom: "8px" }}>Daily Goal</h3>
-                    <p style={{ color: "var(--muted)", fontSize: "14px", fontWeight: "500" }}>
-                      You&apos;ve completed {dailyCompleted} of {dailyGoal} lessons today. {goalProgressPct >= 100 ? "Goal smashed! 🏆" : "Keep pushing!"}
-                    </p>
-                  </div>
-                </motion.div>
-
-                <motion.div variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="card" style={{ gridColumn: "span 12" }}>
-                  <h3 className="syne-heading" style={{ fontSize: "14px", fontWeight: "800", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px", color: "var(--accent)" }}>
-                    Consistency Grind <span style={{ color: "var(--muted)", fontSize: "11px", fontWeight: "500", textTransform: "none", letterSpacing: "0" }}>Study activity over the last year</span>
-                  </h3>
-                  <div style={{ display: "flex", gap: "4px", overflowX: "auto", paddingBottom: "8px" }}>
-                    {heatmapData.map((week, weekIdx) => (
-                      <div key={weekIdx} style={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: "4px" }}>
-                        {week.map((count, dayIdx) => (
-                          <div
-                            key={dayIdx}
-                            style={{
-                              width: "12px", height: "12px", borderRadius: "3.5px",
-                              background: count >= 4 ? "var(--accent)" : count >= 3 ? `rgba(var(--accent-rgb), 0.6)` : count >= 2 ? `rgba(var(--accent-rgb), 0.4)` : count >= 1 ? `rgba(var(--accent-rgb), 0.25)` : "var(--border)",
-                              transition: "all 0.3s ease",
-                              boxShadow: count >= 4 ? "0 0 10px rgba(var(--accent-rgb), 0.3)" : "none"
-                            }}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </motion.div>
-
-
-              {resumeLesson && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.01 }}
-                  className="card"
-                  style={{ marginBottom: "32px", borderLeft: "4px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.05)" }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "4px" }}>Resume Journey</p>
-                      <h3 style={{ fontSize: "22px", fontWeight: "800" }}>{resumeLesson.chapter.title}</h3>
-                    </div>
-                    <button onClick={() => openLesson(resumeLesson.book, resumeLesson.chapter)} style={{ background: "var(--accent-grad)", border: "none", borderRadius: "12px", color: "white", padding: "12px 24px", fontWeight: "800", cursor: "pointer" }}>
-                      Continue
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
-                <h2 className="section-title syne-heading" style={{ fontSize: "22px", fontWeight: "800" }}>Challenges 🚀</h2>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-                {recentPinnedPoints.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.02 }}
-                    className="card" style={{ border: "1px dashed var(--accent)", background: "var(--accent-soft)", display: "flex", flexDirection: "column", gap: "12px" }}
-                  >
-                    <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase" }}>Memory Recall Pulse 🧠</p>
-                    <p style={{ fontSize: "14px", fontWeight: "700", lineHeight: "1.4" }}>&quot;{recentPinnedPoints[0].text.slice(0, 100)}...&quot;</p>
-                    <p style={{ fontSize: "12px", color: "var(--muted)" }}>Do you remember the core concepts of this? Try to explain it out loud.</p>
-                  </motion.div>
-                )}
-                {getUnmastered().slice(0, 4).map((ch, idx) => {
-                  const isMastered = completedLessons.includes(ch.id);
-                  return (
-                    <motion.div
-                      key={ch.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      whileHover={{ scale: 1.02, rotateX: 5, rotateY: 5, z: 10 }}
-                      className={`card tilt-card ${isMastered ? "holographic-shine" : ""} ${idx === 0 ? "power-up-card" : ""}`}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "20px",
-                        position: "relative",
-                        overflow: "hidden"
-                      }}
-                    >
-                      {idx === 0 && (
-                        <div style={{ position: "absolute", top: "10px", right: "10px", background: "var(--accent-grad)", fontSize: "9px", fontWeight: "900", padding: "2px 6px", borderRadius: "4px", color: "white", zIndex: 10 }}>2X XP</div>
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "4px" }}>{ch.bookTitle || "NEW LESSON"}</p>
-                        <h3 style={{ fontSize: "17px", fontWeight: "800" }}>{ch.title}</h3>
-                      </div>
-                      <button
-                        onClick={() => openLesson(ch.parentBook, ch)}
-                        style={{
-                          width: "48px",
-                          height: "48px",
-                          borderRadius: "14px",
-                          background: isMastered ? "var(--accent-grad)" : "var(--input-bg)",
-                          display: "grid",
-                          placeItems: "center",
-                          border: "1px solid transparent",
-                          cursor: "pointer",
-                          transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                          color: isMastered ? "white" : "var(--text)"
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.15)"; e.currentTarget.style.borderColor = "var(--accent)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.borderColor = "transparent"; }}
-                      >
-                        <ChevronRight size={24} />
-                      </button>
-                    </motion.div>
-                  );
-                })}
-                {getUnmastered().length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="card" style={{ textAlign: "center", gridColumn: "1/-1", padding: "60px" }}
-                  >
-                    <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏆</div>
-                    <h3 style={{ fontSize: "20px", fontWeight: "800", marginBottom: "8px" }}>You&apos;ve mastered everything!</h3>
-                    <p style={{ color: "var(--muted)", fontSize: "14px" }}>All lessons conquered. Time for a boss level? 😎</p>
-                  </motion.div>
-                )}
-              </div>
-
-              <h2 style={{ fontSize: "20px", marginTop: "28px", marginBottom: "14px", fontWeight: "800" }}>Achievements 🏅</h2>
-              <div className="card" style={{ padding: "20px" }}>
-                <p style={{ fontSize: "12px", fontWeight: "700", color: "var(--muted)", marginBottom: "14px" }}>{allUnlockedAchievementIds.length}/{achievementCatalog.length} unlocked</p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px" }}>
-                  {achievementProgressList.map(a => (
-                    <div key={a.id} className={a.unlocked ? `${a.rarity}-glow` : ""} style={{ padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88 }}>
-                      <p style={{ fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          {a.rarity === "diamond" ? "💎" : a.rarity === "epic" ? "🔮" : "🏅"} {a.title}
-                        </span>
-                        <span style={{ fontSize: "10px", color: a.unlocked ? "var(--accent)" : "var(--muted)" }}>{a.unlocked ? "Unlocked" : "Locked"}</span>
-                      </p>
-                      <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>{a.description}</p>
-                      <div style={{ marginTop: "8px" }}>
-                        <div style={{ height: "6px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "var(--accent)" : "#64748b" }} />
-                        </div>
-                        <p style={{ fontSize: "10px", color: "var(--muted)", marginTop: "4px" }}>{Math.min(a.progress, a.target)}/{a.target}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {allUnlockedAchievementIds.length === 0 && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
-                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎯</div>
-                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>No badges unlocked yet. Complete a lesson to earn your first one!</p>
-                  </motion.div>
-                )}
-                {nextAchievement && (
-                  <div style={{ marginTop: "16px", padding: "12px", border: "1px dashed var(--border)", borderRadius: "12px" }}>
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--muted)", textTransform: "uppercase" }}>Next Target</p>
-                    <p style={{ fontWeight: "800", marginTop: "4px" }}>{nextAchievement.title}</p>
-                    <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "2px" }}>{nextAchievement.description} ({Math.min(nextAchievement.progress, nextAchievement.target)}/{nextAchievement.target})</p>
-                  </div>
-                )}
-              </div>
-              <h2 style={{ fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800" }}>Quiz Attempts</h2>
-              <div className="card" style={{ padding: "18px" }}>
-                <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", marginBottom: "12px" }}>
-                  <div style={{ fontSize: "13px", color: "var(--muted)" }}>Best: <strong style={{ color: "var(--text)" }}>{bestQuizScore}%</strong></div>
-                  <div style={{ fontSize: "13px", color: "var(--muted)" }}>Weak lessons: <strong style={{ color: "var(--text)" }}>{weakLessonIds.length}</strong></div>
-                </div>
-                {recentQuizAttempts.length === 0 ? (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
-                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>📝</div>
-                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>No attempts yet. Submit a quiz to start tracking your progress!</p>
-                  </motion.div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {recentQuizAttempts.map((a: any, idx: number) => (
-                      <div key={`${a.lessonId}-${a.createdAt}-${idx}`} style={{ display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px" }}>
-                        <div style={{ fontSize: "13px" }}>
-                          <div style={{ fontWeight: "700" }}>{a.lessonTitle || "Lesson"}</div>
-                          <div style={{ fontSize: "11px", color: "var(--muted)" }}>{new Date(a.createdAt).toLocaleString()}</div>
-                        </div>
-                        <div style={{ fontWeight: "800", color: (a.accuracy || 0) >= 70 ? "var(--accent)" : "var(--danger)" }}>{a.score}/{a.total} ({a.accuracy}%)</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <h2 style={{ fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800" }}>Pinned Key Points</h2>
-              <div className="card" style={{ padding: "18px" }}>
-                {recentPinnedPoints.length === 0 ? (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: "center", padding: "24px" }}>
-                    <div style={{ fontSize: "36px", marginBottom: "8px" }}>📌</div>
-                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>No pinned points yet. Pin key concepts from your lesson notes!</p>
-                  </motion.div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {recentPinnedPoints.map((point) => {
-                      const lesson = getLessonById(point.lessonId);
-                      return (
-                        <div key={point.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px" }}>
-                          <div>
-                            <div style={{ fontWeight: "700", fontSize: "13px" }}>{point.text}</div>
-                            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-                              {(lesson?.book?.title || "Unknown Book")} • {(lesson?.chapter?.title || "Unknown Lesson")}
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                            {lesson && (
-                              <button className="btn btn-secondary" style={{ padding: "6px 10px" }} onClick={() => openLesson(lesson.book, lesson.chapter)}>Open</button>
-                            )}
-                            <button className="btn btn-danger" style={{ padding: "6px 10px" }} onClick={() => removePinnedKeyPoint(point.id)}>Remove</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              <h2 style={{ fontSize: "20px", marginTop: "22px", marginBottom: "12px", fontWeight: "800" }}>All Notes</h2>
-              <div className="card" style={{ padding: "18px" }}>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "10px" }}>
-                  <input
-                    type="text"
-                    placeholder="Search across all your notes..."
-                    value={notesSearch}
-                    onChange={(e) => setNotesSearch(e.target.value)}
-                    style={{ padding: "12px", flex: 1, minWidth: "220px" }}
-                  />
-                  <button className="btn btn-secondary" onClick={exportAllNotesMarkdown}>Export All (.md)</button>
-                </div>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-                  <button className="btn btn-secondary" onClick={() => setNotesTagFilter("all")} style={{ padding: "6px 10px", background: notesTagFilter === "all" ? "var(--accent-soft)" : "var(--input-bg)" }}>All Tags</button>
-                  {availableNoteTags.map((tag) => (
-                    <button key={`filter-${tag}`} className="btn btn-secondary" onClick={() => setNotesTagFilter(tag)} style={{ padding: "6px 10px", background: notesTagFilter === tag ? "var(--accent-soft)" : "var(--input-bg)" }}>
-                      #{tag}
-                    </button>
-                  ))}
-                </div>
-                {allNotesEntries.length === 0 ? (
-                  <p style={{ fontSize: "13px", color: "var(--muted)" }}>No matching notes found.</p>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {allNotesEntries.slice(0, 20).map((item) => (
-                      <div key={item.lessonId} style={{ border: "1px solid var(--border)", borderRadius: "10px", padding: "8px 10px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                          <div>
-                            <div style={{ fontWeight: "700", fontSize: "13px" }}>{item.lessonTitle}</div>
-                            <div style={{ fontSize: "11px", color: "var(--muted)" }}>{item.bookTitle}</div>
-                          </div>
-                          {(() => {
-                            const lessonEntry = item.lesson;
-                            if (!lessonEntry) return null;
-                            return <button className="btn btn-secondary" style={{ padding: "6px 10px" }} onClick={() => openLesson(lessonEntry.book, lessonEntry.chapter)}>Open</button>;
-                          })()}
-                        </div>
-                        {(item.tags || []).length > 0 && (
-                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-                            {(item.tags || []).map((tag: string) => (
-                              <span key={`${item.lessonId}-${tag}`} style={{ fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--input-bg)" }}>
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "6px", whiteSpace: "pre-wrap" }}>{`${item.note}`.slice(0, 180)}{`${item.note}`.length > 180 ? "..." : ""}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
+            <DynamicDashboard
+              userXP={userXP}
+              userLevel={userLevel}
+              streakCount={streakCount}
+              completedLessons={completedLessons}
+              dailyGoal={dailyGoal}
+              dailyCompleted={dailyCompleted}
+              goalProgressPct={goalProgressPct}
+              heatmapData={heatmapData}
+              resumeLesson={resumeLesson}
+              smartRecommendation={smartRecommendation}
+              recentPinnedPoints={recentPinnedPoints}
+              achievementProgressList={achievementProgressList}
+              allUnlockedAchievementIds={allUnlockedAchievementIds}
+              achievementCatalog={achievementCatalog}
+              nextAchievement={nextAchievement}
+              bestQuizScore={bestQuizScore}
+              weakLessonIds={weakLessonIds}
+              recentQuizAttempts={recentQuizAttempts}
+              allNotesEntries={allNotesEntries}
+              availableNoteTags={availableNoteTags}
+              notesSearch={notesSearch}
+              setNotesSearch={setNotesSearch}
+              notesTagFilter={notesTagFilter}
+              setNotesTagFilter={setNotesTagFilter}
+              openLesson={openLesson}
+              removePinnedKeyPoint={removePinnedKeyPoint}
+              exportAllNotesMarkdown={exportAllNotesMarkdown}
+              getLessonById={getLessonById}
+              getUnmastered={getUnmastered}
+              getUserName={getUserName}
+              greeting={greeting}
+              quote={quote}
+              user={user}
+              memTier={memTier}
+              AnimatedCounter={AnimatedCounter}
+              FocusGarden={FocusGarden}
+              setView={setView}
+              setCurBook={setCurBook}
+              setCurChapter={setCurChapter}
+            />
           )}
 
           {view === "library" && (
-            <motion.div
-              key="library"
-              initial={{ opacity: 0, x: 30, scale: 0.98 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -20, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="page-shell"
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px" }}>
-                <h1 className="page-title">The Vault 📚</h1>
-                {isOwner && <button onClick={() => { const t = prompt("Book Name?"); if (t) { const nl = [...books, { id: Date.now().toString(), title: t, chapters: [] }]; setDoc(doc(db, "data", "pajji_database"), { books: nl }); } }} className="btn btn-primary">+ New Book</button>}
-              </div>
-
-              <div className="card" style={{ display: "flex", gap: "16px", padding: "16px", marginBottom: "32px" }}>
-                <input type="text" placeholder="Search the library..." value={libraryQuery} onChange={(e) => setLibraryQuery(e.target.value)} style={{ flex: 1, padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)" }} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "24px" }}>
-                {sortedFilteredBooks.map(b => (
-                  <motion.div
-                    key={b.id}
-                    whileHover={{ y: -5, borderColor: "var(--accent)" }}
-                    onClick={() => { setCurBook(b); setView("chapters"); }}
-                    className="card" style={{ cursor: "pointer", textAlign: "center", transition: "all 0.3s ease" }}
-                  >
-                    <div style={{ height: "120px", background: "var(--input-bg)", borderRadius: "16px", marginBottom: "16px", display: "grid", placeItems: "center", fontSize: "40px" }}>📖</div>
-                    <h3 style={{ fontWeight: "800" }}>{b.title}</h3>
-                    <p style={{ fontSize: "12px", opacity: 0.5 }}>{b.chapters?.length || 0} Lessons</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+            <DynamicLibrary
+              isOwner={isOwner}
+              books={books}
+              db={db}
+              libraryQuery={libraryQuery}
+              setLibraryQuery={setLibraryQuery}
+              sortedFilteredBooks={sortedFilteredBooks}
+              setCurBook={setCurBook}
+              setView={setView}
+            />
           )}
 
           {view === "leaderboard" && (
-            <motion.div
-              key="leaderboard"
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              style={{ maxWidth: "700px", margin: "0 auto", padding: "40px 20px" }}
-            >
-              <svg width="0" height="0" style={{ position: "absolute" }}>
-                <defs>
-                  <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#ffd700" />
-                    <stop offset="50%" stopColor="#ffb300" />
-                    <stop offset="100%" stopColor="#fff8b0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              <h1 className="page-title" style={{ textAlign: "center", marginBottom: "40px", fontFamily: "var(--font-syne)", fontWeight: "800" }}>Hall of Fame 🏆</h1>
-              <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "48px" }}>
-                <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{ borderRadius: "20px", background: leaderboardMode === "all" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "all" ? "white" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>All Time</button>
-                <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{ borderRadius: "20px", background: leaderboardMode === "weekly" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "white" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>Weekly</button>
-              </div>
-
-              {/* Podium Section */}
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: "16px", marginBottom: "56px", width: "100%", padding: "0 10px" }}>
-                {(() => {
-                  const data = leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard;
-                  const p2 = data[1];
-                  const p1 = data[0];
-                  const p3 = data[2];
-                  
-                  const getBadge = (p: any) => {
-                    const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-                    if (pt === "free") return null;
-                    
-                    const selected = p.selectedBadge || "crown";
-                    const color = pt === "ultra" ? "#FFD700" : pt === "pro" ? "#3B82F6" : "#A78BFA";
-                    
-                    const icons: Record<string, any> = {
-                      crown: <Crown size={14} fill={color} stroke={color} />,
-                      zap: <Zap size={14} fill={color} stroke={color} />,
-                      sparkles: <Sparkles size={14} fill={color} stroke={color} />,
-                      flame: <Flame size={14} fill={color} stroke={color} />,
-                      star: <Star size={14} fill={color} stroke={color} />,
-                      heart: <Heart size={14} fill={color} stroke={color} />,
-                      brain: <Brain size={14} fill={color} stroke={color} />,
-                      rocket: <Send size={12} fill={color} stroke={color} style={{ transform: "rotate(-45deg)" }} />,
-                    };
-
-                    return (
-                      <span style={{ 
-                        display: "inline-flex", 
-                        filter: pt === "ultra" ? "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.4))" : "none",
-                        marginLeft: "4px"
-                      }}>
-                        {icons[selected] || icons.crown}
-                      </span>
-                    );
-                  };
-
-                  return (
-                    <>
-                      {/* Rank 2 */}
-                      {p2 && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ flex: 1, textAlign: "center", minWidth: "100px", maxWidth: "160px" }}>
-                          <div style={{ position: "relative", marginBottom: "12px" }}>
-                            <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--input-bg)", border: "3px solid #C0C0C0", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "900", color: "#C0C0C0" }}>
-                              {p2.email?.[0].toUpperCase()}
-                            </div>
-                            <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#C0C0C0", color: "white", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>2nd</div>
-                          </div>
-                          <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                            {p2.uiSettings?.displayName || p2.email?.split('@')[0]}
-                            {getBadge(p2)}
-                          </p>
-                          <p style={{ fontFamily: "var(--font-syne)", fontWeight: "800", fontSize: "13px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p2.weeklyXP || 0) : (p2.xp || 0)} XP</p>
-                        </motion.div>
-                      )}
-
-                      {/* Rank 1 */}
-                      {p1 && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }} style={{ flex: 1, textAlign: "center", minWidth: "130px", maxWidth: "200px", transform: "scale(1.15)", zIndex: 2 }}>
-                          <div style={{ position: "relative", marginBottom: "16px" }}>
-                            <div style={{ width: "88px", height: "88px", borderRadius: "50%", background: "linear-gradient(135deg, #FFD700, #F59E0B)", border: "4px solid white", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "32px", fontWeight: "900", color: "white", boxShadow: "0 10px 25px rgba(245, 158, 11, 0.5)" }}>
-                              {p1.email?.[0].toUpperCase()}
-                            </div>
-                            <div style={{ position: "absolute", bottom: "-10px", left: "50%", transform: "translateX(-50%)", background: "#FFD700", color: "black", padding: "4px 14px", borderRadius: "12px", fontSize: "14px", fontWeight: "900", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" }}>1st</div>
-                            <Crown size={28} fill="#FFD700" color="#FFD700" style={{ position: "absolute", top: "-24px", left: "50%", transform: "translateX(-50%) rotate(-15deg)" }} />
-                          </div>
-                          <p style={{ fontWeight: "800", fontSize: "16px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                            {p1.uiSettings?.displayName || p1.email?.split('@')[0]}
-                            {getBadge(p1)}
-                          </p>
-                          <p style={{ fontFamily: "var(--font-syne)", fontWeight: "900", fontSize: "16px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p1.weeklyXP || 0) : (p1.xp || 0)} XP</p>
-                        </motion.div>
-                      )}
-
-                      {/* Rank 3 */}
-                      {p3 && (
-                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ flex: 1, textAlign: "center", minWidth: "100px", maxWidth: "160px" }}>
-                          <div style={{ position: "relative", marginBottom: "12px" }}>
-                            <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--input-bg)", border: "3px solid #CD7F32", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "900", color: "#CD7F32" }}>
-                              {p3.email?.[0].toUpperCase()}
-                            </div>
-                            <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#CD7F32", color: "white", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>3rd</div>
-                          </div>
-                          <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-                            {p3.uiSettings?.displayName || p3.email?.split('@')[0]}
-                            {getBadge(p3)}
-                          </p>
-                          <p style={{ fontFamily: "var(--font-syne)", fontWeight: "800", fontSize: "13px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p3.weeklyXP || 0) : (p3.xp || 0)} XP</p>
-                        </motion.div>
-                      )}
-                    </>
-                  );
-                })()}
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {(leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard).slice(3).map((p, i) => {
-                  const getBadge = (p: any) => {
-                    const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-                    if (pt === "free") return null;
-                    
-                    const selected = p.selectedBadge || "crown";
-                    const color = pt === "ultra" ? "#FFD700" : pt === "pro" ? "#3B82F6" : "#A78BFA";
-                    
-                    const icons: Record<string, any> = {
-                      crown: <Crown size={14} fill={color} stroke={color} />,
-                      zap: <Zap size={14} fill={color} stroke={color} />,
-                      sparkles: <Sparkles size={14} fill={color} stroke={color} />,
-                      flame: <Flame size={14} fill={color} stroke={color} />,
-                      star: <Star size={14} fill={color} stroke={color} />,
-                      heart: <Heart size={14} fill={color} stroke={color} />,
-                      brain: <Brain size={14} fill={color} stroke={color} />,
-                      rocket: <Send size={12} fill={color} stroke={color} style={{ transform: "rotate(-45deg)" }} />,
-                    };
-
-                    return (
-                      <span style={{ 
-                        display: "inline-flex", 
-                        filter: pt === "ultra" ? "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.4))" : "none",
-                        marginLeft: "4px"
-                      }}>
-                        {icons[selected] || icons.crown}
-                      </span>
-                    );
-                  };
-                  const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-                  return (
-                    <motion.div
-                      key={p.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      className="card" style={{ display: "flex", flexDirection: "row", alignItems: "center", padding: "12px 24px", background: p.id === user.uid ? "rgba(var(--accent-rgb), 0.1)" : "var(--card)", border: p.id === user.uid ? "1px solid var(--accent)" : "1px solid var(--border)", borderRadius: "16px", transform: "none" }}
-                    >
-                      <span style={{ width: "40px", fontWeight: "900", color: "var(--muted)", fontSize: "14px", fontFamily: "var(--font-syne)" }}>#{i + 4}</span>
-                      <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--input-bg)", border: "1px solid var(--border)", display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", marginRight: "16px" }}>{p.email?.[0].toUpperCase()}</div>
-                      <span style={{ flex: 1, fontWeight: "700", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                        {p.uiSettings?.displayName || p.email?.split('@')[0]}
-                        {pt === "ultra" && (
-                          <span style={{ display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGrad)" strokeWidth="4" strokeLinecap="round" />
-                            </svg>
-                          </span>
-                        )}
-                        {pt === "pro" && (
-                          <span style={{ display: "inline-flex", filter: "drop-shadow(0px 1px 3px rgba(255, 215, 0, 0.4))" }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="url(#goldGrad)" stroke="url(#goldGrad)" strokeWidth="1.5">
-                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-                            </svg>
-                          </span>
-                        )}
-                        {pt === "plus" && (
-                          <span style={{ color: "#ffd700", fontWeight: "900", fontSize: "16px" }}>+</span>
-                        )}
-                      </span>
-                      <span style={{ fontFamily: "var(--font-syne)", fontWeight: "800", fontSize: "15px", background: "var(--accent-soft)", color: "var(--accent)", padding: "6px 16px", borderRadius: "12px" }}>{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </motion.div>
+            <DynamicLeaderboard
+              leaderboardMode={leaderboardMode}
+              setLeaderboardMode={setLeaderboardMode}
+              leaderboard={leaderboard}
+              weeklyLeaderboard={weeklyLeaderboard}
+              user={user}
+              getMemberTier={getMemberTier}
+            />
           )}
 
           {view === "settings" && (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: -20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="page-shell" style={{ maxWidth: "600px" }}
-            >
-              <h1 className="page-title" style={{ marginBottom: "32px" }}>Preferences ⚙️</h1>
-              <div className="card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Custom Profile</p>
-                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                    <div style={{ width: "50px", height: "50px", borderRadius: "12px", background: "var(--accent-grad)", flexShrink: 0, overflow: "hidden" }}>
-                      {profilePic ? <img src={profilePic} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={24} style={{ margin: "13px" }} />}
-                    </div>
-                    <input type="text" placeholder="Avatar URL (https://...)" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
-                  </div>
-                </div>
-
-                <div>
-                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Username</p>
-                  <input type="text" placeholder="Your Display Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} style={{ width: "100%", padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)" }} />
-                </div>
-
-                <div>
-                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Custom Accent</p>
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <input type="color" value={customAccent || "#10b981"} onChange={(e) => setCustomAccent(e.target.value)} style={{ width: "50px", height: "50px", border: "none", background: "transparent", cursor: "pointer" }} />
-                    <input type="text" value={customAccent} onChange={(e) => setCustomAccent(e.target.value)} placeholder="#00ff00" style={{ padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "10px", color: "var(--text)", flex: 1 }} />
-                  </div>
-                </div>
-
-                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
-
-                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-                    <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
-                  </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{theme === 'dark' ? 'ON' : 'OFF'}</span>
-                </button>
-                <button onClick={() => setReduceMotion(!reduceMotion)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Zap size={20} />
-                    <span>Reduce Motion</span>
-                  </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{reduceMotion ? "ON" : "OFF"}</span>
-                </button>
-                <button onClick={() => setSoundEnabled(!soundEnabled)} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Volume2 size={20} />
-                    <span>Victory Sounds</span>
-                  </div>
-                  <span style={{ color: "var(--accent)", fontWeight: "800" }}>{soundEnabled ? "ON" : "OFF"}</span>
-                </button>
-                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
-                <button onClick={() => setView("membership")} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Star size={20} />
-                    <span>My Membership</span>
-                  </div>
-                  <ChevronRight size={18} color="var(--muted)" />
-                </button>
-                <button onClick={() => window.location.href = '/redeem'} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Zap size={20} />
-                    <span>Redeem a Gift Code 🎟️</span>
-                  </div>
-                  <ChevronRight size={18} color="var(--muted)" />
-                </button>
-                <button onClick={() => setView("credits")} className="nav-btn" style={{ background: "var(--input-bg)", border: "1px solid var(--border)", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <Info size={20} />
-                    <span>Credits & Attribution</span>
-                  </div>
-                  <ChevronRight size={18} color="var(--muted)" />
-                </button>
-                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
-
-                <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
-                  <div className="desktop-only">
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>Interface Style</p>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {(["default", "floating", "minimal"] as const).map(s => (
-                        <button key={s} onClick={() => setSidebarStyle(s)} className="btn btn-secondary" style={{ flex: "1 1 80px", fontSize: "10px", padding: "8px", background: sidebarStyle === s ? "var(--accent)" : "var(--input-bg)", border: sidebarStyle === s ? "1px solid var(--accent)" : "1px solid var(--border)", color: sidebarStyle === s ? "white" : "var(--text)" }}>
-                          {s.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", marginBottom: "8px" }}>AI Personality</p>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {(["coach", "mentor", "chill"] as const).map(p => (
-                        <button key={p} onClick={() => setAiPersonality(p)} className="btn btn-secondary" style={{ flex: "1 1 80px", fontSize: "10px", padding: "8px", background: aiPersonality === p ? "var(--accent)" : "var(--input-bg)", border: aiPersonality === p ? "1px solid var(--accent)" : "1px solid var(--border)", color: aiPersonality === p ? "white" : "var(--text)" }}>
-                          {p.toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
-                </div>
-
-                <button onClick={() => signOut(auth)} className="nav-btn" style={{ background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", border: "1px solid rgba(239, 68, 68, 0.2)", justifyContent: "center", gap: "10px" }}>
-                  <LogOut size={20} />
-                  <span>Terminate Session</span>
-                </button>
-              </div>
-
-              <div className="card" style={{ marginTop: "24px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                  <div style={{ padding: "8px", borderRadius: "10px", background: "var(--accent-soft)", color: "var(--accent)" }}>
-                    <MessageSquare size={18} />
-                  </div>
-                  <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Feedback</h3>
-                </div>
-                <textarea
-                  placeholder="Tell us what you think or report a bug..."
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  style={{
-                    width: "100%",
-                    minHeight: "100px",
-                    padding: "16px",
-                    borderRadius: "16px",
-                    background: "var(--input-bg)",
-                    border: "1px solid var(--border)",
-                    color: "var(--text)",
-                    fontSize: "14px",
-                    resize: "none",
-                    marginBottom: "12px"
-                  }}
-                />
-                <button
-                  onClick={submitFeedback}
-                  disabled={isSubmittingFeedback || !feedbackText.trim()}
-                  className="btn btn-primary"
-                  style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", opacity: (!feedbackText.trim() || isSubmittingFeedback) ? 0.6 : 1 }}
-                >
-                  <Send size={18} />
-                  {isSubmittingFeedback ? "Sending..." : "Submit Feedback"}
-                </button>
-              </div>
-
-              <div className="card" style={{ marginTop: "24px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "20px" }}>Theme Selection</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
-                  {visibleThemePreviewCards.map((item) => {
-                    const selected = item.key === uiTheme;
-                    const allowed = hasThemeAccess(item.key);
-                    return (
-                      <motion.button
-                        key={item.key}
-                        whileHover={allowed ? { y: -2 } : {}}
-                        onClick={() => allowed && setUiTheme(item.key)}
-                        style={{
-                          padding: "8px",
-                          borderRadius: "12px",
-                          background: selected ? "rgba(var(--accent-rgb), 0.1)" : "var(--input-bg)",
-                          border: selected ? "2px solid var(--accent)" : "1px solid var(--border)",
-                          cursor: allowed ? "pointer" : "not-allowed",
-                          opacity: allowed ? 1 : 0.5,
-                          textAlign: "left"
-                        }}
-                      >
-                        <div style={{ height: "40px", borderRadius: "8px", background: item.bg, border: "1px solid var(--border)", marginBottom: "8px", position: "relative" }}>
-                          <div style={{ position: "absolute", top: "8px", left: "8px", width: "16px", height: "4px", borderRadius: "4px", background: item.accent }} />
-                        </div>
-                        <p style={{ fontSize: "11px", fontWeight: "800", color: selected ? "var(--text)" : "var(--muted)" }}>{item.label}</p>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {isOwner && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "24px" }}>
-                  <div className="card">
-                    <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "16px" }}>Admin Tools</h3>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <button onClick={() => setView("library")} className="btn btn-secondary" style={{ flex: 1, minWidth: "120px" }}>Manage Content</button>
-                      <button onClick={() => setMobileQuickSettings(!mobileQuickSettings)} className="btn btn-secondary" style={{ flex: 1, minWidth: "120px" }}>Toggle Settings</button>
-                      <button onClick={() => window.location.href = '/admin'} className="btn btn-primary" style={{ flex: 1, minWidth: "120px" }}>Promo Codes 🎟️</button>
-                    </div>
-                  </div>
-
-                  <div className="card">
-                    <h3 style={{ fontSize: "16px", fontWeight: "800", marginBottom: "4px" }}>🏅 Membership Manager</h3>
-                    <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "16px" }}>Assign a membership tier to any user. Search by email, pick a tier, and save.</p>
-                    <div style={{ display: "flex", gap: "8px", marginBottom: "12px", flexWrap: "wrap" }}>
-                      <input
-                        type="text"
-                        placeholder="Search user by email..."
-                        value={giftUserSearch}
-                        onChange={async (e) => {
-                          setGiftUserSearch(e.target.value);
-                          const val = e.target.value.trim().toLowerCase();
-                          if (val.length < 2) { setGiftUserResults([]); return; }
-                          try {
-                            const snap = await getDocs(collection(db, "users"));
-                            const res: any[] = [];
-                            snap.forEach(d => {
-                              const data = d.data();
-                              if ((data.email || "").toLowerCase().includes(val)) {
-                                res.push({ id: d.id, email: data.email, membership: data.membership || "" });
-                              }
-                            });
-                            setGiftUserResults(res as any);
-                          } catch (err) {
-                            console.error("Membership search error:", err);
-                          }
-                        }}
-                        style={{ flex: 1, minWidth: "200px", padding: "10px 14px", borderRadius: "12px" }}
-                      />
-                    </div>
-                    {giftUserResults.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {(giftUserResults as any[]).map((u: any) => {
-                          const tierLabel = (t: string) => {
-                            const n = (t || "").toUpperCase().replace(/[\s_]+/g, "");
-                            if (n === "PAJJIPLUS") return "Pajji Plus";
-                            if (n === "PAJJIPRO") return "Pajji Pro";
-                            if (n === "PAJJIULTRA") return "Pajji Ultra";
-                            return "None";
-                          };
-                          const isExpired = u.membershipExpiry && new Date(u.membershipExpiry) < new Date();
-                          const defaultExpiry = () => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split('T')[0]; };
-                          return (
-                            <div key={u.id} style={{ padding: "14px", borderRadius: "14px", background: "var(--input-bg)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "10px" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
-                                <div>
-                                  <p style={{ fontWeight: "800", fontSize: "14px" }}>{u.email}</p>
-                                  <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
-                                    Tier: <span style={{ color: "var(--accent)", fontWeight: "800" }}>{tierLabel(u.membership)}</span>
-                                    {u.membershipExpiry && (
-                                      <span style={{ marginLeft: "8px", color: isExpired ? "#ef4444" : "var(--muted)" }}>
-                                        {isExpired ? "⚠ Expired" : `Until ${new Date(u.membershipExpiry).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
-                                      </span>
-                                    )}
-                                  </p>
-                                </div>
-                                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                                  {["", "PAJJIPLUS", "PAJJIPRO", "PAJJIULTRA"].map(tier => (
-                                    <button
-                                      key={tier}
-                                      onClick={async () => {
-                                        const expiry = tier === "" ? "" : (u._pendingExpiry || defaultExpiry());
-                                        await setDoc(doc(db, "users", u.id), { membership: tier, membershipExpiry: expiry }, { merge: true });
-                                        setSaveStatus(`✅ ${tier || "Removed"} → ${u.email}`);
-                                        setTimeout(() => setSaveStatus(""), 2500);
-                                        setGiftUserResults(prev => (prev as any[]).map((r: any) => r.id === u.id ? { ...r, membership: tier, membershipExpiry: expiry } : r) as any);
-                                      }}
-                                      style={{
-                                        padding: "6px 12px",
-                                        borderRadius: "10px",
-                                        border: "1px solid var(--border)",
-                                        background: ((u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier || (u.membership || "").toUpperCase() === tier) ? "var(--accent)" : "var(--card)",
-                                        color: ((u.membership || "").toUpperCase().replace(/[\s_]+/g, "") === tier || (u.membership || "").toUpperCase() === tier) ? "white" : "var(--text)",
-                                        fontWeight: "700",
-                                        fontSize: "11px",
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      {tier === "" ? "❌ Remove" : tier === "PAJJIPLUS" ? "+ Plus" : tier === "PAJJIPRO" ? "👑 Pro" : "⚡ Ultra"}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                                <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--muted)", whiteSpace: "nowrap" }}>Expires on:</label>
-                                <input
-                                  type="date"
-                                  value={u._pendingExpiry || u.membershipExpiry || ""}
-                                  min={new Date().toISOString().split('T')[0]}
-                                  onChange={(e) => setGiftUserResults(prev => (prev as any[]).map((r: any) => r.id === u.id ? { ...r, _pendingExpiry: e.target.value } : r) as any)}
-                                  style={{ padding: "6px 10px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)", fontSize: "12px", fontWeight: "700" }}
-                                />
-                                <button
-                                  onClick={async () => {
-                                    const expiry = u._pendingExpiry || u.membershipExpiry || "";
-                                    await setDoc(doc(db, "users", u.id), { membershipExpiry: expiry }, { merge: true });
-                                    setSaveStatus(`📅 Expiry updated for ${u.email}`);
-                                    setTimeout(() => setSaveStatus(""), 2000);
-                                    setGiftUserResults(prev => (prev as any[]).map((r: any) => r.id === u.id ? { ...r, membershipExpiry: expiry } : r) as any);
-                                  }}
-                                  className="btn btn-secondary"
-                                  style={{ fontSize: "11px", padding: "6px 12px" }}
-                                >
-                                  Save Date
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="card">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                      <h3 style={{ fontSize: "16px", fontWeight: "800" }}>User Feedback ({allFeedback.length})</h3>
-                      <button onClick={fetchFeedback} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "12px", cursor: "pointer", fontWeight: "800" }}>Refresh</button>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "400px", overflowY: "auto", paddingRight: "4px" }}>
-                      {allFeedback.length === 0 ? (
-                        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: "14px", padding: "20px" }}>No feedback yet.</p>
-                      ) : (
-                        allFeedback.map((fb) => (
-                          <div key={fb.id} style={{ padding: "16px", borderRadius: "16px", background: "var(--input-bg)", border: "1px solid var(--border)" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                              <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--accent)" }}>{fb.email}</span>
-                              <span style={{ fontSize: "10px", color: "var(--muted)" }}>{fb.createdAt ? new Date(fb.createdAt).toLocaleDateString() : ""}</span>
-                            </div>
-                            <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{fb.text}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
+            <DynamicSettings
+              isOwner={isOwner}
+              mobileQuickSettings={mobileQuickSettings}
+              setMobileQuickSettings={setMobileQuickSettings}
+              setView={setView}
+              giftUserSearch={giftUserSearch}
+              setGiftUserSearch={setGiftUserSearch}
+              giftUserResults={giftUserResults}
+              setGiftUserResults={setGiftUserResults}
+              setSaveStatus={setSaveStatus}
+              allFeedback={allFeedback}
+              fetchFeedback={fetchFeedback}
+              db={db}
+              user={user}
+              membership={membership}
+              membershipExpiry={membershipExpiry}
+              profilePic={profilePic}
+              setProfilePic={setProfilePic}
+              getUserName={getUserName}
+              signOut={signOut}
+              auth={auth}
+              memTier={memTier}
+              streakCount={streakCount}
+              theme={theme}
+              setTheme={setTheme}
+              uiTheme={uiTheme}
+              setUiTheme={setUiTheme}
+              textSize={textSize}
+              setTextSize={setTextSize}
+              reduceMotion={reduceMotion}
+              setReduceMotion={setReduceMotion}
+              highContrast={highContrast}
+              setHighContrast={setHighContrast}
+              sidebarDensity={sidebarDensity}
+              setSidebarDensity={setSidebarDensity}
+              sidebarStyle={sidebarStyle}
+              setSidebarStyle={setSidebarStyle}
+              aiPersonality={aiPersonality}
+              setAiPersonality={setAiPersonality}
+              soundEnabled={soundEnabled}
+              setSoundEnabled={setSoundEnabled}
+              isZenMode={isZenMode}
+              setIsZenMode={setIsZenMode}
+              displayName={displayName}
+              setDisplayName={setDisplayName}
+              unlockedAchievements={allUnlockedAchievementIds}
+              adminOnlyThemeIds={adminOnlyThemeIds}
+              giftedThemes={giftedThemes}
+              customThemes={customThemes}
+            />
           )}
 
           {view === "credits" && (
@@ -5544,219 +4882,24 @@ function AppContent() {
           )}
 
           {view === "membership" && (
-            <motion.div
-              key="membership"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: -20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="page-shell" style={{ maxWidth: "600px" }}
-            >
-              <button onClick={() => setView("settings")} className="btn-link" style={{ marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <ChevronLeft size={18} /> Back to Settings
-              </button>
-
-              <h1 className="page-title" style={{ marginBottom: "32px" }}>Membership 🏅</h1>
-
-              <div className="card" style={{ padding: "32px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-                {memTier !== "free" ? (
-                  <>
-                    <motion.div 
-                      onMouseMove={handleCardMouseMove}
-                      onMouseLeave={handleCardMouseLeave}
-                      style={{ 
-                        width: "100%", 
-                        maxWidth: "380px", 
-                        aspectRatio: "1.586", 
-                        background: memTier === "ultra" ? "linear-gradient(135deg, #FFD700, #F59E0B)" : memTier === "pro" ? "linear-gradient(135deg, #3B82F6, #1D4ED8)" : "linear-gradient(135deg, #8B5CF6, #6D28D9)", 
-                        borderRadius: "20px", 
-                        padding: "24px", 
-                        display: "flex", 
-                        flexDirection: "column", 
-                        justifyContent: "space-between", 
-                        boxShadow: memTier === "ultra" ? "0 20px 40px rgba(245, 158, 11, 0.3)" : "0 20px 40px rgba(59, 130, 246, 0.3)", 
-                        position: "relative", 
-                        overflow: "hidden", 
-                        color: memTier === "ultra" ? "#000" : "#FFF",
-                        margin: "0 auto 8px auto",
-                        perspective: "1000px",
-                        rotateX,
-                        rotateY,
-                        transformStyle: "preserve-3d"
-                      }}
-                    >
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)", pointerEvents: "none" }} />
-                      
-                      {/* Holographic Refraction Layer for Ultra */}
-                      {memTier === "ultra" && (
-                        <motion.div 
-                          style={{
-                            position: "absolute",
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            background: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.05) 55%, transparent 100%)",
-                            backgroundSize: "200% 200%",
-                            zIndex: 2,
-                            pointerEvents: "none",
-                            mixBlendMode: "overlay"
-                          }}
-                          animate={{
-                            backgroundPosition: ["0% 0%", "200% 200%"]
-                          }}
-                          transition={{
-                            duration: 4,
-                            repeat: Infinity,
-                            ease: "linear"
-                          }}
-                        />
-                      )}
-                      
-                      <motion.div 
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: shineBackground,
-                          pointerEvents: "none",
-                          zIndex: 3
-                        }}
-                      />
-
-                      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", transform: "translateZ(20px)" }}>
-                        <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: "800", fontSize: "16px", margin: 0, letterSpacing: "0.5px" }}>PAJJI SERVICES</h3>
-                        <div style={{ opacity: 0.8 }}>
-                          {memTier === "ultra" ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                            </svg>
-                          ) : memTier === "pro" ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
-                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-                            </svg>
-                          ) : (
-                            <span style={{ fontWeight: "900", fontSize: "24px", lineHeight: "20px" }}>+</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div style={{ position: "relative", zIndex: 1, textAlign: "center", transform: "translateZ(40px)" }}>
-                        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "28px", fontWeight: "800", margin: 0, letterSpacing: "1px", textTransform: "uppercase" }}>
-                          {memTier === "ultra" ? "Pajji Ultra" : memTier === "pro" ? "Pajji Pro" : "Pajji Plus"}
-                        </h2>
-                      </div>
-
-                      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end", transform: "translateZ(20px)" }}>
-                        <div>
-                          <p style={{ fontSize: "10px", fontWeight: "700", opacity: 0.7, textTransform: "uppercase", marginBottom: "2px" }}>Valid Thru</p>
-                          <p style={{ fontSize: "14px", fontWeight: "800", fontFamily: "monospace", letterSpacing: "1px" }}>
-                            {membershipExpiry ? new Date(membershipExpiry).toLocaleDateString("en-IN", { month: "2-digit", year: "2-digit" }) : "LIFETIME"}
-                          </p>
-                          {membershipExpiry && (
-                            (() => {
-                              const expired = new Date(membershipExpiry) < new Date();
-                              return !expired && (
-                                <p style={{ fontSize: "8px", fontWeight: "900", color: "var(--accent)", marginTop: "4px", opacity: 0.8 }}>
-                                  Expires in {Math.max(0, getDayDiff(getLocalDateKey(), membershipExpiry.split('T')[0]))} days
-                                </p>
-                              );
-                            })()
-                          )}
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase", marginBottom: "2px" }}>{getUserName(user)}</p>
-                          <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
-                            {memTier === "ultra" && <Sparkles size={12} color="#FFD700" />}
-                            <CheckCircle2 size={12} color="rgba(255,255,255,0.5)" />
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    <div style={{ width: "100%", background: "var(--input-bg)", borderRadius: "16px", padding: "20px", textAlign: "left", border: "1px solid var(--border)", marginTop: "16px" }}>
-                      <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "12px", letterSpacing: "1px" }}>Benefits Included</p>
-                      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 2× XP Multiplier (Level up twice as fast)</li>
-                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
-                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Full Access to All Premium Themes</li>
-                        <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Custom Badge Appearance</li>
-                      </ul>
-                    </div>
-
-                    {(memTier === "ultra" || true) && (
-                      <div className="card" style={{ width: "100%", marginTop: "32px", textAlign: "left" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
-                          <Sparkles size={20} color="var(--accent)" />
-                          <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Custom Icon Status</h3>
-                        </div>
-                        <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "20px" }}>Select an exclusive badge to display next to your name across the platform.</p>
-                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                          {[
-                            { id: "crown", icon: <Crown size={18} />, label: "Royalty" },
-                            { id: "zap", icon: <Zap size={18} />, label: "Flash" },
-                            { id: "sparkles", icon: <Sparkles size={18} />, label: "Magic" },
-                            { id: "flame", icon: <Flame size={18} />, label: "Hot" },
-                            { id: "star", icon: <Star size={18} />, label: "Elite" },
-                            { id: "heart", icon: <Heart size={18} />, label: "Love" },
-                            { id: "brain", icon: <Brain size={18} />, label: "Genius" },
-                            { id: "rocket", icon: <Send size={18} style={{ transform: "rotate(-45deg)" }} />, label: "Rocket" },
-                          ].map(badge => {
-                            const isSelected = (userData?.selectedBadge || "crown") === badge.id;
-                            return (
-                              <button
-                                key={badge.id}
-                                onClick={async () => {
-                                  if (!user) return;
-                                  await setDoc(doc(db, "users", user.uid), { selectedBadge: badge.id }, { merge: true });
-                                  setSaveStatus(`✨ Badge updated to ${badge.id}!`);
-                                  setTimeout(() => setSaveStatus(""), 2000);
-                                }}
-                                style={{
-                                  padding: "12px",
-                                  borderRadius: "14px",
-                                  background: isSelected ? "var(--accent-grad)" : "var(--input-bg)",
-                                  border: "1px solid var(--border)",
-                                  color: isSelected ? "white" : "var(--text)",
-                                  cursor: "pointer",
-                                  transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                  transform: isSelected ? "scale(1.1)" : "scale(1)",
-                                  boxShadow: isSelected ? "0 8px 20px rgba(var(--accent-rgb), 0.3)" : "none"
-                                }}
-                              >
-                                {badge.icon}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "700", marginTop: "16px", fontStyle: "italic", opacity: 0.8 }}>
-                      Please contact Rushan either on WhatsApp or face to face if applied
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "var(--input-bg)", display: "grid", placeItems: "center", border: "1px dashed var(--border)" }}>
-                      <Star size={32} color="var(--muted)" />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "8px" }}>No Active Membership</h2>
-                      <p style={{ fontSize: "14px", color: "var(--accent)", fontWeight: "700", lineHeight: "1.6", maxWidth: "300px", margin: "12px auto 0", fontStyle: "italic" }}>
-                        Please contact Rushan either on WhatsApp or face to face if applied
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => window.open('https://pajji-services.netlify.app/#memberships', '_blank')}
-                      className="btn btn-primary"
-                      style={{ width: "100%", padding: "16px", borderRadius: "16px", fontSize: "16px", fontWeight: "800", marginTop: "12px", boxShadow: "0 10px 25px -5px rgba(var(--accent-rgb), 0.4)" }}
-                    >
-                      Explore Memberships
-                    </button>
-                  </>
-                )}
-              </div>
-            </motion.div>
+            <DynamicMembership
+              memTier={memTier}
+              setView={setView}
+              handleCardMouseMove={handleCardMouseMove}
+              handleCardMouseLeave={handleCardMouseLeave}
+              rotateX={rotateX}
+              rotateY={rotateY}
+              shineBackground={shineBackground}
+              user={user}
+              getUserName={getUserName}
+              profilePic={profilePic}
+              membershipExpiry={membershipExpiry}
+              getDayDiff={getDayDiff}
+              getLocalDateKey={getLocalDateKey}
+              userData={userData}
+              db={db}
+              setSaveStatus={setSaveStatus}
+            />
           )}
         </AnimatePresence>
 
@@ -5821,618 +4964,113 @@ function AppContent() {
         )}
 
         {view === "study" && curChapter && (
-          <div className="page-shell" style={{ maxWidth: "1000px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center" }}>
-              <button onClick={() => setView("chapters")} className="btn-link">← Lessons</button>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                {quickReviewMode && (
-                  <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{ padding: "8px 12px" }}>End Quick Review</button>
-                )}
-                {!completedLessons.includes(curChapter.id) ? (
-                  <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{ padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)" }}>CLAIM 100 XP</button>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div className="xp-badge">MASTERED</div>
-                    <button onClick={() => unmasterLesson(curChapter.id)} style={{ background: "none", border: "none", opacity: 0.5, cursor: "pointer" }}>↺</button>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-              <h1 style={{ fontSize: "24px", fontWeight: "900" }}>{curChapter.title}</h1>
-              <button onClick={() => setIsSpeedReadOpen(true)} className="btn btn-secondary" style={{ padding: "8px 16px", borderRadius: "100px", fontSize: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <Zap size={14} /> Blaze Mode
-              </button>
-            </div>
-
-            <AnimatePresence>
-              {isSpeedReadOpen && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 1000000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ fontSize: "64px", fontWeight: "900", color: "white", marginBottom: "40px", fontFamily: "var(--font-syne)", textAlign: "center", maxWidth: "80%" }}>
-                    {curChapter.summary?.split(/\s+/)[speedReadIndex] || "READY?"}
-                  </div>
-                  <div style={{ display: "flex", gap: "24px" }}>
-                    <button onClick={() => setIsSpeedReadOpen(false)} className="btn btn-secondary">Exit</button>
-                    <button onClick={() => setSpeedReadIndex(0)} className="btn btn-secondary">Reset</button>
-                    <button onClick={() => {
-                      const words = curChapter.summary?.split(/\s+/) || [];
-                      const timer = setInterval(() => {
-                        setSpeedReadIndex(idx => {
-                          if (idx >= words.length - 1) { clearInterval(timer); return idx; }
-                          return idx + 1;
-                        });
-                      }, 200); // 300 WPM
-                    }} className="btn btn-primary">Start</button>
-                  </div>
-                  {isZenMode && (
-                    <div style={{ marginTop: "40px", width: "100%", maxWidth: "400px" }}>
-                      <FocusGarden />
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
-              {["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
-                <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
-              ))}
-            </div>
-            <div className="card" style={{ minHeight: "500px", padding: "32px" }}>
-              {["Summary", "Spellings"].includes(activeTab) && <div style={{ whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)" }}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
-              {activeTab === "AI Explanation" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)" }}>
-                    <h3 style={{ fontWeight: "800", marginBottom: "8px", color: "var(--accent)" }}>Ask AI about this lesson</h3>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <input
-                        type="text"
-                        value={aiExplainQuestion}
-                        onChange={(e) => setAiExplainQuestion(e.target.value)}
-                        placeholder="E.g. What is the main theme of this summary?"
-                        style={{ flex: 1, padding: "12px", minWidth: "200px" }}
-                        onKeyDown={(e) => { if (e.key === "Enter") askAiExplanation(); }}
-                      />
-                      <button onClick={askAiExplanation} className="btn btn-primary" disabled={aiExplainLoading}>
-                        {aiExplainLoading ? "Thinking..." : "Ask"}
-                      </button>
-                    </div>
-                  </div>
-                  {aiExplainAnswer && (
-                    <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", WebkitUserSelect: "text", userSelect: "text" }}>
-                      <h4 style={{ fontWeight: "800", color: "var(--accent)" }}>AI Explanation</h4>
-                      <div style={{ marginTop: "8px", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "15px" }}>{aiExplainAnswer}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-              {activeTab === "Quiz" && (() => {
-                const quiz = normalizeQuiz(curChapter);
-                if (quiz.length === 0) {
-                  return <div style={{ textAlign: "center", opacity: 0.7, padding: "80px 20px" }}>No quiz questions added yet.</div>;
-                }
-                const questionIndicesSource = quizActiveIndices && quizActiveIndices.length > 0
-                  ? quizActiveIndices
-                  : quiz.map((_: any, idx: number) => idx);
-                const sourceSet = new Set(questionIndicesSource);
-                const orderedFromState = quizQuestionOrder.filter((idx: number) => sourceSet.has(idx));
-                const missingIndices = questionIndicesSource.filter((idx: number) => !orderedFromState.includes(idx));
-                const orderedQuestionIndices = [...orderedFromState, ...missingIndices];
-                const wrongIndices = orderedQuestionIndices.filter((idx: number) => quizReview[idx] && !quizReview[idx].isCorrect);
-                const safePos = Math.max(0, Math.min(currentQuizPos, orderedQuestionIndices.length - 1));
-                const activeQuestionIndex = orderedQuestionIndices[safePos];
-                const q = quiz[activeQuestionIndex];
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "84px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                      <button onClick={() => startQuizAttempt(curChapter)} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
-                        Start / Restart
-                      </button>
-                      <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
-                        Retry Wrong Only
-                      </button>
-                      <button onClick={() => { setQuizShuffleEnabled(prev => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
-                        Shuffle: {quizShuffleEnabled ? "On" : "Off"}
-                      </button>
-                      <button onClick={() => setShowShortcuts((prev) => !prev)} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
-                        Shortcuts
-                      </button>
-                    </div>
-                    {showShortcuts && (
-                      <div style={{ border: "1px dashed var(--border)", borderRadius: "12px", padding: "10px 12px", background: "var(--card)", fontSize: "12px", color: "var(--muted)" }}>
-                        <strong style={{ color: "var(--text)" }}>Keyboard:</strong> Left/Right = navigate, Enter = submit, R = restart, ? = toggle this panel
-                      </div>
-                    )}
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <button onClick={useFiftyFiftyPowerUp} disabled={q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]} className="btn btn-secondary" style={{ opacity: (q.type !== "mcq" || !!usedFiftyFifty[activeQuestionIndex]) ? 0.55 : 1 }}>50:50 ✂️</button>
-                      <button onClick={useHintPowerUp} disabled={!!usedHint[activeQuestionIndex]} className="btn btn-secondary" style={{ opacity: usedHint[activeQuestionIndex] ? 0.55 : 1 }}>Hint 💡</button>
-                      <button onClick={useSkipPowerUp} disabled={!!usedSkip[activeQuestionIndex]} className="btn btn-secondary" style={{ opacity: usedSkip[activeQuestionIndex] ? 0.55 : 1 }}>Skip (-20 XP) ⏭️</button>
-                    </div>
-                    <div className="card" style={{ padding: "12px 14px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                        <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--muted)" }}>Question {safePos + 1}/{orderedQuestionIndices.length}</span>
-                        <span style={{ fontSize: "12px", fontWeight: "800", color: "var(--accent)" }}>{Math.round(((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100)}%</span>
-                      </div>
-                      <div style={{ height: "7px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${((safePos + 1) / Math.max(1, orderedQuestionIndices.length)) * 100}%`, background: "var(--accent-grad)" }} />
-                      </div>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(34px, 1fr))", gap: "6px" }}>
-                      {orderedQuestionIndices.map((qIndex: number, navIndex: number) => {
-                        const isCurrent = navIndex === safePos;
-                        const isAnswered = quizAnswers[qIndex] !== undefined && `${quizAnswers[qIndex]}`.trim() !== "";
-                        const reviewed = quizReview[qIndex];
-                        const bg = reviewed ? (reviewed.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.2)") : (isAnswered ? "var(--accent-soft)" : "var(--input-bg)");
-                        const border = isCurrent ? "2px solid var(--accent)" : "1px solid var(--border)";
-                        return (
-                          <button
-                            key={`nav-${qIndex}`}
-                            onClick={() => setCurrentQuizPos(navIndex)}
-                            style={{ height: "34px", borderRadius: "10px", border, background: bg, color: "var(--text)", fontWeight: "800", cursor: "pointer", fontSize: "12px" }}
-                          >
-                            {navIndex + 1}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div key={`${q.question}-${activeQuestionIndex}`} className="quiz-question-card" style={{ padding: "16px", borderRadius: "16px", border: "1px solid var(--border)", background: "var(--input-bg)" }}>
-                      {(() => {
-                        const review = quizReview[activeQuestionIndex];
-                        return (
-                          <>
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px" }}>
-                              <p style={{ fontWeight: "800" }}>{safePos + 1}. {q.question}</p>
-                              <span style={{ fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
-                                {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
-                              </span>
-                            </div>
-
-                            {q.type === "caseStudy" && q.caseText && (
-                              <div style={{ padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", background: "var(--input-bg)", marginBottom: "10px", whiteSpace: "pre-wrap", fontSize: "14px" }}>
-                                {q.caseText}
-                              </div>
-                            )}
-
-                            {q.type === "pictureStudy" && (
-                              <div style={{ marginBottom: "10px" }}>
-                                {!q.imageUrl && (
-                                  <div style={{ padding: "10px 12px", borderRadius: "12px", border: "1px dashed var(--border)", color: "var(--muted)", fontSize: "13px" }}>
-                                    No image linked for this question yet.
-                                  </div>
-                                )}
-                                {!!q.imageUrl && (
-                                  <>
-                                    {formatDrivePreviewLink(q.imageUrl) ? (
-                                      <iframe
-                                        src={formatDrivePreviewLink(q.imageUrl)}
-                                        title={`question-img-${activeQuestionIndex + 1}`}
-                                        style={{ width: "100%", height: "260px", borderRadius: "14px", border: "1px solid var(--border)", background: "var(--bg)" }}
-                                      />
-                                    ) : (
-                                      <img
-                                        src={formatImageLink(q.imageUrl)}
-                                        alt={`question-${activeQuestionIndex + 1}`}
-                                        onError={() => setQuizImageErrors(prev => ({ ...prev, [activeQuestionIndex]: true }))}
-                                        style={{ maxWidth: "100%", maxHeight: "260px", width: "100%", borderRadius: "14px", border: "1px solid var(--border)", objectFit: "contain", background: "var(--bg)" }}
-                                      />
-                                    )}
-                                    {quizImageErrors[activeQuestionIndex] && (
-                                      <div style={{ marginTop: "6px", fontSize: "12px", color: "#f59e0b", fontWeight: "700" }}>
-                                        Image preview failed. Use the link below.
-                                      </div>
-                                    )}
-                                    <a href={formatImageLink(q.imageUrl)} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: "6px", fontSize: "12px", color: "var(--accent)", fontWeight: "700" }}>
-                                      Open image in new tab
-                                    </a>
-                                  </>
-                                )}
-                              </div>
-                            )}
-
-                            {q.type === "mcq" ? (
-                              <div style={{ display: "grid", gap: "8px" }}>
-                                {((quizOptionOrder[activeQuestionIndex] && quizOptionOrder[activeQuestionIndex].length > 0)
-                                  ? quizOptionOrder[activeQuestionIndex]
-                                  : (q.options || []).map((_: string, opIndex: number) => opIndex).filter((opIndex: number) => `${(q.options || [])[opIndex] || ""}`.trim())
-                                ).filter((originalIndex: number) => !(hiddenOptionsByQuestion[activeQuestionIndex] || []).includes(originalIndex)).map((originalIndex: number) => {
-                                  const op = (q.options || [])[originalIndex] || "";
-                                  const selected = quizAnswers[activeQuestionIndex] === originalIndex;
-                                  const isCorrectOption = originalIndex === q.correctIndex;
-                                  const showCorrectOption = quizSubmitted && isCorrectOption;
-                                  const showWrongSelected = quizSubmitted && selected && !isCorrectOption;
-                                  return (
-                                    <button
-                                      key={`${activeQuestionIndex}-${originalIndex}`}
-                                      onClick={() => {
-                                        setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: originalIndex }));
-                                        setQuizSubmitted(false);
-                                        setQuizReview({});
-                                        setQuizResult("");
-                                      }}
-                                      style={{
-                                        textAlign: "left",
-                                        padding: "10px 12px",
-                                        borderRadius: "12px",
-                                        border: showWrongSelected ? "1px solid var(--danger)" : showCorrectOption ? "1px solid var(--accent)" : selected ? "1px solid var(--accent)" : "1px solid var(--border)",
-                                        background: showWrongSelected ? "rgba(var(--danger-rgb),0.14)" : showCorrectOption ? "var(--accent-soft)" : selected ? "var(--accent-soft)" : "var(--input-bg)",
-                                        color: "var(--text)",
-                                        cursor: "pointer",
-                                        fontWeight: selected ? "700" : "500"
-                                      }}
-                                    >
-                                      {String.fromCharCode(65 + originalIndex)}. {op}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <input
-                                type="text"
-                                placeholder="Type your answer..."
-                                value={`${quizAnswers[activeQuestionIndex] ?? ""}`}
-                                onChange={(e) => {
-                                  setQuizAnswers(prev => ({ ...prev, [activeQuestionIndex]: e.target.value }));
-                                  setQuizSubmitted(false);
-                                  setQuizReview({});
-                                  setQuizResult("");
-                                }}
-                                style={{ padding: "12px" }}
-                              />
-                            )}
-                            {usedHint[activeQuestionIndex] && (
-                              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--muted)", fontWeight: "700" }}>
-                                Hint: {q.type === "mcq"
-                                  ? `Correct option is ${String.fromCharCode(65 + q.correctIndex)}`
-                                  : `Starts with "${`${q.answer || ""}`.trim().charAt(0) || ""}"`}
-                              </div>
-                            )}
-                            {quizSubmitted && review && (
-                              <div style={{ marginTop: "10px", padding: "10px 12px", borderRadius: "10px", border: review.isCorrect ? "1px solid rgba(var(--accent-rgb),0.35)" : "1px solid rgba(var(--danger-rgb),0.35)", background: review.isCorrect ? "var(--accent-soft)" : "rgba(var(--danger-rgb),0.12)", fontSize: "13px" }}>
-                                {review.isCorrect ? (
-                                  <span style={{ fontWeight: "800", color: "var(--accent)" }}>Correct answer.</span>
-                                ) : (
-                                  <span style={{ fontWeight: "700", color: "var(--danger)" }}>
-                                    Wrong answer. Your answer: {review.submitted}. Correct answer: {review.expected || "Not set"}.
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            {quizSubmitted && q.explanation && (
-                              <div style={{ marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", fontSize: "13px" }}>
-                                <span style={{ fontWeight: "800", color: "#3b82f6" }}>Explanation:</span> {q.explanation}
-                              </div>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div style={{ position: "sticky", bottom: "10px", zIndex: 20, border: "1px solid var(--border)", background: "var(--card)", borderRadius: "14px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <button onClick={() => setCurrentQuizPos(prev => Math.max(0, prev - 1))} disabled={safePos === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer" }}>Prev</button>
-                        <button onClick={() => setCurrentQuizPos(prev => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer" }}>Next</button>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                        <button onClick={submitQuiz} style={{ padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "800", cursor: "pointer" }}>Submit Quiz</button>
-                        <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
-                          Retry Wrong
-                        </button>
-                        {quizResult && <span style={{ fontWeight: "800", color: quizResult.startsWith("Score") ? "var(--accent)" : "var(--warning)" }}>{quizResult}</span>}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-              {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{ borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }} /> : "No video available.")}
-              {activeTab === "My Notes" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>
-                    <p style={{ fontSize: "13px", color: "var(--muted)" }}>Write your own notes from Summary, Spellings, Quiz, PDFs, and videos.</p>
-                    <span style={{ fontSize: "12px", fontWeight: "700", color: noteSaving ? "var(--warning)" : "var(--accent)" }}>
-                      {noteSaving ? "Saving..." : (noteSavedAt ? `Saved at ${noteSavedAt}` : "Autosave on")}
-                    </span>
-                  </div>
-                  <textarea
-                    placeholder="Type your lesson notes here..."
-                    value={noteDraft}
-                    onChange={(e) => setNoteDraft(e.target.value)}
-                    style={{ minHeight: "340px", lineHeight: 1.6 }}
-                  />
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Definition")}>Template: Definition</button>
-                    <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Cause/Effect")}>Template: Cause/Effect</button>
-                    <button className="btn btn-secondary" onClick={() => insertNoteTemplate("Timeline")}>Template: Timeline</button>
-                  </div>
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <button onClick={() => saveCurrentNote()} className="btn btn-primary" disabled={noteSaving} style={{ opacity: noteSaving ? 0.7 : 1 }}>Save Note</button>
-                    <button onClick={generateFlashcardsFromNote} className="btn btn-secondary">Generate Flashcards</button>
-                    <button onClick={exportCurrentNote} className="btn btn-secondary">Export Note (.txt)</button>
-                    <button
-                      onClick={async () => {
-                        if (!confirm("Clear note for this lesson?")) return;
-                        setNoteDraft("");
-                        await saveCurrentNote("");
-                      }}
-                      className="btn btn-secondary"
-                      disabled={noteSaving}
-                      style={{ opacity: noteSaving ? 0.7 : 1 }}
-                    >
-                      Clear Note
-                    </button>
-                  </div>
-                  <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
-                    <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>Tags</p>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
-                      <input
-                        type="text"
-                        placeholder="Add tag (example: exam)"
-                        value={newTagInput}
-                        onChange={(e) => setNewTagInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addTagToCurrentLesson(newTagInput);
-                          }
-                        }}
-                        style={{ padding: "10px", flex: 1, minWidth: "220px" }}
-                      />
-                      <button className="btn btn-secondary" onClick={() => addTagToCurrentLesson(newTagInput)}>Add Tag</button>
-                    </div>
-                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-                      {quickTagOptions.map((tag) => (
-                        <button key={`quick-tag-${tag}`} className="btn btn-secondary" style={{ padding: "5px 8px" }} onClick={() => addTagToCurrentLesson(tag)}>
-                          + #{tag}
-                        </button>
-                      ))}
-                    </div>
-                    {currentLessonTags.length > 0 && (
-                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                        {currentLessonTags.map((tag) => (
-                          <button key={`tag-${tag}`} className="btn btn-secondary" style={{ padding: "4px 8px" }} onClick={() => removeTagFromCurrentLesson(tag)}>
-                            #{tag} x
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--input-bg)" }}>
-                    <p style={{ fontSize: "12px", fontWeight: "800", marginBottom: "8px" }}>Pin Key Point</p>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <input
-                        type="text"
-                        placeholder="Add a key takeaway from this lesson..."
-                        value={newPinnedPointText}
-                        onChange={(e) => setNewPinnedPointText(e.target.value)}
-                        style={{ padding: "10px", flex: 1, minWidth: "220px" }}
-                      />
-                      <button className="btn btn-primary" onClick={addPinnedKeyPoint}>Pin</button>
-                    </div>
-                    {lessonPinnedPoints.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "10px" }}>
-                        {lessonPinnedPoints.map((point) => (
-                          <div key={point.id} style={{ display: "flex", justifyContent: "space-between", gap: "8px", border: "1px solid var(--border)", borderRadius: "10px", padding: "6px 8px", background: "var(--card)" }}>
-                            <span style={{ fontSize: "12px" }}>{point.text}</span>
-                            <button className="btn btn-danger" style={{ padding: "4px 8px" }} onClick={() => removePinnedKeyPoint(point.id)}>x</button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "Flashcards" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                  <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                    <p style={{ fontSize: "13px", color: "var(--muted)", fontWeight: "700" }}>
-                      Master your knowledge with 3D Flashcards. Click to flip!
-                    </p>
-                    <p style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>
-                      Progress: {Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length}
-                    </p>
-                  </div>
-
-                  {lessonFlashcards.length > 0 ? (
-                    <>
-                      <div
-                        className={`flashcard-scene ${flashcardReveal ? "is-flipped" : ""}`}
-                        onClick={() => {
-                          setFlashcardReveal(!flashcardReveal);
-                          if (soundEnabled) {
-                            try {
-                              new Audio("https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3").play().catch(() => { });
-                            } catch (e) { }
-                          }
-                        }}
-                      >
-                        <div className="flashcard-inner">
-                          <div className="flashcard-front">
-                            <span style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Question</span>
-                            <h2 style={{ fontSize: "24px", fontWeight: "800", lineHeight: "1.4" }}>{lessonFlashcards[flashcardIndex]?.q}</h2>
-                            <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.5 }}>Click to Reveal Answer</p>
-                          </div>
-                          <div className="flashcard-back">
-                            <span style={{ fontSize: "12px", color: "white", opacity: 0.8, fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Answer</span>
-                            <p style={{ fontSize: "20px", fontWeight: "700", lineHeight: "1.6" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
-                            <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.8 }}>Click to hide</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
-                        <button
-                          className="btn btn-secondary"
-                          onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev) => Math.max(0, prev - 1)); setFlashcardReveal(false); }}
-                          disabled={flashcardIndex === 0}
-                          style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
-                        >
-                          <ChevronLeft size={24} />
-                        </button>
-                        <button
-                          className="btn btn-primary"
-                          onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev) => Math.min(lessonFlashcards.length - 1, prev + 1)); setFlashcardReveal(false); }}
-                          disabled={flashcardIndex >= lessonFlashcards.length - 1}
-                          style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
-                        >
-                          <ChevronRight size={24} />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ textAlign: "center", padding: "80px", border: "1px dashed var(--border)", borderRadius: "24px" }}>
-                      <BookOpen size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
-                      <p style={{ fontWeight: "700", opacity: 0.5 }}>No flashcards for this lesson.</p>
-                      <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>Import from Notes</button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => {
-                let k = activeTab === "Book PDF" ? "bookPdf" : activeTab.charAt(0).toLowerCase() + activeTab.slice(1).replace(" ", "");
-                let link = curChapter[k];
-                return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                    {link ? <iframe src={link.includes("drive.google.com") ? link.replace("/view", "/preview") : link} width="100%" height="600px" style={{ border: "none", borderRadius: "20px" }} /> : <div style={{ textAlign: "center", padding: "100px", opacity: 0.5 }}>This resource hasn't been linked yet.</div>}
-                    {activeTab === "Book PDF" && curChapter.audioBook && (
-                      <div style={{ padding: "20px", background: "var(--input-bg)", borderRadius: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <h3 style={{ fontSize: "16px", fontWeight: "800" }}>Audiobook Resource</h3>
-                        {curChapter.audioBook.includes("drive.google.com") ? (
-                          <iframe src={curChapter.audioBook.replace("/view", "/preview")} width="100%" height="150" style={{ border: "none", borderRadius: "10px" }} />
-                        ) : (
-                          <audio controls src={curChapter.audioBook} style={{ width: "100%", outline: "none" }} />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
+          <DynamicStudy
+            curChapter={curChapter}
+            setView={setView}
+            quickReviewMode={quickReviewMode}
+            setQuickReviewMode={setQuickReviewMode}
+            completedLessons={completedLessons}
+            markCompleted={markCompleted}
+            unmasterLesson={unmasterLesson}
+            isSpeedReadOpen={isSpeedReadOpen}
+            setIsSpeedReadOpen={setIsSpeedReadOpen}
+            speedReadIndex={speedReadIndex}
+            setSpeedReadIndex={setSpeedReadIndex}
+            isZenMode={isZenMode}
+            FocusGarden={FocusGarden}
+            switchStudyTab={switchStudyTab}
+            activeTab={activeTab}
+            aiExplainQuestion={aiExplainQuestion}
+            setAiExplainQuestion={setAiExplainQuestion}
+            askAiExplanation={askAiExplanation}
+            aiExplainLoading={aiExplainLoading}
+            aiExplainAnswer={aiExplainAnswer}
+            normalizeQuiz={normalizeQuiz}
+            quizActiveIndices={quizActiveIndices}
+            quizQuestionOrder={quizQuestionOrder}
+            quizReview={quizReview}
+            currentQuizPos={currentQuizPos}
+            setCurrentQuizPos={setCurrentQuizPos}
+            startQuizAttempt={startQuizAttempt}
+            quizSubmitted={quizSubmitted}
+            quizShuffleEnabled={quizShuffleEnabled}
+            setQuizShuffleEnabled={setQuizShuffleEnabled}
+            showShortcuts={showShortcuts}
+            setShowShortcuts={setShowShortcuts}
+            useFiftyFiftyPowerUp={useFiftyFiftyPowerUp}
+            usedFiftyFifty={usedFiftyFifty}
+            useHintPowerUp={useHintPowerUp}
+            usedHint={usedHint}
+            useSkipPowerUp={useSkipPowerUp}
+            usedSkip={usedSkip}
+            quizAnswers={quizAnswers}
+            setQuizAnswers={setQuizAnswers}
+            setQuizSubmitted={setQuizSubmitted}
+            setQuizReview={setQuizReview}
+            setQuizResult={setQuizResult}
+            quizResult={quizResult}
+            submitQuiz={submitQuiz}
+            formatDrivePreviewLink={formatDrivePreviewLink}
+            formatImageLink={formatImageLink}
+            quizImageErrors={quizImageErrors}
+            setQuizImageErrors={setQuizImageErrors}
+            quizOptionOrder={quizOptionOrder}
+            hiddenOptionsByQuestion={hiddenOptionsByQuestion}
+            formatYoutubeLink={formatYoutubeLink}
+            noteDraft={noteDraft}
+            setNoteDraft={setNoteDraft}
+            noteSaving={noteSaving}
+            noteSavedAt={noteSavedAt}
+            insertNoteTemplate={insertNoteTemplate}
+            saveCurrentNote={saveCurrentNote}
+            generateFlashcardsFromNote={generateFlashcardsFromNote}
+            exportCurrentNote={exportCurrentNote}
+            newTagInput={newTagInput}
+            setNewTagInput={setNewTagInput}
+            addTagToCurrentLesson={addTagToCurrentLesson}
+            quickTagOptions={quickTagOptions}
+            currentLessonTags={currentLessonTags}
+            removeTagFromCurrentLesson={removeTagFromCurrentLesson}
+            newPinnedPointText={newPinnedPointText}
+            setNewPinnedPointText={setNewPinnedPointText}
+            addPinnedKeyPoint={addPinnedKeyPoint}
+            lessonPinnedPoints={lessonPinnedPoints}
+            removePinnedKeyPoint={removePinnedKeyPoint}
+            lessonFlashcards={lessonFlashcards}
+            flashcardIndex={flashcardIndex}
+            setFlashcardIndex={setFlashcardIndex}
+            flashcardReveal={flashcardReveal}
+            setFlashcardReveal={setFlashcardReveal}
+            soundEnabled={soundEnabled}
+          />
         )}
 
         {view === "edit" && tempChapter && (
-          <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px" }}>
-              <h2 style={{ fontWeight: "900" }}>Editor</h2>
-              <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{ background: "var(--accent)", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer" }}>SAVE CHANGES</button>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div><label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({ ...tempChapter, summary: e.target.value })} /></div>
-              <div><label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>Spellings</label><textarea placeholder="Type words here..." value={tempChapter.spellings || ""} onChange={(e) => setTempChapter({ ...tempChapter, spellings: e.target.value })} /></div>
-              <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap" }}>
-                  <label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase" }}>Interactive Quiz</label>
-                  <button onClick={addQuizQuestion} style={{ padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "700", cursor: "pointer" }}>+ Add Question</button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
-                    <div key={`edit-quiz-${qIndex}`} style={{ border: "1px solid var(--border)", borderRadius: "14px", padding: "12px", background: "var(--card)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <p style={{ fontWeight: "800", fontSize: "12px" }}>Question {qIndex + 1}</p>
-                        <button onClick={() => removeQuizQuestion(qIndex)} style={{ background: "rgba(var(--danger-rgb),0.14)", color: "var(--danger)", border: "1px solid rgba(var(--danger-rgb),0.3)", borderRadius: "8px", padding: "4px 8px", cursor: "pointer", fontWeight: "700" }}>Remove</button>
-                      </div>
-                      <div style={{ marginBottom: "8px" }}>
-                        <p style={{ fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)" }}>Question Type</p>
-                        <select value={q.type || "mcq"} onChange={(e) => updateQuizQuestion(qIndex, "type", e.target.value)} style={{ padding: "10px" }}>
-                          <option value="mcq">MCQ</option>
-                          <option value="oneWord">One Word</option>
-                          <option value="caseStudy">Case Study</option>
-                          <option value="pictureStudy">Picture Study</option>
-                        </select>
-                      </div>
-                      <input type="text" placeholder="Type question..." value={q.question || ""} onChange={(e) => updateQuizQuestion(qIndex, "question", e.target.value)} style={{ padding: "10px", marginBottom: "10px" }} />
-                      {(q.type || "mcq") === "mcq" ? (
-                        <>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                            {[0, 1, 2, 3].map((oIndex) => (
-                              <input key={`q-${qIndex}-o-${oIndex}`} type="text" placeholder={`Option ${String.fromCharCode(65 + oIndex)}`} value={(q.options || [])[oIndex] || ""} onChange={(e) => updateQuizOption(qIndex, oIndex, e.target.value)} style={{ padding: "10px" }} />
-                            ))}
-                          </div>
-                          <div style={{ marginTop: "10px" }}>
-                            <p style={{ fontSize: "11px", fontWeight: "700", marginBottom: "4px", color: "var(--muted)" }}>Correct Option</p>
-                            <select value={q.correctIndex ?? 0} onChange={(e) => updateQuizQuestion(qIndex, "correctIndex", Number(e.target.value))} style={{ padding: "10px" }}>
-                              <option value={0}>A</option>
-                              <option value={1}>B</option>
-                              <option value={2}>C</option>
-                              <option value={3}>D</option>
-                            </select>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          {(q.type === "caseStudy") && (
-                            <textarea placeholder="Case study passage..." value={q.caseText || ""} onChange={(e) => updateQuizQuestion(qIndex, "caseText", e.target.value)} style={{ minHeight: "90px", marginBottom: "8px" }} />
-                          )}
-                          {(q.type === "pictureStudy") && (
-                            <input type="text" placeholder="Image URL (https://...)" value={q.imageUrl || ""} onChange={(e) => updateQuizQuestion(qIndex, "imageUrl", e.target.value)} style={{ padding: "10px", marginBottom: "8px" }} />
-                          )}
-                          <input type="text" placeholder="Correct answer (exact text)" value={q.answer || ""} onChange={(e) => updateQuizQuestion(qIndex, "answer", e.target.value)} style={{ padding: "10px" }} />
-                        </>
-                      )}
-                      <textarea
-                        placeholder="Explanation shown after submit (optional)"
-                        value={q.explanation || ""}
-                        onChange={(e) => updateQuizQuestion(qIndex, "explanation", e.target.value)}
-                        style={{ minHeight: "80px", marginTop: "8px" }}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: "14px", borderTop: "1px dashed var(--border)", paddingTop: "12px" }}>
-                  <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase" }}>Quick Bulk Add (NotebookLM Friendly)</p>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "700" }}>Parser mode:</span>
-                    <button onClick={() => setParserMode("strict")} className="btn btn-secondary" style={{ padding: "6px 10px", background: parserMode === "strict" ? "var(--accent-soft)" : "var(--input-bg)" }}>Strict</button>
-                    <button onClick={() => setParserMode("balanced")} className="btn btn-secondary" style={{ padding: "6px 10px", background: parserMode === "balanced" ? "var(--accent-soft)" : "var(--input-bg)" }}>Balanced</button>
-                    <button onClick={() => setParserMode("aggressive")} className="btn btn-secondary" style={{ padding: "6px 10px", background: parserMode === "aggressive" ? "var(--accent-soft)" : "var(--input-bg)" }}>Aggressive</button>
-                  </div>
-                  <textarea
-                    placeholder={`Paste from NotebookLM directly.\nSupported examples:\n1) What is ...?\nA) ...\nB) ...\nC) ...\nD) ...\nCorrect Answer: B\n\nQ2: Another question...\nA. ...\nB. ...\nAnswer: Option text`}
-                    value={quizBuilderText}
-                    onChange={(e) => setQuizBuilderText(e.target.value)}
-                    style={{ minHeight: "130px" }}
-                  />
-                  <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
-                    <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer" }}>
-                      Preview Paste
-                    </button>
-                    <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer" }}>
-                      Add Preview
-                    </button>
-                    <button onClick={bulkAddQuizQuestions} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>Parse & Add Questions</button>
-                    <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1 }}>
-                      {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
-                    </button>
-                    <button onClick={exportQuizPack} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>Export Pack</button>
-                    <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer" }}>
-                      Import Pack
-                    </button>
-                  </div>
-                  <textarea
-                    placeholder="Quiz pack JSON (exported or pasted)"
-                    value={quizPackText}
-                    onChange={(e) => setQuizPackText(e.target.value)}
-                    style={{ minHeight: "110px", marginTop: "8px" }}
-                  />
-                  {parsedPreview.length > 0 && (
-                    <div style={{ marginTop: "8px", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", background: "var(--card)" }}>
-                      <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: "800", marginBottom: "6px" }}>Preview ({parsedPreview.length})</p>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
-                        {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
-                          <div key={`preview-${idx}`} style={{ fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px" }}>
-                            <strong style={{ fontSize: "10px", color: "var(--accent)", marginRight: "6px" }}>{q.type}</strong>{q.question}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                {["video", "slides", "bookPdf", "audioBook", "infographic", "mindMap"].map(f => (
-                  <div key={f}><p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", marginBottom: "6px" }}>{f}</p><input type="text" value={tempChapter[f] || ""} onChange={(e) => setTempChapter({ ...tempChapter, [f]: e.target.value })} style={{ padding: "12px" }} /></div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <DynamicEdit
+            tempChapter={tempChapter}
+            setTempChapter={setTempChapter}
+            saveAllChanges={saveAllChanges}
+            lastAutosavePayloadRef={lastAutosavePayloadRef}
+            setView={setView}
+            addQuizQuestion={addQuizQuestion}
+            removeQuizQuestion={removeQuizQuestion}
+            updateQuizQuestion={updateQuizQuestion}
+            updateQuizOption={updateQuizOption}
+            parserMode={parserMode}
+            setParserMode={setParserMode}
+            quizBuilderText={quizBuilderText}
+            setQuizBuilderText={setQuizBuilderText}
+            previewParsedQuestions={previewParsedQuestions}
+            addPreviewToQuiz={addPreviewToQuiz}
+            bulkAddQuizQuestions={bulkAddQuizQuestions}
+            aiParseQuizQuestions={aiParseQuizQuestions}
+            aiParsingQuiz={aiParsingQuiz}
+            exportQuizPack={exportQuizPack}
+            importQuizPack={importQuizPack}
+            quizPackText={quizPackText}
+            setQuizPackText={setQuizPackText}
+            parsedPreview={parsedPreview}
+          />
         )}
 
         {saveStatus && (
