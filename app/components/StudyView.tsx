@@ -1,7 +1,10 @@
 "use client";
+// Triggering rebuild to fix chunk load error
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ChevronLeft, ChevronRight, BookOpen, Clock, CheckCircle2, Sparkles, Send, Brain, Heart, Volume2, Info, Moon, Sun, LayoutDashboard, LogOut, User, MessageSquare } from "lucide-react";
+import { Zap, ChevronLeft, ChevronRight, BookOpen, Clock, CheckCircle2, Sparkles, Send, Brain, Heart, Volume2, Info, Moon, Sun, LayoutDashboard, LogOut, User, MessageSquare, Upload } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface StudyViewProps {
   curChapter: any;
@@ -101,6 +104,8 @@ export const StudyView: React.FC<StudyViewProps> = ({
   newPinnedPointText, setNewPinnedPointText, addPinnedKeyPoint, lessonPinnedPoints, removePinnedKeyPoint,
   lessonFlashcards, flashcardIndex, setFlashcardIndex, flashcardReveal, setFlashcardReveal, soundEnabled
 }) => {
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+
   return (
     <div className="page-shell" style={{ maxWidth: "1000px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "24px", alignItems: "center" }}>
@@ -165,23 +170,103 @@ export const StudyView: React.FC<StudyViewProps> = ({
             <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)" }}>
               <h3 style={{ fontWeight: "800", marginBottom: "8px", color: "var(--accent)" }}>Ask AI about this lesson</h3>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                <input
-                  type="text"
-                  value={aiExplainQuestion}
-                  onChange={(e) => setAiExplainQuestion(e.target.value)}
-                  placeholder="E.g. What is the main theme of this summary?"
-                  style={{ flex: 1, padding: "12px", minWidth: "200px" }}
-                  onKeyDown={(e) => { if (e.key === "Enter") askAiExplanation(); }}
-                />
-                <button onClick={askAiExplanation} className="btn btn-primary" disabled={aiExplainLoading}>
+                <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
+                  <input
+                    type="text"
+                    value={aiExplainQuestion}
+                    onChange={(e) => setAiExplainQuestion(e.target.value)}
+                    placeholder={selectedImage ? "Describe this image..." : "E.g. What is the main theme?"}
+                    style={{ width: "100%", padding: "12px", paddingRight: "45px" }}
+                    onKeyDown={(e) => { if (e.key === "Enter") askAiExplanation(); }}
+                  />
+                  <label style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", opacity: selectedImage ? 1 : 0.4 }}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: "none" }} 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const canvas = document.createElement("canvas");
+                              const MAX_SIZE = 400; // Tiny Vision compression
+                              let w = img.width;
+                              let h = img.height;
+                              if (w > h) { if (w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } }
+                              else { if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; } }
+                              canvas.width = w; canvas.height = h;
+                              const ctx = canvas.getContext("2d");
+                              ctx?.drawImage(img, 0, 0, w, h);
+                              setSelectedImage(canvas.toDataURL("image/jpeg", 0.6)); // 60% quality JPEG
+                            };
+                            img.src = ev.target?.result as string;
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    <Upload size={20} color={selectedImage ? "var(--accent)" : "white"} />
+                  </label>
+                </div>
+                {selectedImage && (
+                  <div style={{ position: "relative" }}>
+                    <img src={selectedImage} style={{ height: "40px", width: "40px", borderRadius: "8px", border: "2px solid var(--accent)" }} />
+                    <button 
+                      onClick={() => setSelectedImage(null)}
+                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "10px", cursor: "pointer" }}
+                    >×</button>
+                  </div>
+                )}
+                <button onClick={() => {
+                   // Wrap original askAiExplanation to include image
+                   (window as any)._pendingAiImage = selectedImage;
+                   askAiExplanation();
+                   setSelectedImage(null);
+                }} className="btn btn-primary" disabled={aiExplainLoading}>
                   {aiExplainLoading ? "Thinking..." : "Ask"}
+                </button>
+                <button
+                  onClick={() => {
+                    setAiExplainQuestion("Can you generate a quick 3-question quiz for me based on this lesson?");
+                    setTimeout(() => askAiExplanation(), 100);
+                  }}
+                  disabled={aiExplainLoading}
+                  style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "0 16px", color: "var(--text)", fontWeight: "800", fontSize: "12px", cursor: "pointer" }}
+                >
+                  ✨ QUIZ ME
                 </button>
               </div>
             </div>
             {aiExplainAnswer && (
               <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px solid var(--border)", WebkitUserSelect: "text", userSelect: "text" }}>
-                <h4 style={{ fontWeight: "800", color: "var(--accent)" }}>AI Explanation</h4>
-                <div style={{ marginTop: "8px", whiteSpace: "pre-wrap", lineHeight: 1.6, fontSize: "15px" }}>{aiExplainAnswer}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <h4 style={{ fontWeight: "800", color: "var(--accent)" }}>AI Explanation</h4>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      onClick={() => {
+                        const utterance = new SpeechSynthesisUtterance(aiExplainAnswer);
+                        utterance.rate = 1.0;
+                        window.speechSynthesis.cancel();
+                        window.speechSynthesis.speak(utterance);
+                      }}
+                      style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                    >
+                      <Volume2 size={12} /> SPEAK
+                    </button>
+                    <button
+                      onClick={() => window.speechSynthesis.cancel()}
+                      style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid #ef4444", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
+                    >
+                      STOP
+                    </button>
+                  </div>
+                </div>
+                <div className="markdown-container" style={{ marginTop: "8px", lineHeight: 1.6, fontSize: "15px" }}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiExplainAnswer}</ReactMarkdown>
+                </div>
               </div>
             )}
           </div>

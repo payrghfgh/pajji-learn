@@ -65,7 +65,7 @@ export const LibraryView: React.FC<LibraryViewProps> = ({
         {sortedFilteredBooks.map(b => (
           <motion.div
             key={b.id}
-            whileHover={{ y: -5, borderColor: "var(--accent)" }}
+            whileHover={{ borderColor: "var(--accent)" }}
             onClick={() => { setCurBook(b); setView("chapters"); }}
             className="card" style={{ cursor: "pointer", textAlign: "center", transition: "all 0.3s ease" }}
           >

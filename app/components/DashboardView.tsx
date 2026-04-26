@@ -88,7 +88,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       >
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          whileHover={{ y: -5 }}
+          whileHover={{ borderColor: "var(--accent)" }}
           className="card mesh-glow"
           style={{ gridColumn: "span 4", gridRow: "span 2", display: "flex", flexDirection: "column", justifyContent: "center", position: "relative", overflow: "hidden" }}
         >
@@ -112,7 +112,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          whileHover={{ y: -5 }}
+          whileHover={{ borderColor: "var(--accent)" }}
           className="card"
           style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
         >
@@ -122,7 +122,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          whileHover={{ y: -5 }}
+          whileHover={{ borderColor: "var(--accent)" }}
           className="card"
           style={{ gridColumn: "span 4", display: "flex", alignItems: "center", gap: "20px" }}
         >
@@ -139,7 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {smartRecommendation && (
           <motion.div
             variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-            whileHover={{ y: -5 }}
+            whileHover={{ borderColor: "var(--accent)" }}
             className="card ultra-shine"
             onClick={() => { setCurBook(smartRecommendation.book); setCurChapter(smartRecommendation.chapter); setView("study"); }}
             style={{ gridColumn: "span 8", display: "flex", flexDirection: "row", alignItems: "center", gap: "24px", cursor: "pointer", background: "var(--accent-grad)", color: "white", position: "relative", overflow: "hidden" }}
@@ -155,7 +155,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
-          whileHover={{ y: -5 }}
+          whileHover={{ borderColor: "var(--accent)" }}
           className="card"
           style={{ gridColumn: "span 8", display: "flex", alignItems: "center", gap: "32px", padding: "32px" }}
         >
@@ -211,7 +211,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.01 }}
+          whileHover={{ opacity: 0.9 }}
           className="card"
           style={{ marginBottom: "32px", borderLeft: "4px solid var(--accent)", background: "rgba(var(--accent-rgb), 0.05)" }}
         >
@@ -236,7 +236,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ opacity: 0.9 }}
             className="card" style={{ border: "1px dashed var(--accent)", background: "var(--accent-soft)", display: "flex", flexDirection: "column", gap: "12px" }}
           >
             <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase" }}>Memory Recall Pulse 🧠</p>
@@ -252,7 +252,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
-              whileHover={{ scale: 1.02, rotateX: 5, rotateY: 5, z: 10 }}
+              whileHover={{ opacity: 0.9 }}
               className={`card tilt-card ${isMastered ? "holographic-shine" : ""} ${idx === 0 ? "power-up-card" : ""}`}
               style={{
                 display: "flex",

@@ -1,45 +1,81 @@
-import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const { message, history, membership, image } = await req.json();
+
+  // Fetch global AI config from Firestore
+  let baseSystemPrompt = "You are Pajji Learn AI, an ai for a learning platform made by Pajji Services. Answer clearly and concisely using the provided context. Be helpful but brief to save time.Sometimes, act fun";
+  let baseModel = "llama-3.3-70b-versatile";
+  let baseMaxTokens = 300;
+
   try {
-    const { message } = await req.json();
-
-    if (!message) {
-      return NextResponse.json({ error: "No message provided" }, { status: 400 });
+    const configSnap = await getDoc(doc(db, "settings", "ai_config"));
+    if (configSnap.exists()) {
+      const data = configSnap.data();
+      baseSystemPrompt = data.systemPrompt || baseSystemPrompt;
+      baseModel = data.model || baseModel;
+      baseMaxTokens = data.maxTokens || baseMaxTokens;
     }
+  } catch (e) {
+    console.error("Error fetching AI config:", e);
+  }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  // Tier-based Awareness (Incorporate subscriptions into prompt only)
+  const personalizedPrompt = `${baseSystemPrompt}\n\nUSER STATUS: The user has a ${membership?.toUpperCase() || "FREE"} membership.`;
 
-    const prompt = `
-You are Pajji Learn AI, a helpful assistant inside an educational website.
+  // Vision Logic: If an image is provided, we MUST use the Vision model
+  let finalModel = baseModel;
+  let userContent: any = message;
+  let finalMessages: any[] = [];
 
-Your job:
-- Answer questions about the website.
-- Explain features like Summary, QnA, and Spellings.
-- Help users understand how to use the platform.
-- Be clear, helpful, and student-friendly.
-- Do NOT generate random academic content unless asked.
+  if (image) {
+    finalModel = "meta-llama/llama-4-scout-17b-16e-instruct"; // Latest Vision model from Groq docs
+    // For vision, we use a cleaner, shorter prompt to avoid context overflow
+    const visionInstruction = message?.trim() ? message : "Analyze this image in the context of the lesson.";
+    const cleanMessage = `LESSON: ${membership}\n\nQ: ${visionInstruction}`;
+    
+    userContent = [
+      { type: "text", text: cleanMessage },
+      { type: "image_url", image_url: { url: image } }
+    ];
+    
+    // For vision, we skip history to ensure the model has maximum "focus" on the image
+    finalMessages = [
+      { role: "system", content: personalizedPrompt },
+      { role: "user", content: userContent }
+    ];
+  } else {
+    finalMessages = [
+      { role: "system", content: personalizedPrompt },
+      ...(history || []).map((msg: any) => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      { role: "user", content: message },
+    ];
+  }
 
-Website Features:
-1. Summary → Generates a clean summary of pasted lesson text.
-2. QnA → Creates MCQs, one-word answers, and case study questions.
-3. Spellings → Extracts important words for spelling practice.
+  try {
+    const response = await groq.chat.completions.create({
+      model: finalModel,
+      messages: finalMessages,
+      max_tokens: baseMaxTokens,
+    });
 
-User Question:
-${message}
-`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return NextResponse.json({ result: text });
-
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "AI failed to respond." }, { status: 500 });
+    const reply = response.choices[0].message?.content;
+    return NextResponse.json({ reply, result: reply });
+  } catch (error: any) {
+    console.error("GROQ API ERROR:", error);
+    return NextResponse.json({ 
+      reply: "Sorry, I encountered an error processing that. " + (error.message || ""), 
+      error: true 
+    }, { status: 500 });
   }
 }
