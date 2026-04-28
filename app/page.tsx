@@ -5,7 +5,7 @@ import Head from "next/head";
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring, useTransform, useMotionTemplate } from "framer-motion";
 import {
-  Trophy, BookOpen, Zap, Settings, Flame,
+  Trophy, BookOpen, Zap, Settings, Flame, Plane,
   ChevronRight, ChevronLeft, Search, Plus, Star, Map, Crown,
   Clock, CheckCircle2, AlertCircle, FileText,
   MessageSquare, LayoutDashboard, LogOut, User, Volume2,
@@ -4466,6 +4466,10 @@ function AppContent() {
           <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}>
             <Trophy size={20} />
             {sidebarStyle !== "minimal" && <span>Leaderboard</span>}
+          </button>
+          <button className="nav-btn" onClick={() => window.location.href = '/focus-flight'}>
+            <Plane size={20} />
+            {sidebarStyle !== "minimal" && <span>Focus Flight</span>}
           </button>
           <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}>
             <Settings size={20} />

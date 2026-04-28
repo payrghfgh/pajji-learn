@@ -155,6 +155,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <motion.div
           variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ borderColor: "#3b82f6", scale: 1.02 }}
+          className="card"
+          onClick={() => window.location.href = '/focus-flight'}
+          style={{ 
+            gridColumn: "span 4", 
+            display: "flex", 
+            flexDirection: "column", 
+            justifyContent: "center", 
+            gap: "12px", 
+            cursor: "pointer",
+            background: "linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1))",
+            border: "1px solid rgba(59, 130, 246, 0.2)"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "#3b82f6", display: "grid", placeItems: "center", color: "white" }}>
+              <Zap size={20} fill="white" />
+            </div>
+            <h3 style={{ fontSize: "18px", fontWeight: "900" }}>Focus Flight</h3>
+          </div>
+          <p style={{ fontSize: "12px", opacity: 0.7, fontWeight: "500" }}>Start a high-octane deep work session.</p>
+        </motion.div>
+
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
           whileHover={{ borderColor: "var(--accent)" }}
           className="card"
           style={{ gridColumn: "span 8", display: "flex", alignItems: "center", gap: "32px", padding: "32px" }}

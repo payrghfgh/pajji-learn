@@ -167,4 +167,85 @@
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
   }
+
+  /* Layout & Dashboard Utilities */
+  .page-shell {
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--card-shadow);
+  }
+
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-radius: 14px;
+    color: var(--muted);
+    font-weight: 700;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+    border: 1px solid transparent;
+  }
+
+  .nav-btn:hover {
+    background: var(--input-bg);
+    color: var(--text);
+  }
+
+  .nav-btn.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: rgba(var(--accent-rgb), 0.2);
+  }
+
+  .ultra-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ultra-shine::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 45%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.1) 55%,
+      transparent 100%
+    );
+    transform: rotate(-45deg);
+    animation: shine 6s infinite;
+  }
+
+  @keyframes shine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(-45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(-45deg); }
+  }
 }
