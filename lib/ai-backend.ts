@@ -1,10 +1,18 @@
 import Groq from "groq-sdk";
 import Tesseract from "tesseract.js";
 
-// Initialize Groq client
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+let groqClient: Groq | null = null;
+
+const getGroqClient = () => {
+  if (!groqClient) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error("GROQ_API_KEY is missing. Please set it in your environment variables.");
+    }
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+};
 
 /**
  * Wikipedia Lookup for broad knowledge (free)
@@ -45,7 +53,7 @@ export const classifyQuery = (text: string): "8B" | "70B" => {
  * Calls the 8B model for simple queries
  */
 export const call8B = async (prompt: string): Promise<string> => {
-  const response = await groq.chat.completions.create({
+  const response = await getGroqClient().chat.completions.create({
     model: "llama-3.1-8b-instant",
     messages: [
       { role: "system", content: "Short, direct answers only. No detailed explanations." },
@@ -60,7 +68,7 @@ export const call8B = async (prompt: string): Promise<string> => {
  * Calls the 70B model for complex queries
  */
 export const call70B = async (prompt: string, systemPrompt?: string): Promise<string> => {
-  const response = await groq.chat.completions.create({
+  const response = await getGroqClient().chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
       {
@@ -93,7 +101,7 @@ export const processOCR = async (image: string): Promise<{ text: string; confide
  */
 export const processScout = async (image: string): Promise<string> => {
   try {
-    const response = await groq.chat.completions.create({
+    const response = await getGroqClient().chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
       messages: [
         {
