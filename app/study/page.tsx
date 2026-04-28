@@ -127,129 +127,35 @@ export default function Home() {
   const [aiExplainQuestion, setAiExplainQuestion] = useState("");
   const [aiExplainAnswer, setAiExplainAnswer] = useState("");
   const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  const [aiMode, setAiMode] = useState<"chapter" | "global">("chapter");
   
   const askAiExplanation = async () => {
-    if (!aiExplainQuestion.trim() || !curChapter) return;
+    if (!aiExplainQuestion.trim() && !(window as any)._pendingAiImage) return;
+    if (!curChapter) return;
+    
     setAiExplainLoading(true);
     setAiExplainAnswer("");
-    const lowerQ = aiExplainQuestion.toLowerCase();
-    const context = `Summary: ${curChapter.summary}\nSpellings: ${curChapter.spellings}`;
 
     try {
-      // 1. --- LOCAL KNOWLEDGE BASE (Alexa-style instant answers) ---
-      const localAnswers = [
-        {
-          keywords: ["hi", "hello", "hey", "greetings", "wassup", "sup"],
-          answer: "Hi there! 👋 I'm your Pajji Study Assistant. How can I help you with this chapter? You can ask me about the lesson, or test my knowledge on something random!"
-        },
-        {
-          keywords: ["xp", "points", "score"],
-          answer: "You earn 100 XP for every lesson you master! You can also gain XP by completing quizzes and using power-ups correctly. XP helps you climb the Leaderboard and unlock exclusive themes."
-        },
-        {
-          keywords: ["master", "mastered", "complete lesson", "done"],
-          answer: "To master a lesson, click the 'CLAIM 100 XP' button at the top of the Study page. This marks the lesson with a ✓ and adds 100 XP to your profile."
-        },
-        {
-          keywords: ["theme", "color", "night mode", "dark mode", "looks"],
-          answer: "Go to Settings (⚙️) to change your theme. You can unlock premium themes by earning badges or getting gifts from an Admin!"
-        },
-        {
-          keywords: ["notes", "pin", "key point", "save"],
-          answer: "Use the 'My Notes' tab to type! Pro Tip: If you see something really important, click 'Pin Key Point' to save it to your home dashboard so you never forget it."
-        },
-        {
-          keywords: ["quiz", "mcq", "question", "test"],
-          answer: "Quizzes are the best way to practice. If you get a question wrong, don't worry—use the 'Retry Wrong Only' button to master that specific topic!"
-        },
-        {
-          keywords: ["audio", "audiobook", "listen", "voice"],
-          answer: "Look for the 'Audiobook' player under the Book PDF tab. It's perfect for listening to the chapter while you read perfectly along."
-        },
-        {
-          keywords: ["study tip", "how to study", "advice", "help me learn"],
-          answer: "Try 'Active Recall'! Instead of just reading, close your eyes and try to explain the topic out loud. Or use our Flashcards in the My Notes tab!"
-        },
-        {
-          keywords: ["exam", "test tomorrow", "prepare", "boards"],
-          answer: "Stay calm! Focus on the Summary first to get the big picture, then practice the 'Spellings' and take a mock Quiz. Getting 70% or more on our quizzes usually means you're ready!"
-        },
-        {
-          keywords: ["pomodoro", "focus", "timing", "break"],
-          answer: "Try the 25/5 rule: Study hard for 25 minutes, then take a 5-minute break. It keeps your brain fresh and prevents burnout."
-        },
-        {
-          keywords: ["memorize", "remember", "forgetting"],
-          answer: "Use Mnemonics! Create a funny story or a catchy song using the first letters of the points you need to remember. Your brain loves stories!"
-        },
-        {
-          keywords: ["essay", "writing", "paragraph", "introduction"],
-          answer: "Always start with a 'Hook'—something interesting to grab the reader. Then state your main point clearly and use bullet points for facts."
-        },
-        {
-          keywords: ["math", "calculation", "formula", "science"],
-          answer: "For Math and Science, always write down the 'Given' values first. Understanding what you already know is 50% of solving the problem!"
-        },
-        {
-          keywords: ["who are you", "assistant", "pajji"],
-          answer: "I'm Pajji, your smart study companion! I'm here to help you master your ICSE subjects with ease."
-        },
-        {
-          keywords: ["motivation", "tired", "give up", "bored"],
-          answer: "Remember why you started! Every lesson you complete today makes you 1% smarter for tomorrow. You've got this! 🚀"
-        },
-        {
-          keywords: ["definition", "meaning", "what is"],
-          answer: "I can help with that! Check the 'Summary' or 'Spellings' tabs for the key terms of this chapter. If you need a broad definition, I'll do my best to explain it!"
-        }
-      ];
-
-      for (const item of localAnswers) {
-        if (item.keywords.some(k => lowerQ.includes(k))) {
-          setAiExplainAnswer(item.answer + "\n\n(Generated instantly by Pajji Assistant ⚡)");
-          setAiExplainLoading(false);
-          setAiExplainQuestion("");
-          return;
-        }
-      }
-
-      // 2. --- SMART CONTEXT MATCHER (Chapter Specific) ---
-      const sentences = context.split(/[.!?]/);
-      const matchedSentences = sentences.filter((s: string) => {
-        const words = lowerQ.split(" ").filter((w: string) => w.length > 3);
-        return words.some((w: string) => s.toLowerCase().includes(w));
-      });
-
-      if (matchedSentences.length > 0) {
-        setAiExplainAnswer("Based on the material in this chapter:\n\n" + matchedSentences.slice(0, 3).join(". ").trim() + "." + "\n\n(Found instantly in chapter material 📚)");
-        setAiExplainLoading(false);
-        setAiExplainQuestion("");
-        return;
-      }
-
-      // 3. --- WIKIPEDIA DYNAMIC FALLBACK ---
-      const stopWords = ["what", "is", "the", "who", "why", "how", "when", "where", "a", "an", "of", "to", "in", "for", "with", "on", "do", "does", "are", "tell", "me", "about", "describe", "explain"];
-      const questionWords = lowerQ.replace(/[?!.]/g, "").split(" ");
-      const searchTerms = questionWords.filter((w: string) => !stopWords.includes(w) && w.length > 2);
+      const chapterContext = `Lesson: ${curChapter.title}\nSummary: ${curChapter.summary?.slice(0, 800) || "N/A"}`;
+      const currentMessage = `CONTEXT:\n${chapterContext}\n\nQ: ${aiExplainQuestion}`;
       
-      if (searchTerms.length > 0) {
-        const searchQuery = searchTerms.join(" ");
-        const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?origin=*&action=query&list=search&srsearch=${encodeURIComponent(searchQuery)}&utf8=&format=json&srlimit=1`);
-        const wikiData = await wikiRes.json();
-        if (wikiData.query?.search?.length > 0) {
-          const firstResult = wikiData.query.search[0];
-          const cleanSnippet = firstResult.snippet.replace(/<[^>]*>?/gm, '');
-          setAiExplainAnswer(`Here is what I found about "${firstResult.title}":\n\n${cleanSnippet}...\n\n(Generated via World Knowledge 🌍)`);
-          setAiExplainLoading(false);
-          setAiExplainQuestion("");
-          return;
-        }
-      }
-
-      // 4. --- FINAL FALLBACK ---
-      setAiExplainAnswer("I'm not quite sure about that! Try rephrasing your question or checking the chapter summary. \n\n(Pajji Assistant 🤖)");
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          message: currentMessage,
+          membership: "free",
+          image: (window as any)._pendingAiImage,
+          mode: aiMode
+        })
+      });
+      const data = await res.json();
+      const reply = data.reply || data.result || "I couldn't get a response from the AI.";
+      setAiExplainAnswer(reply);
+      
     } catch (e: any) {
-      setAiExplainAnswer("Note: I'm currently running in Offline Mode. Ask me about the lesson or platform features!");
+      setAiExplainAnswer("Note: Trouble connecting to AI. Please check connection!");
     } finally {
       setAiExplainLoading(false);
       setAiExplainQuestion("");
@@ -3676,7 +3582,37 @@ export default function Home() {
                {activeTab === "AI Explanation" && (
                  <div style={{display: "flex", flexDirection: "column", gap: "16px"}}>
                    <div style={{background: "rgba(15,23,42,0.08)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)"}}>
-                     <h3 style={{fontWeight: "800", marginBottom: "8px", color: "var(--accent)"}}>Ask AI about this lesson</h3>
+                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                       <h3 style={{ fontWeight: "800", color: "var(--accent)" }}>Ask AI about this lesson</h3>
+                       <div style={{ display: "flex", background: "var(--card)", borderRadius: "100px", padding: "4px", border: "1px solid var(--border)" }}>
+                         <button 
+                           onClick={() => setAiMode("chapter")}
+                           style={{ 
+                             padding: "4px 12px", 
+                             borderRadius: "100px", 
+                             fontSize: "10px", 
+                             fontWeight: "900", 
+                             border: "none",
+                             cursor: "pointer",
+                             background: aiMode === "chapter" ? "var(--accent)" : "transparent",
+                             color: aiMode === "chapter" ? "white" : "var(--muted)"
+                           }}
+                         >CHAPTER</button>
+                         <button 
+                           onClick={() => setAiMode("global")}
+                           style={{ 
+                             padding: "4px 12px", 
+                             borderRadius: "100px", 
+                             fontSize: "10px", 
+                             fontWeight: "900", 
+                             border: "none",
+                             cursor: "pointer",
+                             background: aiMode === "global" ? "var(--accent)" : "transparent",
+                             color: aiMode === "global" ? "white" : "var(--muted)"
+                           }}
+                         >GLOBAL</button>
+                       </div>
+                     </div>
                      <div style={{display: "flex", gap: "8px", flexWrap: "wrap"}}>
                        <input 
                          type="text" 

@@ -27,6 +27,8 @@ interface StudyViewProps {
   askAiExplanation: () => void;
   aiExplainLoading: boolean;
   aiExplainAnswer: string;
+  aiMode: "chapter" | "global";
+  setAiMode: (m: "chapter" | "global") => void;
   normalizeQuiz: (q: any) => any;
   quizActiveIndices: number[] | null;
   quizQuestionOrder: number[];
@@ -92,6 +94,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
   isSpeedReadOpen, setIsSpeedReadOpen, speedReadIndex, setSpeedReadIndex,
   isZenMode, FocusGarden, switchStudyTab, activeTab,
   aiExplainQuestion, setAiExplainQuestion, askAiExplanation, aiExplainLoading, aiExplainAnswer,
+  aiMode, setAiMode,
   normalizeQuiz, quizActiveIndices, quizQuestionOrder, quizReview,
   currentQuizPos, setCurrentQuizPos, startQuizAttempt, quizSubmitted,
   quizShuffleEnabled, setQuizShuffleEnabled, showShortcuts, setShowShortcuts,
@@ -168,7 +171,37 @@ export const StudyView: React.FC<StudyViewProps> = ({
         {activeTab === "AI Explanation" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ background: "var(--input-bg)", padding: "16px", borderRadius: "12px", border: "1px dashed var(--border)" }}>
-              <h3 style={{ fontWeight: "800", marginBottom: "8px", color: "var(--accent)" }}>Ask AI about this lesson</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <h3 style={{ fontWeight: "800", color: "var(--accent)" }}>Ask AI about this lesson</h3>
+                <div style={{ display: "flex", background: "var(--card)", borderRadius: "100px", padding: "4px", border: "1px solid var(--border)" }}>
+                  <button 
+                    onClick={() => setAiMode("chapter")}
+                    style={{ 
+                      padding: "4px 12px", 
+                      borderRadius: "100px", 
+                      fontSize: "10px", 
+                      fontWeight: "900", 
+                      border: "none",
+                      cursor: "pointer",
+                      background: aiMode === "chapter" ? "var(--accent)" : "transparent",
+                      color: aiMode === "chapter" ? "white" : "var(--muted)"
+                    }}
+                  >CHAPTER</button>
+                  <button 
+                    onClick={() => setAiMode("global")}
+                    style={{ 
+                      padding: "4px 12px", 
+                      borderRadius: "100px", 
+                      fontSize: "10px", 
+                      fontWeight: "900", 
+                      border: "none",
+                      cursor: "pointer",
+                      background: aiMode === "global" ? "var(--accent)" : "transparent",
+                      color: aiMode === "global" ? "white" : "var(--muted)"
+                    }}
+                  >GLOBAL</button>
+                </div>
+              </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
                   <input

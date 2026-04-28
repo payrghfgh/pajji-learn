@@ -225,6 +225,7 @@ function AppContent() {
   const [aiExplainQuestion, setAiExplainQuestion] = useState("");
   const [aiExplainAnswer, setAiExplainAnswer] = useState("");
   const [aiExplainLoading, setAiExplainLoading] = useState(false);
+  const [aiMode, setAiMode] = useState<"chapter" | "global">("chapter");
   const [aiChatHistory, setAiChatHistory] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const [debouncedLibraryQuery, setDebouncedLibraryQuery] = useState("");
   const [sessionXP, setSessionXP] = useState(0);
@@ -565,16 +566,8 @@ function AppContent() {
     setAiExplainAnswer("");
 
     try {
-      const platformInfo = "100 XP for mastery, Quizzes/Flashcards/Spellings, Leaderboard/Themes, Blaze Mode.";
-      
-      // Build a concise map of the entire library
-      const libraryMap = books.map(b => 
-        `Book: ${b.title} (Lessons: ${(b.chapters || []).map((c: any) => c.title).join(", ")})`
-      ).join("\n");
-
-      const chapterContext = `Lesson: ${curChapter.title}\nSummary: ${curChapter.summary?.slice(0, 500) || "N/A"}\nQuiz Qs: ${(curChapter.quiz || []).map((q: any) => q.question).slice(0, 5).join(", ")}`;
-
-      const currentMessage = `INFO: ${platformInfo}\nMAP:\n${libraryMap}\n\nCUR: ${chapterContext}\n\nQ: ${aiExplainQuestion}`;
+      const chapterContext = `Lesson: ${curChapter.title}\nSummary: ${curChapter.summary?.slice(0, 800) || "N/A"}`;
+      const currentMessage = `CONTEXT:\n${chapterContext}\n\nQ: ${aiExplainQuestion}`;
       
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -583,7 +576,8 @@ function AppContent() {
           message: currentMessage,
           history: aiChatHistory.slice(-4),
           membership: userData?.membership || "free",
-          image: pendingImage
+          image: pendingImage,
+          mode: aiMode
         })
       });
       const data = await res.json();
@@ -4897,6 +4891,8 @@ function AppContent() {
             askAiExplanation={askAiExplanation}
             aiExplainLoading={aiExplainLoading}
             aiExplainAnswer={aiExplainAnswer}
+            aiMode={aiMode}
+            setAiMode={setAiMode}
             normalizeQuiz={normalizeQuiz}
             quizActiveIndices={quizActiveIndices}
             quizQuestionOrder={quizQuestionOrder}
