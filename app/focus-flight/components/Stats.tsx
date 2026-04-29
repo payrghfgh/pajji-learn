@@ -20,7 +20,7 @@ export default function StatsPhase({ history, onNewFlight }: StatsProps) {
 
   // Weak subject detection
   const subjectStats = history.sessions.reduce((acc, s) => {
-    const sub = s.subject || 'General';
+    const sub = s.task || 'General';
     if (!acc[sub]) acc[sub] = { total: 0, completed: 0, ratings: [] as number[] };
     acc[sub].total += 1;
     if (s.status === 'completed') {
@@ -102,12 +102,15 @@ export default function StatsPhase({ history, onNewFlight }: StatsProps) {
                     {s.focusRating || '-'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold truncate text-lg">{s.task}</h4>
-                    <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
-                      <span className="uppercase">{s.subject || 'General'}</span>
-                      <span>•</span>
-                      <span>{s.duration} MINS</span>
-                      <span>•</span>
+                    <div>
+                      <p className="font-bold text-white uppercase italic tracking-tighter">{s.route.from.code} → {s.route.to.code}</p>
+                      <div className="flex gap-2 text-[8px] text-slate-500 font-black uppercase tracking-widest">
+                        <span className="uppercase">{s.task || 'General'}</span>
+                        <span>•</span>
+                        <span>{s.route.duration} MINS</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-500 font-medium mt-1">
                       <span>{new Date(s.startTime).toLocaleDateString()}</span>
                     </div>
                   </div>

@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, BarChart3, Play } from 'lucide-react';
-import { getActiveFlight, setActiveFlight, saveFlightSession, getFlightHistory, FlightSession, FlightHistory } from '@/lib/focus-flight';
+import { Plane, BarChart3, Globe, Navigation } from 'lucide-react';
+import { getActiveFlight, setActiveFlight, saveFlightSession, getFlightHistory, FlightSession, FlightHistory, Route } from '@/lib/focus-flight';
 import AirportHub from './components/AirportHub';
 import BoardingPass from './components/BoardingPass';
 import CruisePhase from './components/Cruise';
 import LandingPhase from './components/Landing';
 import StatsPhase from './components/Stats';
+import FlightMap from './components/FlightMap';
 
 export type FlightPhase = 'hub' | 'boarding' | 'cruise' | 'landing' | 'stats';
 
@@ -16,30 +17,72 @@ export default function FocusFlightPage() {
   const [phase, setPhase] = useState<FlightPhase>('hub');
   const [activeFlight, setActiveFlightState] = useState<FlightSession | null>(null);
   const [history, setHistory] = useState<FlightHistory>({ sessions: [], totalDistance: 0, streak: 0, unlockedDestinations: [] });
-  const [selectedTask, setSelectedTask] = useState({ task: '', duration: 25 });
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
+  // PROGRESS TRACKER
   useEffect(() => {
-    // Load history and active flight
-    setHistory(getFlightHistory());
-    const savedActive = getActiveFlight();
-    if (savedActive) {
-      setActiveFlightState(savedActive);
-      setPhase('cruise');
+    if (!activeFlight || (phase !== 'cruise' && phase !== 'landing') || isPaused) {
+      if (!activeFlight || (phase !== 'cruise' && phase !== 'landing')) setProgress(0);
+      return;
     }
+
+    const calculateProgress = () => {
+      const elapsedMs = Date.now() - activeFlight.startTime;
+      const totalMs = activeFlight.route.duration * 60 * 1000;
+      return Math.min(Math.max(elapsedMs / totalMs, 0), 1);
+    };
+
+    setProgress(calculateProgress());
+
+    const interval = setInterval(() => {
+      const p = calculateProgress();
+      setProgress(p);
+      if (p >= 1 && phase === 'cruise') {
+        setPhase('landing');
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeFlight, phase, isPaused]);
+
+  // SESSION RESTORATION ENGINE
+  useEffect(() => {
+    const init = () => {
+      const savedHistory = getFlightHistory();
+      setHistory(savedHistory);
+      
+      const savedActive = getActiveFlight();
+      if (savedActive) {
+        // Calculate if flight is technically over
+        const elapsedMs = Date.now() - savedActive.startTime;
+        const totalMs = savedActive.route.duration * 60 * 1000;
+        
+        if (elapsedMs >= totalMs) {
+          setActiveFlightState(savedActive);
+          setPhase('landing');
+        } else {
+          setActiveFlightState(savedActive);
+          setPhase('cruise');
+        }
+      }
+    };
+    init();
   }, []);
 
-  const initiateBoarding = (task: string, duration: number) => {
-    setSelectedTask({ task, duration });
+  const initiateBoarding = useCallback((route: Route) => {
+    setSelectedRoute(route);
     setPhase('boarding');
-  };
+  }, []);
 
-  const startFlight = (session: FlightSession) => {
+  const startFlight = useCallback((session: FlightSession) => {
     setActiveFlightState(session);
     setActiveFlight(session);
     setPhase('cruise');
-  };
+  }, []);
 
-  const completeFlight = (rating: number, reflection: string, status: 'completed' | 'interrupted') => {
+  const completeFlight = useCallback((rating: number, reflection: string, status: 'completed' | 'interrupted') => {
     if (!activeFlight) return;
 
     const finishedSession: FlightSession = {
@@ -54,74 +97,82 @@ export default function FocusFlightPage() {
     setActiveFlight(null);
     setHistory(getFlightHistory());
     setPhase('stats');
-  };
+  }, [activeFlight]);
 
-  const cancelFlight = () => {
-    if (window.confirm('Abort flight? This will be marked as an interrupted mission.')) {
-      completeFlight(0, 'Aborted by user', 'interrupted');
+  const cancelFlight = useCallback(() => {
+    if (window.confirm('ABORT MISSION? Critical deviation will be logged in your profile.')) {
+      completeFlight(0, 'Mission aborted by pilot manually.', 'interrupted');
     }
-  };
+  }, [completeFlight]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white overflow-hidden relative">
-      {/* Background Atmosphere */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-600/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/5 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-[#0a0a0b] text-white overflow-hidden relative selection:bg-emerald-500/30">
+      {/* MAP BACKGROUND ENGINE */}
+      <div className="absolute inset-0 z-0">
+        <FlightMap 
+          origin={activeFlight?.route.from.coords || { lat: 20, lng: 77 }}
+          destination={activeFlight?.route.to.coords || { lat: 20, lng: 77 }}
+          progress={progress}
+          isActive={!!activeFlight}
+        />
       </div>
 
-      <nav className="relative z-50 px-8 py-6 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-emerald-900/40">
-            <Plane className="w-7 h-7 text-white" />
+      {/* TOP NAVIGATION */}
+      <nav className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-2xl">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 bg-emerald-600 rounded-[22px] flex items-center justify-center shadow-[0_20px_40px_rgba(5,150,105,0.3)] border border-emerald-400/20">
+            <Plane className="w-8 h-8 text-white -rotate-12" />
           </div>
-          <div>
-            <h1 className="text-2xl font-black tracking-tighter italic">FOCUS FLIGHT</h1>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Operational Terminal v2.0</p>
+          <div className="space-y-0.5">
+            <h1 className="text-3xl font-black tracking-tighter italic leading-none uppercase">Focus Flight</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em]">Route Network: Active</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           <button 
             onClick={() => setPhase('stats')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-bold text-sm ${phase === 'stats' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-white/5'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${phase === 'stats' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
           >
-            <BarChart3 className="w-5 h-5" /> LOGBOOK
+            <BarChart3 size={18} /> Pilot Log
           </button>
           <button 
             onClick={() => setPhase('hub')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-bold text-sm ${phase === 'hub' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:bg-white/5'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${phase === 'hub' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
           >
-            <Play className="w-5 h-5" /> TERMINAL
+            <Globe size={18} /> Terminal
           </button>
         </div>
       </nav>
 
-      <main className="relative z-10 container mx-auto px-8 py-12 h-[calc(100vh-100px)] overflow-y-auto">
+      {/* VIEWPORT CONTROLLER */}
+      <main className="relative z-10 container mx-auto px-10 py-12 h-[calc(100vh-120px)] bg-transparent overflow-y-auto">
         <AnimatePresence mode="wait">
           {phase === 'hub' && (
             <motion.div
               key="hub"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex-1"
+            >
+              <AirportHub history={history} onSelectRoute={initiateBoarding} />
+            </motion.div>
+          )}
+
+          {phase === 'boarding' && selectedRoute && (
+            <motion.div
+              key="boarding"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.02 }}
               className="flex-1"
             >
-              <AirportHub history={history} onSelectFlight={initiateBoarding} />
-            </motion.div>
-          )}
-
-          {phase === 'boarding' && (
-            <motion.div
-              key="boarding"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex-1"
-            >
               <BoardingPass 
-                initialTask={selectedTask.task}
-                initialDuration={selectedTask.duration}
+                route={selectedRoute}
                 onBoard={startFlight}
                 onCancel={() => setPhase('hub')}
               />
@@ -134,10 +185,13 @@ export default function FocusFlightPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-[#0a0a0b]"
+              className="fixed inset-0 z-[200] bg-transparent"
             >
               <CruisePhase 
                 session={activeFlight} 
+                progress={progress}
+                isPaused={isPaused}
+                setIsPaused={setIsPaused}
                 onComplete={() => setPhase('landing')}
                 onCancel={cancelFlight}
               />
@@ -147,9 +201,9 @@ export default function FocusFlightPage() {
           {phase === 'landing' && activeFlight && (
             <motion.div
               key="landing"
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -30 }}
+              exit={{ opacity: 0, y: -40 }}
               className="flex-1"
             >
               <LandingPhase 
