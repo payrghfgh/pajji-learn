@@ -26,6 +26,7 @@ interface EditViewProps {
   quizPackText: string;
   setQuizPackText: (v: string) => void;
   parsedPreview: any[];
+  importFlashcardsCsv: (file: File) => Promise<void> | void;
 }
 
 export const EditView: React.FC<EditViewProps> = ({
@@ -34,7 +35,7 @@ export const EditView: React.FC<EditViewProps> = ({
   parserMode, setParserMode, quizBuilderText, setQuizBuilderText,
   previewParsedQuestions, addPreviewToQuiz, bulkAddQuizQuestions,
   aiParseQuizQuestions, aiParsingQuiz, exportQuizPack, importQuizPack,
-  quizPackText, setQuizPackText, parsedPreview
+  quizPackText, setQuizPackText, parsedPreview, importFlashcardsCsv
 }) => {
   return (
     <div className="page-shell" style={{ maxWidth: "900px" }}>
@@ -153,6 +154,36 @@ export const EditView: React.FC<EditViewProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+          <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+              <div>
+                <label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Flashcards</label>
+                <p style={{ fontSize: "12px", color: "var(--muted)" }}>
+                  Import a NotebookLM CSV. Common headers like `Question,Answer` or `Front,Back` are supported.
+                </p>
+              </div>
+              <div style={{ fontSize: "12px", fontWeight: "800", color: "var(--accent)" }}>
+                {Array.isArray(tempChapter.flashcards) ? `${tempChapter.flashcards.length} cards loaded` : "No flashcards loaded"}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--card)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>
+                Import CSV
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    await importFlashcardsCsv(file);
+                    e.currentTarget.value = "";
+                  }}
+                />
+              </label>
+              <span style={{ fontSize: "12px", color: "var(--muted)" }}>This replaces the lesson's current flashcards.</span>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
