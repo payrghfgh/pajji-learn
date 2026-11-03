@@ -19,7 +19,7 @@ export const CreditsView = ({ onBack }: { onBack: () => void }) => (
     <h1 className="page-title" style={{ marginBottom: "32px" }}>Credits 🏆</h1>
     <div className="card" style={{ padding: "40px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
       <div style={{ padding: "20px", borderRadius: "50%", background: "var(--accent-soft)", color: "var(--accent)", width: "80px", height: "80px", display: "grid", placeItems: "center" }}><Heart size={40} fill="currentColor" /></div>
-      <div><h2 style={{ fontSize: "24px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI LEARN</h2><p style={{ color: "var(--muted)", maxWidth: "300px", margin: "12px auto" }}>Built with passion for modern students.</p></div>
+      <div><h2 style={{ fontSize: "24px", fontWeight: "900", fontFamily: "var(--disp)" }}>PAJJI LEARN</h2><p style={{ color: "var(--muted)", maxWidth: "300px", margin: "12px auto" }}>Built with passion for modern students.</p></div>
       <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <div><p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Lead Developer</p><p style={{ fontSize: "20px", fontWeight: "700" }}>Rushan</p></div>
