@@ -1,6 +1,7 @@
 "use client";
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
+import { Music, CloudRain, Brain } from "lucide-react";
 
 interface DashboardViewProps {
   userXP: number;
@@ -152,9 +153,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="sep" />
           <span style={{ color: "var(--amber)" }}>🔥 {streakCount}</span>
           <div className="sep" />
-          <div className="mus on" aria-disabled="true" title="Ambient audio — not built yet">♪</div>
-          <div className="mus" aria-disabled="true" title="Ambient audio — not built yet">☔</div>
-          <div className="mus" aria-disabled="true" title="Ambient audio — not built yet">🧠</div>
+          {/* Placeholders for ambient audio, which does not exist yet. No .on state:
+              nothing is playing, so nothing may claim to be. Re-add when it ships. */}
+          <div className="mus" aria-disabled="true" aria-label="Ambient audio, not available yet" title="Ambient audio — not built yet">
+            <Music size={13} strokeWidth={2} />
+          </div>
+          <div className="mus" aria-disabled="true" aria-label="Ambient audio, not available yet" title="Ambient audio — not built yet">
+            <CloudRain size={13} strokeWidth={2} />
+          </div>
+          <div className="mus" aria-disabled="true" aria-label="Ambient audio, not available yet" title="Ambient audio — not built yet">
+            <Brain size={13} strokeWidth={2} />
+          </div>
         </div>
       </header>
 
