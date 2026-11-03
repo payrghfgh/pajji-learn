@@ -3,23 +3,23 @@
 @layer base {
   :root {
     /* ── Dark mode defaults ── */
-    --bg: #0a0a0b;
-    --side: #0f0f10;
-    --card: #121214;
-    --text: #ffffff;
-    --muted: #94a3b8;
-    --accent: #10b981;
-    --accent-rgb: 16, 185, 129;
-    --accent-soft: rgba(16, 185, 129, 0.15);
-    --accent-grad: linear-gradient(135deg, #10b981, #34d399);
-    --brand-gradient: linear-gradient(135deg, #121214, #10b981);
-    --border: rgba(255, 255, 255, 0.08);
+    --bg: var(--ink-0);
+    --side: var(--ink-1);
+    --card: var(--ink-2);
+    --text: #EEF2F6;
+    --muted: var(--dim);
+    --accent: var(--jade);
+    --accent-rgb: 25, 195, 125;
+    --accent-soft: var(--jade-soft);
+    --accent-grad: linear-gradient(135deg, var(--jade), #5FE0AC);
+    --brand-gradient: linear-gradient(135deg, var(--ink-2), var(--jade));
+    --border: var(--line);
     --input-bg: rgba(255, 255, 255, 0.05);
-    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --danger: #ef4444;
-    --danger-rgb: 239, 68, 68;
-    --warning: #f59e0b;
-    --info: #10b981;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --danger: var(--coral);
+    --danger-rgb: 255, 107, 107;
+    --warning: var(--amber);
+    --info: var(--jade);
 
     /* ── Study Arcade Redesign Tokens ── */
     --ink-0: #08090C;
@@ -30,7 +30,7 @@
     --line: rgba(255, 255, 255, 0.07);
     --line-2: rgba(255, 255, 255, 0.13);
     --dim: #9AA6B4;
-    --faint: #5F6B79;
+    --faint: #89919C;
     --jade: #19C37D;
     --jade-d: #0C6B45;
     --jade-soft: rgba(25, 195, 125, 0.13);
@@ -38,10 +38,10 @@
     --amber-d: #9C6A00;
     --amber-soft: rgba(255, 176, 32, 0.14);
     --azure: #4EA8FF;
-    --azure-d: #1B5FA8;
+    --azure-d: #17538F;
     --azure-soft: rgba(78, 168, 255, 0.14);
     --coral: #FF6B6B;
-    --coral-d: #A83535;
+    --coral-d: #96302F;
     --coral-soft: rgba(255, 107, 107, 0.14);
     --r-s: 10px;
     --r-m: 16px;
@@ -437,7 +437,7 @@
 
   .sa-lbl {
     font-family: var(--mono);
-    font-size: 10.5px;
+    font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--faint);
@@ -705,7 +705,7 @@
 
   .sa-nav-l {
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.18em;
     color: var(--faint);
     padding: 14px 10px 6px;
@@ -762,7 +762,7 @@
   .sa-nav .sa-tag {
     margin-left: auto;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: 11px;
     background: var(--amber-soft);
     color: var(--amber);
     padding: 2px 7px;
@@ -888,7 +888,7 @@
   }
 
   .sa-mob-tab-lbl {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
   }
 
