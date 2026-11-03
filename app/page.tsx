@@ -3233,9 +3233,9 @@ function AppContent() {
         }
 
         @keyframes music-pulse {
-          0% { transform: scale(1.25) translateY(-2px); filter: drop-shadow(0 0 2px var(--accent)); }
-          50% { transform: scale(1.35) translateY(-4px); filter: drop-shadow(0 0 8px var(--accent)); }
-          100% { transform: scale(1.25) translateY(-2px); filter: drop-shadow(0 0 2px var(--accent)); }
+          0% { transform: scale(1.25) translateY(-2px); filter: none; }
+          50% { transform: scale(1.35) translateY(-4px); filter: none; }
+          100% { transform: scale(1.25) translateY(-2px); filter: none; }
         }
 
         @keyframes spin-slow {
@@ -4662,7 +4662,7 @@ function AppContent() {
                 </span>
               ))}
             </div>
-            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)" }}>
+            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
               🏆 {achievementToast}
             </div>
           </>

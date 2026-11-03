@@ -118,7 +118,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
             <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{ padding: "8px 12px" }}>End Quick Review</button>
           )}
           {!completedLessons.includes(curChapter.id) ? (
-            <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{ padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)" }}>CLAIM 100 XP</button>
+            <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{ padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>CLAIM 100 XP</button>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div className="xp-badge">MASTERED</div>
@@ -521,7 +521,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
             </div>
           );
         })()}
-        {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{ borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }} /> : "No video available.")}
+        {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{ borderRadius: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }} /> : "No video available.")}
         {activeTab === "My Notes" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap" }}>

@@ -2367,12 +2367,12 @@ export default function Home() {
   if (!user) {
     return (
       <div style={{height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: theme === 'dark' ? "#020617" : "#f1f5f9", fontFamily: "sans-serif"}}>
-        <div style={{background: theme === 'dark' ? "#1e293b" : "#ffffff", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)"}}>
+        <div style={{background: theme === 'dark' ? "#1e293b" : "#ffffff", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>
           <h1 style={{color: "#10b981", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px"}}>PAJJI LEARN</h1>
           <form onSubmit={handleAuth} style={{display: "flex", flexDirection: "column", gap: "16px"}}>
             <input type="email" placeholder="Email" value={authEmail} onChange={(e)=>setAuthEmail(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "rgba(0,0,0,0.2)" : "#f1f5f9", border: "1px solid rgba(255,255,255,0.1)", color: theme === 'dark' ? "white" : "#0f172a"}} />
             <input type="password" placeholder="Password" value={authPass} onChange={(e)=>setAuthPass(e.target.value)} required style={{padding: "14px", borderRadius: "12px", background: theme === 'dark' ? "rgba(0,0,0,0.2)" : "#f1f5f9", border: "1px solid rgba(255,255,255,0.1)", color: theme === 'dark' ? "white" : "#0f172a"}} />
-            <button type="submit" style={{padding: "14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer", boxShadow: "0 10px 15px -3px rgba(16, 185, 129, 0.3)"}}>{isRegistering ? "Register" : "Sign In"}</button>
+            <button type="submit" style={{padding: "14px", background: "#10b981", color: "#fff", border: "none", borderRadius: "12px", fontWeight: "700", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>{isRegistering ? "Register" : "Sign In"}</button>
           </form>
           <div style={{display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px"}}>
             <button onClick={handleGuestLogin} style={{background: "none", border: "1px solid #10b981", color: "#10b981", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer"}}>Continue as Guest 👤</button>
@@ -3144,7 +3144,7 @@ export default function Home() {
                       <p style={{fontSize: "10px", color: "var(--accent)", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
                       <h3 style={{fontSize: "16px", marginTop: "4px", fontWeight: "700"}}>{ch.title}</h3>
                   </div>
-                  <button onClick={() => openLesson(ch.parentBook, ch)} style={{padding: "10px 20px", background: "var(--accent)", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 4px 10px rgba(var(--accent-rgb), 0.28)"}}>Start</button>
+                  <button onClick={() => openLesson(ch.parentBook, ch)} style={{padding: "10px 20px", background: "var(--accent)", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>Start</button>
                 </div>
               ))}
               {getUnmastered().length === 0 && <div className="card" style={{textAlign: "center", padding: "40px", opacity: 0.6}}>You've mastered everything! </div>}
@@ -3562,7 +3562,7 @@ export default function Home() {
                   <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{padding: "8px 12px"}}>End Quick Review</button>
                 )}
                 {!completedLessons.includes(curChapter.id) ? (
-                  <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)"}}>CLAIM 100 XP</button>
+                  <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>CLAIM 100 XP</button>
                 ) : (
                   <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
                       <div className="xp-badge">MASTERED</div>
@@ -3851,7 +3851,7 @@ export default function Home() {
                   </div>
                  );
                })()}
-               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px", boxShadow: "0 20px 40px rgba(0,0,0,0.2)"}} /> : "No video available.")}
+               {activeTab === "Video" && (curChapter.video ? <iframe width="100%" height="450px" src={formatYoutubeLink(curChapter.video)} frameBorder="0" allowFullScreen style={{borderRadius: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}} /> : "No video available.")}
                {activeTab === "My Notes" && (
                  <div style={{display: "flex", flexDirection: "column", gap: "12px"}}>
                    <div style={{display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "wrap"}}>
@@ -4173,7 +4173,7 @@ export default function Home() {
                 </span>
               ))}
             </div>
-            <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)"}}>
+            <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>
               🏆 {achievementToast}
             </div>
           </>

@@ -127,12 +127,13 @@
   }
 
   .glass-card:hover {
-    border-color: var(--accent);
-    box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.15);
+    border-color: var(--line-2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .text-glow {
-    text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    /* coloured glow removed: depth comes from surface lightness, not light effects */
+    text-shadow: none;
   }
 
   /* 3D Flashcard Styles */
@@ -320,11 +321,11 @@
   .sa-btn-p {
     background: var(--jade);
     color: #04150D;
-    box-shadow: 0 4px 0 var(--jade-d);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   .sa-btn-p:active {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 var(--jade-d);
+    transform: scale(0.97);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .sa-btn-g {
@@ -506,7 +507,7 @@
     border: 1px solid var(--line-2);
     border-radius: 999px;
     padding: 8px 16px;
-    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     font-size: 12.5px;
     font-weight: 600;
   }
@@ -583,7 +584,7 @@
     letter-spacing: 0.02em;
     padding: 6px 11px;
     border-radius: 9px;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     z-index: 2;
   }
 
@@ -688,7 +689,7 @@
     font-weight: 800;
     font-size: 19px;
     color: #04150D;
-    box-shadow: 0 4px 14px rgba(25, 195, 125, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   .sa-logo .sa-nm {

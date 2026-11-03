@@ -59,7 +59,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
                 display: "flex", 
                 flexDirection: "column", 
                 justifyContent: "space-between", 
-                boxShadow: memTier === "ultra" ? "0 20px 40px rgba(245, 158, 11, 0.3)" : "0 20px 40px rgba(59, 130, 246, 0.3)", 
+                boxShadow: memTier === "ultra" ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.3)", 
                 position: "relative", 
                 overflow: "hidden", 
                 color: memTier === "ultra" ? "#000" : "#FFF",
@@ -177,7 +177,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
             <button
               onClick={() => window.open('https://pajji-services.netlify.app/#memberships', '_blank')}
               className="btn btn-primary"
-              style={{ width: "100%", padding: "16px", borderRadius: "16px", fontSize: "16px", fontWeight: "800", marginTop: "12px", boxShadow: "0 10px 25px -5px rgba(var(--accent-rgb), 0.4)" }}
+              style={{ width: "100%", padding: "16px", borderRadius: "16px", fontSize: "16px", fontWeight: "800", marginTop: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
             >
               Explore Memberships
             </button>

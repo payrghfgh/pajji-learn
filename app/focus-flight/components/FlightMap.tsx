@@ -70,7 +70,7 @@ export default function FlightMap({ origin, destination, progress, isActive }: F
       el.className = 'airplane-marker';
       el.style.transition = 'transform 0.2s linear';
       el.innerHTML = `
-        <div style="filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.6))">
+        <div style="filter: none">
           <svg viewBox="0 0 24 24" width="40" height="40" fill="#10b981">
             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
           </svg>
