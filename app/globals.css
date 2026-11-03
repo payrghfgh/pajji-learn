@@ -12,7 +12,7 @@
     --accent-rgb: 25, 195, 125;
     --accent-soft: var(--jade-soft);
     --accent-grad: linear-gradient(135deg, var(--jade), #5FE0AC);
-    --brand-gradient: linear-gradient(135deg, var(--ink-2), var(--jade));
+    --brand-gradient: linear-gradient(135deg, var(--jade), #5FE0AC);
     --border: var(--line);
     --input-bg: rgba(255, 255, 255, 0.05);
     --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);

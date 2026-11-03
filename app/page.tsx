@@ -3195,7 +3195,7 @@ function AppContent() {
           background: var(--accent-grad);
           border: none;
           z-index: 1000;
-          color: white;
+          color: #04150D;
           display: grid;
           place-items: center;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -4057,7 +4057,7 @@ function AppContent() {
         .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
         .stack-12 { display: flex; flex-direction: column; gap: 12px; }
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .btn-primary { background: var(--accent); color: #04150D; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
         .btn-warning { background: #fbbf24; color: #111827; }
@@ -4071,7 +4071,7 @@ function AppContent() {
         .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .nav-btn.active { background: var(--accent); color: #04150D; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .nav-btn.active svg { opacity: 1; }
         .theme-default .nav-btn.active svg, .theme-paper .nav-btn.active svg {
           border: 1px solid rgba(var(--accent-rgb), 0.65);
@@ -4085,7 +4085,7 @@ function AppContent() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: #04150D; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
           backdrop-filter: blur(14px) saturate(1.2);
@@ -4093,7 +4093,7 @@ function AppContent() {
         }
         
         .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px; background: var(--card); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 0 0 auto; text-align: center; transition: 0.2s; }
-        .tab-btn.active { background: var(--accent); color: white; border-color: transparent; }
+        .tab-btn.active { background: var(--accent); color: #04150D; border-color: transparent; }
         
         textarea, input[type="text"], select { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; outline: none; }
         textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14); }

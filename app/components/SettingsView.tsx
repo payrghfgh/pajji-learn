@@ -193,7 +193,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   {profilePic ? (
                     <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <User size={40} color="white" />
+                    <User size={40} />
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
