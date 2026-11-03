@@ -118,7 +118,7 @@ export default function Home() {
       <Head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet" />
       </Head>
       <AppContent />
     </>
@@ -3029,7 +3029,6 @@ function AppContent() {
       <style>{`
         :root {
           --font-main: 'Outfit', sans-serif;
-          --font-heading: 'Syne', sans-serif;
         }
 
         body {
@@ -3039,7 +3038,7 @@ function AppContent() {
         }
 
         .syne-heading {
-          font-family: var(--font-heading);
+          font-family: var(--disp);
           letter-spacing: -0.04em;
           text-transform: uppercase;
         }
