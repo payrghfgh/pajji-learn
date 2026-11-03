@@ -202,7 +202,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <div style={{ marginTop: "8px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <span className="xp-badge">{tierLabel(membership)}</span>
                     {membershipExpiry && (
-                      <span style={{ fontSize: "11px", color: isExpired(membershipExpiry) ? "#ef4444" : "var(--muted)", fontWeight: "700" }}>
+                      <span style={{ fontSize: "11px", color: isExpired(membershipExpiry) ? "var(--coral)" : "var(--muted)", fontWeight: "700" }}>
                         {isExpired(membershipExpiry) ? "Expired" : `Expires: ${membershipExpiry}`}
                       </span>
                     )}
@@ -222,7 +222,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <label className="input-label">Profile Picture URL</label>
                   <input type="text" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} placeholder="https://..." style={{ width: "100%" }} />
                 </div>
-                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "#ef4444", borderColor: "#ef444433", marginTop: "12px" }}>
+                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "var(--coral)", borderColor: "rgba(255, 107, 107, 0.2)", marginTop: "12px" }}>
                   <LogOut size={16} /> Sign Out
                 </button>
               </div>
@@ -404,7 +404,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <div key={fb.id} className="card" style={{ padding: "16px", background: "var(--input-bg)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                       <span style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>{fb.userEmail || "Anonymous"}</span>
-                      <button onClick={async () => { await deleteDoc(doc(db, "feedback", fb.id)); fetchFeedback(); }} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={14} /></button>
+                      <button onClick={async () => { await deleteDoc(doc(db, "feedback", fb.id)); fetchFeedback(); }} style={{ color: "var(--coral)", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={14} /></button>
                     </div>
                     <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{fb.text}</p>
                     <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "8px" }}>{fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleString() : "Recently"}</p>
