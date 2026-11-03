@@ -53,7 +53,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
                 width: "100%", 
                 maxWidth: "380px", 
                 aspectRatio: "1.586", 
-                background: memTier === "ultra" ? "linear-gradient(135deg, #FFD700, #F59E0B)" : memTier === "pro" ? "linear-gradient(135deg, #3B82F6, #1D4ED8)" : "linear-gradient(135deg, #8B5CF6, #6D28D9)", 
+                background: memTier === "ultra" ? "linear-gradient(135deg, #FFD700, #F59E0B)" : memTier === "pro" ? "linear-gradient(135deg, #2563EB, #1D4ED8)" : "linear-gradient(135deg, #7C3AED, #6D28D9)", 
                 borderRadius: "20px", 
                 padding: "24px", 
                 display: "flex", 
