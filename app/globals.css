@@ -886,6 +886,8 @@
   }
 
   /* Ribbon ambience toggles — mirrors the plan's .mus */
+  /* Ambient toggles are inert: no handler exists, so they must read as
+     switched off rather than as broken controls. No pointer, no hover. */
   .mus {
     width: 26px;
     height: 26px;
@@ -894,12 +896,14 @@
     place-items: center;
     font-size: 13px;
     color: var(--dim);
-    cursor: pointer;
+    cursor: default;
+    opacity: 0.55;
   }
 
   .mus.on {
     background: var(--jade-soft);
     color: var(--jade);
+    opacity: 0.55;
   }
 
   .sa-body {

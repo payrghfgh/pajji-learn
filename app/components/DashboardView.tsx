@@ -152,9 +152,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="sep" />
           <span style={{ color: "var(--amber)" }}>🔥 {streakCount}</span>
           <div className="sep" />
-          <div className="mus on">♪</div>
-          <div className="mus">☔</div>
-          <div className="mus">🧠</div>
+          <div className="mus on" aria-disabled="true" title="Ambient audio — not built yet">♪</div>
+          <div className="mus" aria-disabled="true" title="Ambient audio — not built yet">☔</div>
+          <div className="mus" aria-disabled="true" title="Ambient audio — not built yet">🧠</div>
         </div>
       </header>
 
