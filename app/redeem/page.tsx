@@ -144,7 +144,7 @@ export default function RedeemPage() {
         textAlign: 'center',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
       }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800', background: 'linear-gradient(to right, var(--jade), var(--azure))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800', color: 'var(--text)' }}>
           Redeem Code
         </h1>
         <p style={{ marginBottom: '32px', opacity: 0.6 }}>Enter your special code to unlock premium features.</p>
