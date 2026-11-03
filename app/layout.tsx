@@ -1,6 +1,6 @@
 // app/layout.tsx
 
-import { Inter, Syne, Bricolage_Grotesque, Plus_Jakarta_Sans, Azeret_Mono } from "next/font/google";
+import { Inter, Bricolage_Grotesque, Plus_Jakarta_Sans, Azeret_Mono } from "next/font/google";
 import "./globals.css";
 import { PremiumBackground } from "./components/PremiumBackground";
 import { MotionProvider } from "./components/MotionProvider";
@@ -8,11 +8,6 @@ import { MotionProvider } from "./components/MotionProvider";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-});
-
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-syne",
 });
 
 const bricolage = Bricolage_Grotesque({
@@ -41,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${syne.variable} ${bricolage.variable} ${jakarta.variable} ${azeret.variable}`}>
+    <html lang="en" className={`${inter.variable} ${bricolage.variable} ${jakarta.variable} ${azeret.variable}`}>
       <body className="font-sans antialiased" style={{ color: "var(--text)", backgroundColor: "var(--bg)" }}>
         <MotionProvider>
           <PremiumBackground />
