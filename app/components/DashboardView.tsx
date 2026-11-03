@@ -200,17 +200,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           >
             {activeContinue?.chapter?.title || "Trigonometric Ratios"}
           </div>
-          <div className="sa-sub">
+          {/* Two-line clamp instead of slice(0,48), which cut mid-word. */}
+          <div
+            className="sa-sub"
+            style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+          >
             {activeContinue?.book?.title ? `${activeContinue.book.title} · ` : "Mathematics · "}
-            {activeContinue?.chapter?.summary ? activeContinue.chapter.summary.slice(0, 48) : "Chapter 4 of 12 · 14 min left"}
+            {activeContinue?.chapter?.summary || "Chapter 4 of 12 · 14 min left"}
           </div>
           <div className="sa-bar" style={{ margin: "22px 0 14px" }}>
             <i style={{ width: `${Math.max(25, Math.min(100, goalProgressPct || 64))}%` }} />
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          {/* nowrap + shrinkable buttons: the badge must stay on this row */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap" }}>
             {activeContinue ? (
               <button
                 className="sa-btn sa-btn-p"
+                style={{ minWidth: 0 }}
                 onClick={() => openLesson(activeContinue.book, activeContinue.chapter)}
               >
                 Resume lesson →
@@ -218,6 +224,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             ) : (
               <button
                 className="sa-btn sa-btn-p"
+                style={{ minWidth: 0 }}
                 onClick={() => setView("library")}
               >
                 Browse library →
@@ -226,6 +233,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {activeContinue && (
               <button
                 className="sa-btn sa-btn-g sa-btn-sm"
+                style={{ minWidth: 0 }}
                 onClick={() => {
                   setCurBook(activeContinue.book);
                   setCurChapter(activeContinue.chapter);
@@ -235,7 +243,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 Practice quiz
               </button>
             )}
-            <span className="sa-badge sa-b-amber" style={{ marginLeft: "auto" }}>
+            <span className="sa-badge sa-b-amber" style={{ marginLeft: "auto", flexShrink: 0 }}>
               +240 XP
             </span>
           </div>
@@ -484,14 +492,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             padding: "20px",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
             <span className="sa-lbl">Pinned key points</span>
             <span className="sa-badge sa-b-line">{recentPinnedPoints.length} saved</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {recentPinnedPoints.length > 0 ? (
               recentPinnedPoints.slice(0, 3).map((pt, i) => (
-                <div key={pt.id || i} style={{ display: "flex", gap: "10px", fontSize: "13.5px", alignItems: "center" }}>
+                <div key={pt.id || i} style={{ display: "flex", gap: "10px", fontSize: "13.5px", lineHeight: "1.35", alignItems: "center" }}>
                   <span style={{ color: "var(--jade)" }}>◆</span>
                   <span style={{ flex: 1 }}>{pt.text}</span>
                   {removePinnedKeyPoint && (
@@ -506,20 +514,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               ))
             ) : (
-              <>
-                <div style={{ display: "flex", gap: "10px", fontSize: "13.5px" }}>
-                  <span style={{ color: "var(--jade)" }}>◆</span>
-                  <span><b>Snell&apos;s law:</b> n₁sin θ₁ = n₂sin θ₂ — the exam favourite.</span>
-                </div>
-                <div style={{ display: "flex", gap: "10px", fontSize: "13.5px" }}>
-                  <span style={{ color: "var(--jade)" }}>◆</span>
-                  <span><b>Convex lens:</b> real, inverted image when object is beyond 2F.</span>
-                </div>
-                <div style={{ display: "flex", gap: "10px", fontSize: "13.5px" }}>
-                  <span style={{ color: "var(--jade)" }}>◆</span>
-                  <span><b>Power of a lens:</b> P = 1/f, measured in dioptres (D).</span>
-                </div>
-              </>
+              // Honest empty state. The old fallback rendered three hardcoded
+              // example pins beside a "0 saved" count -- the app lying on screen.
+              <p style={{ margin: 0, fontSize: "13.5px", lineHeight: "1.4", color: "var(--dim)" }}>
+                Nothing pinned yet. Open a lesson and tap{" "}
+                <b style={{ color: "var(--text)" }}>Pin</b> on a key point to keep it here.
+              </p>
             )}
           </div>
         </div>
