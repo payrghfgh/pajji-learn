@@ -1,16 +1,23 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { motion, useMotionValue, useSpring, useReducedMotion } from "framer-motion";
 
 export const CursorTrail = () => {
+  const reduceMotion = useReducedMotion();
   const mouse = { x: useMotionValue(0), y: useMotionValue(0) };
   useEffect(() => {
     const move = (event: MouseEvent) => { mouse.x.set(event.clientX); mouse.y.set(event.clientY); };
     window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
   }, []);
-  return <motion.div style={{ position: "fixed", top: -20, left: -20, width: 40, height: 40, borderRadius: "50%", background: "var(--accent)", opacity: 0.15, filter: "blur(20px)", pointerEvents: "none", zIndex: 9999, x: useSpring(mouse.x, { damping: 20, stiffness: 200 }), y: useSpring(mouse.y, { damping: 20, stiffness: 200 }) }} />;
+  // Springs are created unconditionally to keep hook order stable.
+  const springX = useSpring(mouse.x, { damping: 20, stiffness: 200 });
+  const springY = useSpring(mouse.y, { damping: 20, stiffness: 200 });
+  // A blob that follows the cursor is transform motion. MotionConfig only gates
+  // animations, not motion-value-driven styles, so this needs its own check.
+  if (reduceMotion) return null;
+  return <motion.div style={{ position: "fixed", top: -20, left: -20, width: 40, height: 40, borderRadius: "50%", background: "var(--accent)", opacity: 0.15, filter: "blur(20px)", pointerEvents: "none", zIndex: 9999, x: springX, y: springY }} />;
 };
 
 export const FocusGarden = ({ gardenPlants, memTier }: { gardenPlants: number; memTier: string }) => (
