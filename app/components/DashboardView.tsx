@@ -141,8 +141,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="sa-ribbon">
           <span className="sa-badge sa-b-jade">LVL {userLevel}</span>
           <div className="sep" />
+          {/* TODO(data): this reports level-relative XP (userXP % 1000) under a
+              "today" label. It is wrong, but the fix needs real today-XP state that
+              may not exist yet — do not invent a formula in a design pass. */}
           <span>⚡ {userXP % 1000} XP today</span>
           <div className="sep" />
+          {/* TODO(data): derived from a lesson count, not measured time. Logged, not
+              fixed — needs a real session timer. */}
           <span>⏱ {Math.max(12, dailyCompleted * 15)}m</span>
           <div className="sep" />
           <span style={{ color: "var(--amber)" }}>🔥 {streakCount}</span>

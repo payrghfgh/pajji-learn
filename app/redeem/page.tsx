@@ -142,7 +142,7 @@ export default function RedeemPage() {
         width: '100%',
         maxWidth: '450px',
         textAlign: 'center',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
       }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800', background: 'linear-gradient(to right, #10b981, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           Redeem Code

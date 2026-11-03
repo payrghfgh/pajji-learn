@@ -126,7 +126,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
               <div style={{ width: "88px", height: "88px", borderRadius: "50%", background: "linear-gradient(135deg, #FFD700, #F59E0B)", border: "4px solid white", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "32px", fontWeight: "900", color: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                 {p1.email?.[0].toUpperCase()}
               </div>
-              <div style={{ position: "absolute", bottom: "-10px", left: "50%", transform: "translateX(-50%)", background: "#FFD700", color: "black", padding: "4px 14px", borderRadius: "12px", fontSize: "14px", fontWeight: "900", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>1st</div>
+              <div style={{ position: "absolute", bottom: "-10px", left: "50%", transform: "translateX(-50%)", background: "#FFD700", color: "black", padding: "4px 14px", borderRadius: "12px", fontSize: "14px", fontWeight: "900", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" }}>1st</div>
               <Crown size={28} fill="#FFD700" color="#FFD700" style={{ position: "absolute", top: "-24px", left: "50%", transform: "translateX(-50%) rotate(-15deg)" }} />
             </div>
             <p style={{ fontWeight: "800", fontSize: "16px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>

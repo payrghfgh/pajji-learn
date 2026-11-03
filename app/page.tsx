@@ -3224,7 +3224,7 @@ function AppContent() {
           display: flex;
           gap: 24px;
           align-items: center;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
           pointer-events: auto;
           cursor: grab;
           white-space: nowrap;
@@ -3284,14 +3284,14 @@ function AppContent() {
           backdrop-filter: blur(24px);
           transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
           overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 4px 24px -12px rgba(0,0,0,0.5);
           display: flex;
           flex-direction: column;
         }
 
         .card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3);
           border-color: rgba(var(--accent-rgb), 0.4);
         }
 
@@ -3502,7 +3502,7 @@ function AppContent() {
             background: rgba(10,10,12,0.8);
             backdrop-filter: blur(20px);
             gap: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
           }
           .sidebar-extras, .sidebar h1 { display: none !important; }
           .main-content { padding-top: 100px; padding-bottom: 120px; }
@@ -4158,7 +4158,7 @@ function AppContent() {
             background: rgba(var(--accent-rgb), 0.1);
             backdrop-filter: blur(28px) saturate(1.8);
             -webkit-backdrop-filter: blur(28px) saturate(1.8);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 12px 40px -12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
             z-index: 1000;
             box-sizing: border-box;
           }
@@ -4280,13 +4280,7 @@ function AppContent() {
             <div
               className="sa-av sa-av-user"
               onClick={() => setView("settings")}
-              style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "10px",
-                cursor: "pointer",
-                border: "1px solid var(--line-2)",
-              }}
+              style={{ cursor: "pointer" }}
               title={getUserName(user)}
             />
           </div>
