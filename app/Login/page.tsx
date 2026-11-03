@@ -35,41 +35,49 @@ export default function AuthPage() {
           {isLogin ? "Login" : "Sign Up"}
         </h1>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full mb-3 p-2 border border-[var(--line)] rounded bg-[var(--input-bg)] text-[var(--text)] placeholder:text-[var(--dim)]"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        {/* handleAuth takes no event and does not preventDefault, so the submit
+            handler has to do both or the browser navigates away. */}
+        <form onSubmit={(e) => { e.preventDefault(); handleAuth(); }}>
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full mb-3 p-2 border border-[var(--line)] rounded bg-[var(--input-bg)] text-[var(--text)] placeholder:text-[var(--dim)]"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full mb-3 p-2 border border-[var(--line)] rounded bg-[var(--input-bg)] text-[var(--text)] placeholder:text-[var(--dim)]"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full mb-3 p-2 border border-[var(--line)] rounded bg-[var(--input-bg)] text-[var(--text)] placeholder:text-[var(--dim)]"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-        {error && (
-          <p className="text-[var(--coral)] text-sm mb-2">{error}</p>
-        )}
+          {error && (
+            <p className="text-[var(--coral)] text-sm mb-2">{error}</p>
+          )}
 
+          {/* onClick removed: with form onSubmit it would fire handleAuth twice.
+              type=submit routes click and Enter through one path. */}
+          <button
+            type="submit"
+            className="w-full bg-[var(--jade)] text-[#04150D] font-bold p-2 rounded hover:bg-[#5FE0AC]"
+          >
+            {isLogin ? "Login" : "Sign Up"}
+          </button>
+        </form>
+
+        {/* type=button matters: inside a form a bare button defaults to submit */}
         <button
-          onClick={handleAuth}
-          className="w-full bg-[var(--jade)] text-[#04150D] font-bold p-2 rounded hover:bg-[#5FE0AC]"
-        >
-          {isLogin ? "Login" : "Sign Up"}
-        </button>
-
-        <p
+          type="button"
           onClick={() => setIsLogin(!isLogin)}
-          className="text-sm text-[var(--jade)] mt-3 cursor-pointer text-center"
+          className="block w-full bg-transparent border-0 text-sm text-[var(--jade)] mt-3 cursor-pointer text-center"
         >
           {isLogin
             ? "Don't have an account? Sign up"
             : "Already have an account? Login"}
-        </p>
+        </button>
       </div>
     </div>
   )
