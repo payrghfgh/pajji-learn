@@ -2910,7 +2910,7 @@ function AppContent() {
       <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-        style={{ fontSize: "28px", fontWeight: "900", letterSpacing: "-1px", fontFamily: "var(--font-syne)" }}
+        style={{ fontSize: "28px", fontWeight: "900", letterSpacing: "-1px", fontFamily: "var(--disp)" }}
       >
         <span style={{ color: "var(--text)" }}>PAJJI </span><span style={{ color: "var(--accent)" }}>LEARN</span>
       </motion.div>
@@ -3009,7 +3009,7 @@ function AppContent() {
             style={{ position: "fixed", inset: 0, background: "var(--bg)", zIndex: 99999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
           >
             <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="text-center">
-              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "var(--text)", letterSpacing: "-5px", fontFamily: "var(--font-syne)" }}>{formatTime(zenTime)}</h1>
+              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "var(--text)", letterSpacing: "-5px", fontFamily: "var(--disp)" }}>{formatTime(zenTime)}</h1>
               <p style={{ color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "4px" }}>Focus Mode Active</p>
               <button onClick={() => setIsZenMode(false)} className="btn btn-secondary" style={{ marginTop: "40px", padding: "12px 32px" }}>Exit Zen Mode (Z)</button>
             </motion.div>
@@ -3463,14 +3463,14 @@ function AppContent() {
         }
 
         .stat-value {
-          font-family: var(--font-syne);
+          font-family: var(--disp);
           font-size: 32px;
           font-weight: 800;
           letter-spacing: -1px;
         }
 
         .page-title {
-          font-family: var(--font-syne);
+          font-family: var(--disp);
           font-size: 40px;
           font-weight: 800;
           letter-spacing: -1.5px;
@@ -4462,7 +4462,7 @@ function AppContent() {
                     style={{ position: "absolute", inset: -20, border: "2px dashed #FFD700", borderRadius: "50%", opacity: 0.3 }} 
                   />
                 </div>
-                <h1 style={{ fontSize: "min(80px, 12vw)", fontWeight: "900", color: "#FFD700", fontFamily: "var(--font-syne)", letterSpacing: "-3px", textShadow: "0 0 40px rgba(255,215,0,0.5)", margin: 0 }}>LEGENDARY MASTER</h1>
+                <h1 style={{ fontSize: "min(80px, 12vw)", fontWeight: "900", color: "#FFD700", fontFamily: "var(--disp)", letterSpacing: "-3px", textShadow: "0 0 40px rgba(255,215,0,0.5)", margin: 0 }}>LEGENDARY MASTER</h1>
                 <p style={{ fontSize: "28px", color: "white", opacity: 0.9, fontWeight: "800", marginTop: "16px" }}>+200 XP (Ultra 2× Bonus ⚡)</p>
                 <motion.p 
                   initial={{ opacity: 0 }} 
