@@ -32,6 +32,10 @@
  *  2a. Raw hex inside a style object.
  *  2b. rgb()/rgba() inside a style object. Found eight slate-400s, a blue-500
  *      and two red-500s the hex rule had missed.
+ *  2c. hex and rgb()/rgba() inside CSS declarations in <style> blocks. Added
+ *      because .btn-danger was sitting on the dead palette and no rule could
+ *      see it — the script only ever looked at style objects. Theme-override
+ *      blocks are skipped by documented range.
  *  3a. transition: all.
  *  3b. the transition-all Tailwind class.
  *  3c. font-syne or --font-main — the pre-redesign type system.
@@ -42,6 +46,11 @@
  * blanket regexes over a colour family. If an allowlisted value is ever used
  * for something other than its named purpose, it stops being an exception and
  * becomes a token — that is how --ink-on-accent was born.
+ *
+ * The rgb()/rgba() CATEGORIES are held to a stricter standard: each may match
+ * only literal 0,0,0 alpha, literal 255,255,255 alpha, or a token-driven alpha.
+ * A HUE INSIDE AN ALLOWLISTED CATEGORY IS A BUG IN THE ALLOWLIST, NOT A VALUE
+ * TO ADD. Hues are identity; they belong in the per-value list with a reason.
  */
 
 import fs from "node:fs";
@@ -69,20 +78,43 @@ const ALLOWED_HEX = new Map([
 ]);
 
 /**
- * rgb()/rgba() categories that are not palette colours at all. Each is a
- * category because there are ~50 of them; unlike the medals these are not
- * identity colours, they are neutral alpha layers.
+ * rgb()/rgba() CATEGORIES. Every pattern here must be provably neutral: literal
+ * 0,0,0 or 255,255,255 alpha, or a token-driven alpha. That is the whole test.
+ *
+ * A HUE INSIDE ONE OF THESE CATEGORIES IS A BUG IN THE ALLOWLIST, NOT A VALUE
+ * TO ADD. If you find yourself wanting to extend a pattern to cover a colour,
+ * the colour is identity, not neutrality — give it a per-value entry in
+ * ALLOWED_RGB_VALUES with its reason, or promote it to a token.
  */
-const ALLOWED_RGB_FN = [
+const ALLOWED_RGB_CATEGORIES = [
   { re: /^rgba?\(\s*0\s*,\s*0\s*,\s*0\s*[,)]/,
-    why: "neutral scrim or shadow — carries no palette hue" },
+    why: "neutral black alpha — scrim or shadow, no hue" },
   { re: /^rgba?\(\s*255\s*,\s*255\s*,\s*255\s*[,)]/,
-    why: "neutral overlay or hairline — carries no palette hue" },
-  { re: /^rgba?\(\s*var\(--/,
+    why: "neutral white alpha — overlay or hairline, no hue" },
+  { re: /^rgba?\(\s*var\(--[a-z-]+\)\s*[,)]/,
     why: "token-driven alpha, e.g. rgba(var(--accent-rgb), .14)" },
-  { re: /^rgba?\(\s*255\s*,\s*215\s*,\s*0\s*[,)]/,
-    why: "gold celebration glow — LEGENDARY and ultra only" },
 ];
+
+/**
+ * Per-value rgb()/rgba() exceptions. Identity colours, each with its single
+ * purpose — the same policy as ALLOWED_HEX. A hue belongs here, never in a
+ * category above.
+ */
+const ALLOWED_RGB_VALUES = new Map([
+  // Gold — celebration glow and the ultra rarity border.
+  ["rgba(255,215,0,0.5)", "gold celebration glow — LEGENDARY only"],
+  ["rgba(255,215,0,0.3)", "gold celebration glow — LEGENDARY only"],
+  ["rgba(255,215,0,0.2)", "gold celebration glow — LEGENDARY only"],
+  ["rgba(255,215,0,0.1)", "gold celebration glow — LEGENDARY only"],
+  ["rgba(255,215,0,0.6)", "ultra rarity border — gold"],
+  // Diamond rarity — cyan. A tier identity, like the medals above.
+  ["rgba(0,255,255,0.4)", "diamond rarity glow — cyan"],
+  ["rgba(0,255,255,0.6)", "diamond rarity border — cyan"],
+  ["rgba(0,255,255,0.1)", "diamond rarity fill — cyan"],
+  // Epic rarity — violet.
+  ["rgba(168,85,247,0.4)", "epic rarity glow — violet"],
+  ["rgba(168,85,247,0.6)", "epic rarity border — violet"],
+]);
 
 /**
  * Named source blocks that are data rather than styling. Skipped by name so a
@@ -96,6 +128,20 @@ const ALLOWED_BLOCKS = [
     end: /\n\s*\];/,
     why: "theme preview data — each theme's own accent and background gradient, "
        + "rendered as a swatch. Tokenising these would destroy what they show.",
+  },
+  {
+    file: "app/page.tsx",
+    start: /\.theme-[a-z0-9]+[^{]*\{/,
+    braceMatched: true,
+    why: "theme override data — each theme defines its own --accent, --bg and "
+       + "--danger-rgb. These ARE the palette a user picks, not styling debt.",
+  },
+  {
+    file: "app/page.tsx",
+    start: /\n\s*\.(?:dark|light|contrast-high(?:\.[a-z]+)?)\s*\{/,
+    braceMatched: true,
+    why: "global palette override data — the .dark/.light base sets and the "
+       + "contrast-high accessibility variants. Data, like the themes above.",
   },
 ];
 
@@ -127,7 +173,8 @@ const RULE_2A = {
 const RULE_2B = {
   id: "raw-rgb-in-style",
   label: "rgb()/rgba() inside a style object",
-  re: /rgba?\([^)]*\)/g,
+  // Allows one level of nesting so rgba(var(--x-rgb), .14) is matched whole.
+  re: /rgba?\((?:[^()]|\([^()]*\))*\)/g,
 };
 
 const RULE_3 = [
@@ -175,11 +222,45 @@ function styleRanges(src) {
   return ranges;
 }
 
+function styleBlockRanges(src) {
+  const out = [];
+  const re = /<style>\{`([\s\S]*?)`\}<\/style>/g;
+  let m;
+  while ((m = re.exec(src))) {
+    const offset = m.index + m[0].indexOf(m[1]);
+    out.push({ start: offset, end: offset + m[1].length });
+  }
+  return out;
+}
+
+/** Why an rgb()/rgba() value is allowed, or null if it is not. */
+function rgbWhy(value) {
+  const norm = value.replace(/\s+/g, "");
+  if (ALLOWED_RGB_VALUES.has(norm)) return ALLOWED_RGB_VALUES.get(norm);
+  const cat = ALLOWED_RGB_CATEGORIES.find((a) => a.re.test(value));
+  return cat ? cat.why : null;
+}
+
 function blockRanges(src, spec) {
   const out = [];
   const startRe = new RegExp(spec.start.source, "g");
   let m;
   while ((m = startRe.exec(src))) {
+    if (spec.braceMatched) {
+      // Theme blocks use compound selectors and close inline, so the end has to
+      // be found by counting braces rather than by matching a line shape.
+      const open = src.indexOf("{", m.index);
+      if (open < 0) continue;
+      let depth = 0;
+      let j = open;
+      for (; j < src.length; j++) {
+        if (src[j] === "{") depth++;
+        else if (src[j] === "}") { depth--; if (depth === 0) break; }
+      }
+      out.push({ start: m.index, end: j });
+      startRe.lastIndex = j;
+      continue;
+    }
     const rest = src.slice(m.index);
     const endM = rest.match(spec.end);
     if (endM) out.push({ start: m.index, end: m.index + endM.index + endM[0].length });
@@ -260,9 +341,29 @@ function checkFile(full) {
       RULE_2B.re.lastIndex = 0;
       while ((m = RULE_2B.re.exec(block))) {
         const abs = start + m.index;
-        const hit = ALLOWED_RGB_FN.find((a) => a.re.test(m[0]));
-        if (hit) { allowed.push({ file: rel, line: lineOf(src, abs), match: m[0], why: hit.why }); continue; }
+        const why = rgbWhy(m[0]);
+        if (why) { allowed.push({ file: rel, line: lineOf(src, abs), match: m[0], why }); continue; }
         record(RULE_2B.id, rel, src, abs, m[0], snippet(block, m.index));
+      }
+    }
+
+    // 2c — CSS declarations inside <style> blocks. The script used to look only
+    // at style objects, which is why a live .btn-danger could sit on the dead
+    // palette and still produce a green run.
+    for (const { start, end } of styleBlockRanges(src)) {
+      const block = src.slice(start, end);
+      for (const rule of [RULE_2A, RULE_2B]) {
+        rule.re.lastIndex = 0;
+        let m;
+        while ((m = rule.re.exec(block))) {
+          const abs = start + m.index;
+          if (inDataBlock(abs)) continue;
+          const why = rule === RULE_2A
+            ? ALLOWED_HEX.get(m[0].toLowerCase())
+            : rgbWhy(m[0]);
+          if (why) { allowed.push({ file: rel, line: lineOf(src, abs), match: m[0], why }); continue; }
+          record(rule.id, rel, src, abs, m[0], snippet(block, m.index));
+        }
       }
     }
   }

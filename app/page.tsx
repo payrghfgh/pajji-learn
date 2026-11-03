@@ -3488,7 +3488,7 @@ function AppContent() {
             border: 1px solid var(--border);
             padding: 8px 16px;
             z-index: 1100;
-            background: rgba(10,10,12,0.8);
+            background: rgba(0,0,0,0.8);
             backdrop-filter: blur(20px);
             gap: 8px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
@@ -4048,8 +4048,8 @@ function AppContent() {
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
         .btn-primary { background: var(--accent); color: var(--ink-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
-        .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
-        .btn-warning { background: #fbbf24; color: #111827; }
+        .btn-danger { background: var(--coral-soft); color: var(--coral); border: 1px solid color-mix(in oklab, var(--coral) 25%, transparent); }
+        .btn-warning { background: var(--amber); color: var(--ink-on-accent); }
         .btn-link { background: none; border: none; color: var(--accent); font-weight: 800; cursor: pointer; padding: 0; }
         .stat-card { border-left-width: 4px; border-left-style: solid; }
         .stat-label { font-size: 11px; font-weight: 800; opacity: 0.65; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
