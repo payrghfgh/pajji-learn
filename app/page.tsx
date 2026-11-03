@@ -4085,7 +4085,7 @@ function AppContent() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: #04150D; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .profile-card { background: var(--jade); padding: 18px; border-radius: 20px; color: #04150D; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
           backdrop-filter: blur(14px) saturate(1.2);
