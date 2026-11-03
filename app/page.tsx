@@ -4652,7 +4652,7 @@ function AppContent() {
                 </span>
               ))}
             </div>
-            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "#04150D", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
               🏆 {achievementToast}
             </div>
           </>
