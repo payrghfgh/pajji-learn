@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type CSSProperties } from "react";
 import { initializeApp, getApps } from "firebase/app";
 import { 
   getFirestore, doc, onSnapshot, setDoc, getDoc, 
@@ -3093,8 +3093,8 @@ export default function Home() {
             </div>
             <div className="card" style={{marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap"}}>
               <div style={{display: "flex", gap: "12px", alignItems: "center"}}>
-                <div style={{width: "68px", height: "68px", borderRadius: "999px", display: "grid", placeItems: "center", background: `conic-gradient(var(--accent) ${goalProgressPct * 3.6}deg, rgba(148, 163, 184, 0.25) 0deg)`, padding: "6px"}}>
-                  <div style={{width: "100%", height: "100%", borderRadius: "999px", display: "grid", placeItems: "center", background: "var(--bg)", fontSize: "12px", fontWeight: "900"}}>{goalProgressPct}%</div>
+                <div className="sa-ring" style={{width: "68px", height: "68px", ["--p"]: goalProgressPct} as CSSProperties}>
+                  <b>{goalProgressPct}%</b>
                 </div>
                 <div>
                   <p style={{fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900", letterSpacing: "0.8px"}}>Today Goal</p>

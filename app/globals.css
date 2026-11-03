@@ -406,17 +406,22 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    background: conic-gradient(var(--jade) calc(var(--p) * 1%), rgba(255, 255, 255, 0.09) 0);
+    background: var(--ink-2);
     position: relative;
     flex-shrink: 0;
   }
 
+  /* masked donut: a solid surface plus a masked arc, so the label always
+     sits on --ink-2 instead of on jade on one side and near-black on the other */
   .sa-ring::before {
     content: "";
     position: absolute;
-    inset: 6px;
+    inset: 0;
     border-radius: 50%;
-    background: var(--ink-1);
+    background: conic-gradient(var(--jade) calc(var(--p) * 1%), rgba(255, 255, 255, 0.09) 0);
+    -webkit-mask: radial-gradient(circle, transparent 0 47%, #000 48%);
+    mask: radial-gradient(circle, transparent 0 47%, #000 48%);
+    pointer-events: none;
   }
 
   .sa-ring b {
