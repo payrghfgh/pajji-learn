@@ -42,7 +42,7 @@ export const EditView: React.FC<EditViewProps> = ({
       <div className="card" style={{ width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px" }}>
           <h2 style={{ fontWeight: "900" }}>Editor</h2>
-          <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{ background: "var(--accent)", color: "white", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer" }}>SAVE CHANGES</button>
+          <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{ background: "var(--accent)", color: "#04150D", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer" }}>SAVE CHANGES</button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div><label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({ ...tempChapter, summary: e.target.value })} style={{ width: "100%", padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)", minHeight: "150px" }} /></div>
@@ -50,7 +50,7 @@ export const EditView: React.FC<EditViewProps> = ({
           <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap" }}>
               <label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase" }}>Interactive Quiz</label>
-              <button onClick={addQuizQuestion} style={{ padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "700", cursor: "pointer" }}>+ Add Question</button>
+              <button onClick={addQuizQuestion} style={{ padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "#04150D", fontWeight: "700", cursor: "pointer" }}>+ Add Question</button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
