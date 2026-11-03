@@ -29,16 +29,16 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md w-80">
-        <h1 className="text-2xl font-bold mb-4 text-center">
+    <div className="flex items-center justify-center min-h-screen bg-[var(--ink-0)]">
+      <div className="bg-[var(--ink-2)] border border-[var(--line)] p-8 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.3)] w-80">
+        <h1 className="text-2xl font-bold mb-4 text-center text-[var(--text)]">
           {isLogin ? "Login" : "Sign Up"}
         </h1>
 
         <input
           type="email"
           placeholder="Email"
-          className="w-full mb-3 p-2 border rounded"
+          className="w-full mb-3 p-2 border border-[var(--line)] rounded bg-[var(--input-bg)] text-[var(--text)] placeholder:text-[var(--dim)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -46,25 +46,25 @@ export default function AuthPage() {
         <input
           type="password"
           placeholder="Password"
-          className="w-full mb-3 p-2 border rounded"
+          className="w-full mb-3 p-2 border border-[var(--line)] rounded bg-[var(--input-bg)] text-[var(--text)] placeholder:text-[var(--dim)]"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         {error && (
-          <p className="text-red-500 text-sm mb-2">{error}</p>
+          <p className="text-[var(--coral)] text-sm mb-2">{error}</p>
         )}
 
         <button
           onClick={handleAuth}
-          className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          className="w-full bg-[var(--jade)] text-[#04150D] font-bold p-2 rounded hover:bg-[#5FE0AC]"
         >
           {isLogin ? "Login" : "Sign Up"}
         </button>
 
         <p
           onClick={() => setIsLogin(!isLogin)}
-          className="text-sm text-blue-600 mt-3 cursor-pointer text-center"
+          className="text-sm text-[var(--jade)] mt-3 cursor-pointer text-center"
         >
           {isLogin
             ? "Don't have an account? Sign up"
