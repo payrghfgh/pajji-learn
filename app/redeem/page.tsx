@@ -213,7 +213,7 @@ export default function RedeemPage() {
                 fontSize: '1rem',
                 border: 'none',
                 cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s'
+                transition: 'background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out)'
               }}
             >
               {isSubmitting ? 'Activating...' : 'Activate Now 🚀'}

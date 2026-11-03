@@ -111,7 +111,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
 
               <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end", transform: "translateZ(20px)" }}>
                 <div>
-                  <p style={{ fontSize: "10px", fontWeight: "700", opacity: 0.7, textTransform: "uppercase", marginBottom: "2px" }}>Valid Thru</p>
+                  <p style={{ fontSize: "11px", fontWeight: "700", opacity: 0.7, textTransform: "uppercase", marginBottom: "2px" }}>Valid Thru</p>
                   <p style={{ fontSize: "14px", fontWeight: "800", fontFamily: "monospace", letterSpacing: "1px" }}>
                     {membershipExpiry ? new Date(membershipExpiry).toLocaleDateString("en-IN", { month: "2-digit", year: "2-digit" }) : "LIFETIME"}
                   </p>
@@ -131,7 +131,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
                           backdropFilter: "blur(4px)"
                         }}>
                           <Clock size={10} color="white" />
-                          <p style={{ fontSize: "10px", fontWeight: "800", color: "white", letterSpacing: "0.3px", margin: 0 }}>
+                          <p style={{ fontSize: "11px", fontWeight: "800", color: "white", letterSpacing: "0.3px", margin: 0 }}>
                             Expires in {Math.max(0, getDayDiff(getLocalDateKey(), membershipExpiry.split('T')[0]))} days
                           </p>
                         </div>

@@ -385,7 +385,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             setGiftUserResults(giftUserResults.map(r => r.id === u.id ? { ...r, membership: tier } : r));
                           }}
                           className={`btn ${u.membership === tier ? "btn-primary" : "btn-secondary"}`}
-                          style={{ padding: "4px 8px", fontSize: "10px" }}
+                          style={{ padding: "4px 8px", fontSize: "11px" }}
                         >
                           {tier || "None"}
                         </button>
@@ -407,7 +407,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       <button onClick={async () => { await deleteDoc(doc(db, "feedback", fb.id)); fetchFeedback(); }} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={14} /></button>
                     </div>
                     <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{fb.text}</p>
-                    <p style={{ fontSize: "10px", color: "var(--muted)", marginTop: "8px" }}>{fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleString() : "Recently"}</p>
+                    <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "8px" }}>{fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleString() : "Recently"}</p>
                   </div>
                 ))}
               </div>

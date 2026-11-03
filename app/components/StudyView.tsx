@@ -179,7 +179,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     style={{ 
                       padding: "4px 12px", 
                       borderRadius: "100px", 
-                      fontSize: "10px", 
+                      fontSize: "11px", 
                       fontWeight: "900", 
                       border: "none",
                       cursor: "pointer",
@@ -192,7 +192,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     style={{ 
                       padding: "4px 12px", 
                       borderRadius: "100px", 
-                      fontSize: "10px", 
+                      fontSize: "11px", 
                       fontWeight: "900", 
                       border: "none",
                       cursor: "pointer",
@@ -249,7 +249,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     <img src={selectedImage} style={{ height: "40px", width: "40px", borderRadius: "8px", border: "2px solid var(--accent)" }} />
                     <button 
                       onClick={() => setSelectedImage(null)}
-                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "10px", cursor: "pointer" }}
+                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "11px", cursor: "pointer" }}
                     >×</button>
                   </div>
                 )}
@@ -380,7 +380,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     <>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px" }}>
                         <p style={{ fontWeight: "800" }}>{safePos + 1}. {q.question}</p>
-                        <span style={{ fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
                           {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
                         </span>
                       </div>

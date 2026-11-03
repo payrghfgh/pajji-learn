@@ -104,7 +104,7 @@ export const AppNavigation = ({
       <div className="sa-side-foot">
         <div className="sa-lvlbox">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "9px" }}>
-            <span className="sa-badge sa-b-amber" style={{ fontSize: "10px", padding: "3px 8px" }}>
+            <span className="sa-badge sa-b-amber" style={{ fontSize: "11px", padding: "3px 8px" }}>
               ★ Level {userLevel}
             </span>
             <span className="sa-sub" style={{ fontFamily: "var(--mono)", fontSize: "11px" }}>
@@ -114,7 +114,7 @@ export const AppNavigation = ({
           <div className="sa-bar">
             <i style={{ width: `${lvlProgressPct}%` }} />
           </div>
-          <div className="sa-sub" style={{ fontFamily: "var(--mono)", fontSize: "10px", marginTop: "8px" }}>
+          <div className="sa-sub" style={{ fontFamily: "var(--mono)", fontSize: "11px", marginTop: "8px" }}>
             {xpNeeded} XP to Level {userLevel + 1}
           </div>
         </div>

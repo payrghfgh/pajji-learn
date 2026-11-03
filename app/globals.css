@@ -50,6 +50,8 @@
     --disp: var(--font-bricolage), 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
     --body: var(--font-jakarta), 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
     --mono: var(--font-azeret), 'Azeret Mono', ui-monospace, monospace;
+    --ease-out: cubic-bezier(.23, 1, .32, 1);
+    --ease-in-out: cubic-bezier(.77, 0, .175, 1);
 
     /* Mapping legacy names */
     --background: var(--bg);
@@ -96,7 +98,6 @@
 
   * {
     border-color: var(--border);
-    transition: border-color 0.5s ease, background-color 0.5s ease, color 0.5s ease;
   }
 
   /* Hide scrollbar for Chrome, Safari and Opera */
@@ -123,12 +124,15 @@
     backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 24px;
-    transition: all 0.3s ease;
+    transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out),
+      border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
   }
 
-  .glass-card:hover {
-    border-color: var(--line-2);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  @media (hover: hover) and (pointer: fine) {
+    .glass-card:hover {
+      border-color: var(--line-2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
   }
 
   .text-glow {
@@ -213,13 +217,16 @@
     border: 1px solid var(--border);
     border-radius: 24px;
     padding: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out),
+      border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
     box-shadow: var(--card-shadow);
   }
 
-  .card:hover {
-    border-color: var(--accent);
-    transform: translateY(-4px);
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      border-color: var(--line-2);
+      transform: translateY(-2px);
+    }
   }
 
   .bento-grid {
@@ -236,15 +243,18 @@
     border-radius: 14px;
     color: var(--muted);
     font-weight: 700;
-    transition: all 0.2s ease;
+    transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out),
+      border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
     width: 100%;
     text-align: left;
     border: 1px solid transparent;
   }
 
-  .nav-btn:hover {
-    background: var(--input-bg);
-    color: var(--text);
+  @media (hover: hover) and (pointer: fine) {
+    .nav-btn:hover {
+      background: var(--input-bg);
+      color: var(--text);
+    }
   }
 
   .nav-btn.active {
@@ -313,7 +323,8 @@
     border-radius: 13px;
     padding: 12px 18px;
     cursor: pointer;
-    transition: 0.16s ease;
+    transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out),
+      border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
     letter-spacing: -0.01em;
     text-decoration: none;
   }
@@ -333,8 +344,10 @@
     color: var(--text);
     border: 1px solid var(--line-2);
   }
-  .sa-btn-g:hover {
-    background: var(--ink-4);
+  @media (hover: hover) and (pointer: fine) {
+    .sa-btn-g:hover {
+      background: var(--ink-4);
+    }
   }
 
   .sa-btn-sm {
@@ -616,9 +629,11 @@
     cursor: pointer;
     transition: transform 0.18s ease, border-color 0.18s ease;
   }
-  .sa-lib-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--line-2);
+  @media (hover: hover) and (pointer: fine) {
+    .sa-lib-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--line-2);
+    }
   }
 
   @media (max-width: 900px) {
@@ -736,9 +751,11 @@
     transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
   }
 
-  .sa-nav:hover {
-    background: var(--ink-2);
-    color: var(--text);
+  @media (hover: hover) and (pointer: fine) {
+    .sa-nav:hover {
+      background: var(--ink-2);
+      color: var(--text);
+    }
   }
 
   .sa-nav .sa-gi {
@@ -831,9 +848,11 @@
     user-select: none;
     transition: border-color 0.16s ease;
   }
-  .sa-search:hover {
-    border-color: var(--line-2);
-    color: var(--dim);
+  @media (hover: hover) and (pointer: fine) {
+    .sa-search:hover {
+      border-color: var(--line-2);
+      color: var(--dim);
+    }
   }
 
   .sa-search .sa-kbd {
@@ -876,7 +895,6 @@
     border: none;
     cursor: pointer;
     padding: 0;
-    outline: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -925,3 +943,83 @@
 }
 
 
+
+/* ══════════════════════════════════════════════════════════════
+   Craft layer — motion, press, focus, reduced motion.
+   Unlayered on purpose: it is the last word on interaction states.
+   ══════════════════════════════════════════════════════════════ */
+
+button,
+.btn,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+.btn,
+[role="button"],
+a {
+  transition:
+    background-color 160ms var(--ease-out),
+    color 160ms var(--ease-out),
+    border-color 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+button:active,
+.btn:active,
+[role="button"]:active,
+a:active {
+  transform: scale(0.97);
+}
+
+/* hover is a pointer-only affordance: never let it stick on touch */
+@media (hover: hover) and (pointer: fine) {
+  button:hover,
+  .btn:hover,
+  [role="button"]:hover {
+    transform: translateY(-1px);
+  }
+
+  button:active:hover,
+  .btn:active:hover,
+  [role="button"]:active:hover {
+    transform: scale(0.97);
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--jade);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Reduced motion: kill movement, keep opacity so state changes stay legible. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity, background-color, color, border-color !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  button,
+  .btn,
+  [role="button"],
+  a,
+  button:hover,
+  .btn:hover,
+  [role="button"]:hover,
+  button:active,
+  .btn:active,
+  [role="button"]:active,
+  a:active,
+  .card:hover,
+  .sa-lib-card:hover {
+    transform: none !important;
+  }
+}

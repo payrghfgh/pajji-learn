@@ -246,7 +246,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="sa-bar">
             <i style={{ width: `${levelProgressPct}%` }} />
           </div>
-          <div className="sa-sub" style={{ fontFamily: "var(--mono)", fontSize: "10.5px", marginTop: "8px", color: "var(--faint)" }}>
+          <div className="sa-sub" style={{ fontFamily: "var(--mono)", fontSize: "11px", marginTop: "8px", color: "var(--faint)" }}>
             {xpNeeded} XP to Level {userLevel + 1}
           </div>
         </div>
@@ -285,14 +285,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               🔥
             </div>
             <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "24px" }}>{streakCount}</div>
-            <div className="sa-sub" style={{ fontSize: "11.5px" }}>day streak</div>
+            <div className="sa-sub" style={{ fontSize: "12px" }}>day streak</div>
           </div>
           <div className="sa-card" style={{ padding: "14px" }}>
             <div className="sa-ic" style={{ background: "var(--jade-soft)", color: "var(--jade)", width: "36px", height: "36px", fontSize: "16px", marginBottom: "10px" }}>
               ◎
             </div>
             <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "24px" }}>{Math.round(goalProgressPct)}%</div>
-            <div className="sa-sub" style={{ fontSize: "11.5px" }}>today&apos;s goal</div>
+            <div className="sa-sub" style={{ fontSize: "12px" }}>today&apos;s goal</div>
           </div>
         </div>
 

@@ -148,7 +148,7 @@ export const EditView: React.FC<EditViewProps> = ({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
                     {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
                       <div key={`preview-${idx}`} style={{ fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px" }}>
-                        <strong style={{ fontSize: "10px", color: "var(--accent)", marginRight: "6px" }}>{q.type}</strong>{q.question}
+                        <strong style={{ fontSize: "11px", color: "var(--accent)", marginRight: "6px" }}>{q.type}</strong>{q.question}
                       </div>
                     ))}
                   </div>

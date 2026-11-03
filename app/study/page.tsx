@@ -2889,7 +2889,7 @@ export default function Home() {
         .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
         .stack-12 { display: flex; flex-direction: column; gap: 12px; }
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px -8px color-mix(in oklab, var(--accent) 55%, transparent); }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
         .btn-warning { background: #fbbf24; color: #111827; }
@@ -2902,7 +2902,7 @@ export default function Home() {
         .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .nav-btn.active svg { opacity: 1; }
         .theme-default .nav-btn.active svg, .theme-paper .nav-btn.active svg {
           border: 1px solid rgba(var(--accent-rgb), 0.65);
@@ -2916,7 +2916,7 @@ export default function Home() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 10px 20px -5px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
           backdrop-filter: blur(14px) saturate(1.2);
@@ -2998,7 +2998,7 @@ export default function Home() {
             margin-bottom: 0;
             flex-direction: column; 
             gap: 2px; 
-            font-size: 10px; 
+            font-size: 11px; 
             justify-content: center; 
             align-items: center;
             text-align: center; 
@@ -3029,7 +3029,7 @@ export default function Home() {
         <div className="sidebar-extras">
             <h1 style={{fontSize: "22px", fontWeight: "900", marginBottom: "32px", letterSpacing: "-0.5px"}}>PAJJI <span style={{color: "var(--accent)"}}>LEARN</span></h1>
             <div className="profile-card">
-              <p style={{fontSize: "10px", fontWeight: "800", opacity: 0.8, marginBottom: "4px"}}>LEVEL {userLevel}</p>
+              <p style={{fontSize: "11px", fontWeight: "800", opacity: 0.8, marginBottom: "4px"}}>LEVEL {userLevel}</p>
               <h3 style={{fontSize: "15px", marginBottom: "10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"}}>{getUserName(user)}</h3>
               <div style={{height: "6px", background: "rgba(255,255,255,0.2)", borderRadius: "10px", overflow: "hidden"}}>
                 <div style={{width: `${(userXP % 500) / 5}%`, height: "100%", background: "#fff"}}></div>
@@ -3141,7 +3141,7 @@ export default function Home() {
               {getUnmastered().slice(0, 5).map(ch => (
                 <div key={ch.id} className="card" style={{display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px"}}>
                   <div>
-                      <p style={{fontSize: "10px", color: "var(--accent)", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
+                      <p style={{fontSize: "11px", color: "var(--accent)", fontWeight: "900", textTransform: "uppercase"}}>{ch.bookTitle}</p>
                       <h3 style={{fontSize: "16px", marginTop: "4px", fontWeight: "700"}}>{ch.title}</h3>
                   </div>
                   <button onClick={() => openLesson(ch.parentBook, ch)} style={{padding: "10px 20px", background: "var(--accent)", color: "white", borderRadius: "12px", border: "none", fontWeight: "bold", cursor: "pointer", fontSize: "13px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>Start</button>
@@ -3157,14 +3157,14 @@ export default function Home() {
                   <div key={a.id} style={{padding: "12px", borderRadius: "14px", background: a.unlocked ? "var(--accent-soft)" : "var(--input-bg)", border: a.unlocked ? "1px solid rgba(var(--accent-rgb), 0.3)" : "1px solid var(--border)", opacity: a.unlocked ? 1 : 0.88}}>
                     <p style={{fontWeight: "800", fontSize: "13px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px"}}>
                       <span>{a.title}</span>
-                      <span style={{fontSize: "10px", color: a.unlocked ? "var(--accent)" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
+                      <span style={{fontSize: "11px", color: a.unlocked ? "var(--accent)" : "var(--muted)"}}>{a.unlocked ? "Unlocked" : "Locked"}</span>
                     </p>
                     <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{a.description}</p>
                     <div style={{marginTop: "8px"}}>
                       <div style={{height: "6px", borderRadius: "8px", background: "var(--input-bg)", border: "1px solid var(--border)", overflow: "hidden"}}>
                         <div style={{height: "100%", width: `${Math.min(100, Math.round((a.progress / Math.max(1, a.target)) * 100))}%`, background: a.unlocked ? "var(--accent)" : "#64748b"}} />
                       </div>
-                      <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{Math.min(a.progress, a.target)}/{a.target}</p>
+                      <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{Math.min(a.progress, a.target)}/{a.target}</p>
                     </div>
                   </div>
                 ))}
@@ -3270,7 +3270,7 @@ export default function Home() {
                       {(item.tags || []).length > 0 && (
                         <div style={{display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px"}}>
                           {(item.tags || []).map((tag: string) => (
-                            <span key={`${item.lessonId}-${tag}`} style={{fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
+                            <span key={`${item.lessonId}-${tag}`} style={{fontSize: "11px", fontWeight: "700", padding: "2px 6px", borderRadius: "999px", border: "1px solid var(--border)", background: "var(--input-bg)"}}>
                               #{tag}
                             </span>
                           ))}
@@ -3299,7 +3299,7 @@ export default function Home() {
                 </span>
                 <div style={{flex: 1}}>
                     <span style={{fontSize: "16px", fontWeight: "700"}}>{p.email && p.email !== "guest" ? p.email.split('@')[0] : "Guest User"}</span>
-                    {p.id === user.uid && <span style={{fontSize: "10px", marginLeft: "8px", background: "var(--accent)", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
+                    {p.id === user.uid && <span style={{fontSize: "11px", marginLeft: "8px", background: "var(--accent)", color: "white", padding: "2px 8px", borderRadius: "10px", fontWeight: "900"}}>YOU</span>}
                 </div>
                 <span className="xp-badge">{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
               </div>
@@ -3346,7 +3346,7 @@ export default function Home() {
                           {item.label}{showAdminTag ? " (ADMIN)" : ""}{showAchievementTag ? " (ACHIEVEMENT)" : ""}
                         </span>
                         {!allowed && (
-                          <span style={{display: "block", fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>
+                          <span style={{display: "block", fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>
                             {requiredAchievementId && !achievementUnlocked
                               ? `Unlock: ${getAchievementTitleById(requiredAchievementId)}`
                               : "Locked"}
@@ -3505,7 +3505,7 @@ export default function Home() {
                     <p style={{fontSize: "11px", color: "var(--muted)", fontWeight: "700"}}>
                       Attempts: {insights.attemptsCount} • Avg: {insights.avgAccuracy === null ? "--" : `${insights.avgAccuracy}%`}
                     </p>
-                    <p style={{fontSize: "10px", color: "var(--muted)", marginTop: "4px"}}>{formatNoteEdited(bookLastEditedAt)}</p>
+                    <p style={{fontSize: "11px", color: "var(--muted)", marginTop: "4px"}}>{formatNoteEdited(bookLastEditedAt)}</p>
                     {insights.trend.length > 0 && (
                       <div style={{display: "flex", gap: "4px", marginTop: "6px", alignItems: "flex-end", justifyContent: "center", height: "28px"}}>
                         {insights.trend.map((v: number, idx: number) => (
@@ -3514,7 +3514,7 @@ export default function Home() {
                       </div>
                     )}
                     {insights.weakCount > 0 && (
-                      <p style={{fontSize: "10px", color: "var(--danger)", fontWeight: "800", marginTop: "6px"}}>
+                      <p style={{fontSize: "11px", color: "var(--danger)", fontWeight: "800", marginTop: "6px"}}>
                         Weak tags: {insights.weakCount}
                       </p>
                     )}
@@ -3590,7 +3590,7 @@ export default function Home() {
                            style={{ 
                              padding: "4px 12px", 
                              borderRadius: "100px", 
-                             fontSize: "10px", 
+                             fontSize: "11px", 
                              fontWeight: "900", 
                              border: "none",
                              cursor: "pointer",
@@ -3603,7 +3603,7 @@ export default function Home() {
                            style={{ 
                              padding: "4px 12px", 
                              borderRadius: "100px", 
-                             fontSize: "10px", 
+                             fontSize: "11px", 
                              fontWeight: "900", 
                              border: "none",
                              cursor: "pointer",
@@ -3711,7 +3711,7 @@ export default function Home() {
                             <>
                         <div style={{display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px"}}>
                           <p style={{fontWeight: "800"}}>{safePos + 1}. {q.question}</p>
-                          <span style={{fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)"}}>
+                          <span style={{fontSize: "11px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)"}}>
                             {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
                           </span>
                         </div>
@@ -4106,7 +4106,7 @@ export default function Home() {
                           <div style={{display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto"}}>
                             {parsedPreview.slice(0, 10).map((q: any, idx: number) => (
                               <div key={`preview-${idx}`} style={{fontSize: "12px", borderBottom: "1px dashed var(--border)", paddingBottom: "4px"}}>
-                                <strong style={{fontSize: "10px", color: "var(--accent)", marginRight: "6px"}}>{q.type}</strong>{q.question}
+                                <strong style={{fontSize: "11px", color: "var(--accent)", marginRight: "6px"}}>{q.type}</strong>{q.question}
                               </div>
                             ))}
                           </div>

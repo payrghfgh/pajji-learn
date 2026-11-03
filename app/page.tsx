@@ -3198,7 +3198,7 @@ function AppContent() {
           color: white;
           display: grid;
           place-items: center;
-          box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.4);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           cursor: pointer;
           animation: wobble 3s ease-in-out infinite;
           will-change: transform;
@@ -3224,7 +3224,7 @@ function AppContent() {
           display: flex;
           gap: 24px;
           align-items: center;
-          box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15), 0 8px 32px rgba(0,0,0,0.4);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           pointer-events: auto;
           cursor: grab;
           white-space: nowrap;
@@ -3282,16 +3282,16 @@ function AppContent() {
           border-radius: 28px;
           padding: 24px;
           backdrop-filter: blur(24px);
-          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+          transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
           overflow: hidden;
-          box-shadow: 0 4px 24px -12px rgba(0,0,0,0.5);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;
         }
 
         .card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(var(--accent-rgb), 0.2);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           border-color: rgba(var(--accent-rgb), 0.4);
         }
 
@@ -3347,7 +3347,7 @@ function AppContent() {
           border: 1px solid var(--border);
           border-radius: 24px;
           padding: 24px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
         }
 
         .holographic-shine {
@@ -3372,14 +3372,10 @@ function AppContent() {
 
         .power-up-card {
           border: 1px solid var(--accent) !important;
-          box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
-          animation: power-up-glow 3s infinite alternate;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          /* coloured glow animation removed: depth is not a light effect */
         }
 
-        @keyframes power-up-glow {
-          from { box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1); }
-          to { box-shadow: 0 0 25px rgba(var(--accent-rgb), 0.35); }
-        }
 
         @keyframes pulse {
           0% { opacity: 1; transform: scale(1); }
@@ -3446,7 +3442,7 @@ function AppContent() {
           padding: 12px 16px;
           border-radius: 14px;
           color: var(--muted);
-          transition: all 0.2s;
+          transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
           font-weight: 600;
           border: none;
           background: transparent;
@@ -3506,7 +3502,7 @@ function AppContent() {
             background: rgba(10,10,12,0.8);
             backdrop-filter: blur(20px);
             gap: 8px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           }
           .sidebar-extras, .sidebar h1 { display: none !important; }
           .main-content { padding-top: 100px; padding-bottom: 120px; }
@@ -4061,7 +4057,7 @@ function AppContent() {
         .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
         .stack-12 { display: flex; flex-direction: column; gap: 12px; }
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px -8px color-mix(in oklab, var(--accent) 55%, transparent); }
+        .btn-primary { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
         .btn-warning { background: #fbbf24; color: #111827; }
@@ -4075,7 +4071,7 @@ function AppContent() {
         .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .nav-btn.active svg { opacity: 1; }
         .theme-default .nav-btn.active svg, .theme-paper .nav-btn.active svg {
           border: 1px solid rgba(var(--accent-rgb), 0.65);
@@ -4089,7 +4085,7 @@ function AppContent() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 10px 20px -5px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
           backdrop-filter: blur(14px) saturate(1.2);
@@ -4162,7 +4158,7 @@ function AppContent() {
             background: rgba(var(--accent-rgb), 0.1);
             backdrop-filter: blur(28px) saturate(1.8);
             -webkit-backdrop-filter: blur(28px) saturate(1.8);
-            box-shadow: 0 12px 40px -12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             z-index: 1000;
             box-sizing: border-box;
           }
@@ -4184,7 +4180,7 @@ function AppContent() {
             margin-bottom: 0;
             flex-direction: column; 
             gap: 4px; 
-            font-size: 10px; 
+            font-size: 11px; 
             font-weight: 700;
             justify-content: center; 
             align-items: center;
@@ -4209,7 +4205,7 @@ function AppContent() {
             height: 4px;
             border-radius: 50%;
             background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           }
           
           .main-content { 
