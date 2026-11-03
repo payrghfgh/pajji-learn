@@ -12,6 +12,19 @@ interface LeaderboardViewProps {
   getMemberTier: (mem: string, expiry: string) => string;
 }
 
+export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
+  leaderboardMode,
+  setLeaderboardMode,
+  leaderboard,
+  weeklyLeaderboard,
+  user,
+  getMemberTier
+}) => {
+  const data = leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard;
+  const p1 = data[0];
+  const p2 = data[1];
+  const p3 = data[2];
+
   // Responsive handling for mobile layout (<900px)
   const [isMobile, setIsMobile] = React.useState(false);
   React.useEffect(() => {
@@ -27,18 +40,6 @@ interface LeaderboardViewProps {
 
   // Adjust podium container flex direction for mobile
   const podiumFlexDirection = isMobile ? 'column' : 'row';
-
-  // Existing component content continues
-
-  // Responsive handling for mobile layout (<900px)
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 900);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
 
   const getBadgeIcon = (p: any) => {
     const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
