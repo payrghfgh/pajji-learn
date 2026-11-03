@@ -91,7 +91,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
               <motion.div style={{ position: "absolute", inset: 0, background: shineBackground, zIndex: 3, pointerEvents: "none" }} />
 
               <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", transform: "translateZ(20px)" }}>
-                <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: "800", fontSize: "16px", margin: 0, letterSpacing: "0.5px" }}>PAJJI SERVICES</h3>
+                <h3 style={{ fontFamily: "var(--disp)", fontWeight: "800", fontSize: "16px", margin: 0, letterSpacing: "0.5px" }}>PAJJI SERVICES</h3>
                 <div style={{ opacity: 0.8 }}>
                   {memTier === "ultra" ? (
                     <Crown size={20} />
@@ -104,7 +104,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
               </div>
               
               <div style={{ position: "relative", zIndex: 1, textAlign: "center", transform: "translateZ(40px)" }}>
-                <h2 style={{ fontFamily: "var(--font-syne)", fontSize: "28px", fontWeight: "800", margin: 0, letterSpacing: "1px", textTransform: "uppercase" }}>
+                <h2 style={{ fontFamily: "var(--disp)", fontSize: "28px", fontWeight: "800", margin: 0, letterSpacing: "1px", textTransform: "uppercase" }}>
                   {memTier === "ultra" ? "Pajji Ultra" : memTier === "pro" ? "Pajji Pro" : "Pajji Plus"}
                 </h2>
               </div>
@@ -130,8 +130,8 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
                           border: "1px solid rgba(255,255,255,0.1)",
                           backdropFilter: "blur(4px)"
                         }}>
-                          <Clock size={10} color="white" />
-                          <p style={{ fontSize: "11px", fontWeight: "800", color: "white", letterSpacing: "0.3px", margin: 0 }}>
+                          <Clock size={10} />
+                          <p style={{ fontSize: "11px", fontWeight: "800", letterSpacing: "0.3px", margin: 0 }}>
                             Expires in {Math.max(0, getDayDiff(getLocalDateKey(), membershipExpiry.split('T')[0]))} days
                           </p>
                         </div>
