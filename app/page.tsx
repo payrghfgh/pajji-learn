@@ -407,14 +407,14 @@ function AppContent() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: -20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="w-full max-w-2xl bg-[#121214] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+          className="w-full max-w-2xl bg-[var(--ink-2)] border border-[var(--line-2)] rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.3)] overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
-          <div className="flex items-center p-6 border-b border-white/5">
-            <Search className="text-emerald-500 mr-4" size={24} />
+          <div className="flex items-center p-6 border-b border-[var(--line)]">
+            <Search className="text-[var(--jade)] mr-4" size={24} />
             <input
               autoFocus
-              className="bg-transparent border-none outline-none text-xl w-full text-white placeholder:text-white/20"
+              className="bg-transparent border-none outline-none text-xl w-full text-[var(--text)] placeholder:text-[var(--dim)]"
               placeholder="Search anything... (lessons, books, notes)"
               value={spotlightQuery}
               onChange={e => setSpotlightQuery(e.target.value)}
@@ -425,7 +425,7 @@ function AppContent() {
               searchResults.map((res, i) => (
                 <button
                   key={i}
-                  className="w-full text-left p-4 rounded-2xl hover:bg-emerald-500/10 flex items-center justify-between group transition-all"
+                  className="w-full text-left p-4 rounded-2xl hover:bg-[var(--jade-soft)] flex items-center justify-between group"
                   onClick={() => {
                     if (res.type === "lesson") openLesson(res.book, res.item);
                     else if (res.type === "note") { openLesson(res.book, res.item); setActiveTab("My Notes"); }
@@ -433,15 +433,15 @@ function AppContent() {
                     setIsSpotlightOpen(false);
                   }}
                 >
-                  <span className="font-bold text-white group-hover:text-emerald-400">{res.label}</span>
-                  <ChevronRight size={18} className="text-white/20 group-hover:text-emerald-400" />
+                  <span className="font-bold text-[var(--text)] group-hover:text-[var(--jade)]">{res.label}</span>
+                  <ChevronRight size={18} className="text-[var(--faint)] group-hover:text-[var(--jade)]" />
                 </button>
               ))
             ) : (
-              <div className="p-8 text-center text-white/40">No results found for &quot;{spotlightQuery}&quot;</div>
+              <div className="p-8 text-center text-[var(--dim)]">No results found for &quot;{spotlightQuery}&quot;</div>
             )}
           </div>
-          <div className="p-4 bg-white/5 text-[10px] uppercase tracking-widest font-black text-white/30 flex justify-between">
+          <div className="p-4 bg-[var(--ink-3)] text-[11px] uppercase tracking-widest font-black text-[var(--faint)] flex justify-between">
             <span>ESC to close</span>
             <span>ENTER to select</span>
           </div>
@@ -3184,7 +3184,7 @@ function AppContent() {
           background: var(--accent-grad);
           border: none;
           z-index: 1000;
-          color: #04150D;
+          color: var(--ink-on-accent);
           display: grid;
           place-items: center;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -4046,7 +4046,7 @@ function AppContent() {
         .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
         .stack-12 { display: flex; flex-direction: column; gap: 12px; }
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
-        .btn-primary { background: var(--accent); color: #04150D; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .btn-primary { background: var(--accent); color: var(--ink-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
         .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
         .btn-warning { background: #fbbf24; color: #111827; }
@@ -4060,7 +4060,7 @@ function AppContent() {
         .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: #04150D; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .nav-btn.active { background: var(--accent); color: var(--ink-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .nav-btn.active svg { opacity: 1; }
         .theme-default .nav-btn.active svg, .theme-paper .nav-btn.active svg {
           border: 1px solid rgba(var(--accent-rgb), 0.65);
@@ -4074,7 +4074,7 @@ function AppContent() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .profile-card { background: var(--jade); padding: 18px; border-radius: 20px; color: #04150D; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+        .profile-card { background: var(--jade); padding: 18px; border-radius: 20px; color: var(--ink-on-accent); margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
           backdrop-filter: blur(14px) saturate(1.2);
@@ -4082,7 +4082,7 @@ function AppContent() {
         }
         
         .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px; background: var(--card); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 0 0 auto; text-align: center; transition: 0.2s; }
-        .tab-btn.active { background: var(--accent); color: #04150D; border-color: transparent; }
+        .tab-btn.active { background: var(--accent); color: var(--ink-on-accent); border-color: transparent; }
         
         textarea, input[type="text"], select { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; outline: none; }
         textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14); }
@@ -4600,7 +4600,7 @@ function AppContent() {
           <div className="firework-burst">🎆🎇</div>
         )}
         {themeUnlockShowcase && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 1204, background: "rgba(2,6,23,0.55)", display: "grid", placeItems: "center" }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1204, background: "rgba(0,0,0,0.55)", display: "grid", placeItems: "center" }}>
             <div className="card" style={{ maxWidth: "360px", textAlign: "center", padding: "22px" }}>
               <p style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900" }}>Theme Unlocked</p>
               <h3 style={{ fontSize: "24px", marginTop: "8px", marginBottom: "8px", color: "var(--accent)" }}>✨ {themeUnlockShowcase.label}</h3>
@@ -4641,7 +4641,7 @@ function AppContent() {
                 </span>
               ))}
             </div>
-            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "#04150D", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "var(--ink-on-accent)", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
               🏆 {achievementToast}
             </div>
           </>

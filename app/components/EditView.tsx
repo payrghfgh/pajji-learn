@@ -42,7 +42,7 @@ export const EditView: React.FC<EditViewProps> = ({
       <div className="card" style={{ width: "100%" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px" }}>
           <h2 style={{ fontWeight: "900" }}>Editor</h2>
-          <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{ background: "var(--accent)", color: "#04150D", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer" }}>SAVE CHANGES</button>
+          <button onClick={() => { saveAllChanges(); lastAutosavePayloadRef.current = JSON.stringify(tempChapter || {}); setView("chapters"); }} style={{ background: "var(--accent)", color: "var(--ink-on-accent)", padding: "12px 30px", borderRadius: "14px", border: "none", fontWeight: "800", cursor: "pointer" }}>SAVE CHANGES</button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div><label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>Summary</label><textarea value={tempChapter.summary || ""} onChange={(e) => setTempChapter({ ...tempChapter, summary: e.target.value })} style={{ width: "100%", padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)", minHeight: "150px" }} /></div>
@@ -50,7 +50,7 @@ export const EditView: React.FC<EditViewProps> = ({
           <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "16px", background: "var(--input-bg)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", gap: "8px", flexWrap: "wrap" }}>
               <label style={{ color: "var(--accent)", fontWeight: "800", fontSize: "13px", textTransform: "uppercase" }}>Interactive Quiz</label>
-              <button onClick={addQuizQuestion} style={{ padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "#04150D", fontWeight: "700", cursor: "pointer" }}>+ Add Question</button>
+              <button onClick={addQuizQuestion} style={{ padding: "8px 12px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "var(--ink-on-accent)", fontWeight: "700", cursor: "pointer" }}>+ Add Question</button>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {(Array.isArray(tempChapter.quiz) ? tempChapter.quiz : []).map((q: any, qIndex: number) => (
@@ -121,18 +121,18 @@ export const EditView: React.FC<EditViewProps> = ({
                 style={{ minHeight: "130px", width: "100%", padding: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", borderRadius: "12px", color: "var(--text)" }}
               />
               <div style={{ display: "flex", gap: "8px", marginTop: "8px", flexWrap: "wrap" }}>
-                <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer" }}>
+                <button onClick={previewParsedQuestions} disabled={!quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizBuilderText.trim() ? "var(--ink-4)" : "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: !quizBuilderText.trim() ? "not-allowed" : "pointer" }}>
                   Preview Paste
                 </button>
-                <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer" }}>
+                <button onClick={addPreviewToQuiz} disabled={parsedPreview.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: parsedPreview.length === 0 ? "var(--ink-4)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: parsedPreview.length === 0 ? "not-allowed" : "pointer" }}>
                   Add Preview
                 </button>
                 <button onClick={bulkAddQuizQuestions} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>Parse & Add Questions</button>
-                <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "rgba(148,163,184,0.2)" : "rgba(59,130,246,0.14)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1 }}>
+                <button onClick={aiParseQuizQuestions} disabled={aiParsingQuiz || !quizBuilderText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (aiParsingQuiz || !quizBuilderText.trim()) ? "var(--ink-4)" : "var(--azure-soft)", color: "var(--text)", fontWeight: "800", cursor: (aiParsingQuiz || !quizBuilderText.trim()) ? "not-allowed" : "pointer", opacity: (aiParsingQuiz || !quizBuilderText.trim()) ? 0.65 : 1 }}>
                   {aiParsingQuiz ? "AI Parsing..." : "AI Parse"}
                 </button>
                 <button onClick={exportQuizPack} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "800", cursor: "pointer" }}>Export Pack</button>
-                <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "rgba(148,163,184,0.2)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer" }}>
+                <button onClick={importQuizPack} disabled={!quizPackText.trim()} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: !quizPackText.trim() ? "var(--ink-4)" : "var(--accent-soft)", color: "var(--text)", fontWeight: "800", cursor: !quizPackText.trim() ? "not-allowed" : "pointer" }}>
                   Import Pack
                 </button>
               </div>

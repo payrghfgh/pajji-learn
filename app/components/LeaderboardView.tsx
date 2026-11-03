@@ -97,8 +97,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
       </svg>
       <h1 className="page-title" style={{ textAlign: "center", marginBottom: "40px", fontFamily: "var(--disp)", fontWeight: "800" }}>Hall of Fame 🏆</h1>
       <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "48px" }}>
-        <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{ borderRadius: "20px", background: leaderboardMode === "all" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "all" ? "#04150D" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>All Time</button>
-        <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{ borderRadius: "20px", background: leaderboardMode === "weekly" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "#04150D" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>Weekly</button>
+        <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{ borderRadius: "20px", background: leaderboardMode === "all" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "all" ? "var(--ink-on-accent)" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>All Time</button>
+        <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{ borderRadius: "20px", background: leaderboardMode === "weekly" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "var(--ink-on-accent)" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>Weekly</button>
       </div>
 
       <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: "16px", marginBottom: "56px", width: "100%", padding: "0 10px" }}>
@@ -109,7 +109,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
               <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--input-bg)", border: "3px solid #C0C0C0", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "900", color: "#C0C0C0" }}>
                 {p2.email?.[0].toUpperCase()}
               </div>
-              <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#C0C0C0", color: "#04150D", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>2nd</div>
+              <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#C0C0C0", color: "var(--ink-on-accent)", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>2nd</div>
             </div>
             <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
               {p2.uiSettings?.displayName || p2.email?.split('@')[0]}
@@ -123,10 +123,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
         {p1 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }} style={{ flex: 1, textAlign: "center", minWidth: "130px", maxWidth: "200px", transform: "scale(1.15)", zIndex: 2 }}>
             <div style={{ position: "relative", marginBottom: "16px" }}>
-              <div style={{ width: "88px", height: "88px", borderRadius: "50%", background: "linear-gradient(135deg, #FFD700, #F59E0B)", border: "4px solid white", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "32px", fontWeight: "900", color: "#04150D", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+              <div style={{ width: "88px", height: "88px", borderRadius: "50%", background: "linear-gradient(135deg, #FFD700, #F59E0B)", border: "4px solid white", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "32px", fontWeight: "900", color: "var(--ink-on-accent)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                 {p1.email?.[0].toUpperCase()}
               </div>
-              <div style={{ position: "absolute", bottom: "-10px", left: "50%", transform: "translateX(-50%)", background: "#FFD700", color: "#04150D", padding: "4px 14px", borderRadius: "12px", fontSize: "14px", fontWeight: "900", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" }}>1st</div>
+              <div style={{ position: "absolute", bottom: "-10px", left: "50%", transform: "translateX(-50%)", background: "#FFD700", color: "var(--ink-on-accent)", padding: "4px 14px", borderRadius: "12px", fontSize: "14px", fontWeight: "900", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" }}>1st</div>
               <Crown size={28} fill="#FFD700" color="#FFD700" style={{ position: "absolute", top: "-24px", left: "50%", transform: "translateX(-50%) rotate(-15deg)" }} />
             </div>
             <p style={{ fontWeight: "800", fontSize: "16px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
@@ -144,7 +144,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
               <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--input-bg)", border: "3px solid #CD7F32", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "900", color: "#CD7F32" }}>
                 {p3.email?.[0].toUpperCase()}
               </div>
-              <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#CD7F32", color: "#04150D", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>3rd</div>
+              <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#CD7F32", color: "var(--ink-on-accent)", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>3rd</div>
             </div>
             <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
               {p3.uiSettings?.displayName || p3.email?.split('@')[0]}

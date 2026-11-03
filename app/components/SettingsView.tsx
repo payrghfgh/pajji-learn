@@ -222,7 +222,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <label className="input-label">Profile Picture URL</label>
                   <input type="text" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} placeholder="https://..." style={{ width: "100%" }} />
                 </div>
-                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "var(--coral)", borderColor: "rgba(255, 107, 107, 0.2)", marginTop: "12px" }}>
+                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "var(--coral)", borderColor: "var(--coral-soft)", marginTop: "12px" }}>
                   <LogOut size={16} /> Sign Out
                 </button>
               </div>

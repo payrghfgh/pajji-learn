@@ -184,7 +184,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                       border: "none",
                       cursor: "pointer",
                       background: aiMode === "chapter" ? "var(--accent)" : "transparent",
-                      color: aiMode === "chapter" ? "#04150D" : "var(--muted)"
+                      color: aiMode === "chapter" ? "var(--ink-on-accent)" : "var(--muted)"
                     }}
                   >CHAPTER</button>
                   <button 
@@ -197,7 +197,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                       border: "none",
                       cursor: "pointer",
                       background: aiMode === "global" ? "var(--accent)" : "transparent",
-                      color: aiMode === "global" ? "#04150D" : "var(--muted)"
+                      color: aiMode === "global" ? "var(--ink-on-accent)" : "var(--muted)"
                     }}
                   >GLOBAL</button>
                 </div>
@@ -249,7 +249,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     <img src={selectedImage} style={{ height: "40px", width: "40px", borderRadius: "8px", border: "2px solid var(--accent)" }} />
                     <button 
                       onClick={() => setSelectedImage(null)}
-                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "var(--coral)", color: "#04150D", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "11px", cursor: "pointer" }}
+                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "var(--coral)", color: "var(--ink-on-accent)", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "11px", cursor: "pointer" }}
                     >×</button>
                   </div>
                 )}
@@ -285,13 +285,13 @@ export const StudyView: React.FC<StudyViewProps> = ({
                         window.speechSynthesis.cancel();
                         window.speechSynthesis.speak(utterance);
                       }}
-                      style={{ background: "var(--accent)", color: "#04150D", border: "none", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                      style={{ background: "var(--accent)", color: "var(--ink-on-accent)", border: "none", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                     >
                       <Volume2 size={12} /> SPEAK
                     </button>
                     <button
                       onClick={() => window.speechSynthesis.cancel()}
-                      style={{ background: "rgba(239, 68, 68, 0.2)", color: "var(--coral)", border: "1px solid var(--coral)", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
+                      style={{ background: "var(--coral-soft)", color: "var(--coral)", border: "1px solid var(--coral)", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
                     >
                       STOP
                     </button>
@@ -326,7 +326,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                 <button onClick={() => startQuizAttempt(curChapter)} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
                   Start / Restart
                 </button>
-                <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
+                <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "var(--ink-4)" : "var(--coral-soft)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
                   Retry Wrong Only
                 </button>
                 <button onClick={() => { setQuizShuffleEnabled((prev: boolean) => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
@@ -507,12 +507,12 @@ export const StudyView: React.FC<StudyViewProps> = ({
               </div>
               <div style={{ position: "sticky", bottom: "10px", zIndex: 20, border: "1px solid var(--border)", background: "var(--card)", borderRadius: "14px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.max(0, prev - 1))} disabled={safePos === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer" }}>Prev</button>
-                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer" }}>Next</button>
+                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.max(0, prev - 1))} disabled={safePos === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "var(--ink-4)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer" }}>Prev</button>
+                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "var(--ink-4)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer" }}>Next</button>
                 </div>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                  <button onClick={submitQuiz} style={{ padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "#04150D", fontWeight: "800", cursor: "pointer" }}>Submit Quiz</button>
-                  <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
+                  <button onClick={submitQuiz} style={{ padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "var(--ink-on-accent)", fontWeight: "800", cursor: "pointer" }}>Submit Quiz</button>
+                  <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "var(--ink-4)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
                     Retry Wrong
                   </button>
                   {quizResult && <span style={{ fontWeight: "800", color: quizResult.startsWith("Score") ? "var(--accent)" : "var(--warning)" }}>{quizResult}</span>}
@@ -650,7 +650,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                       <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.5 }}>Click to Reveal Answer</p>
                     </div>
                     <div className="flashcard-back">
-                      <span style={{ fontSize: "12px", color: "#04150D", opacity: 0.8, fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Answer</span>
+                      <span style={{ fontSize: "12px", color: "var(--ink-on-accent)", opacity: 0.8, fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Answer</span>
                       <p style={{ fontSize: "20px", fontWeight: "700", lineHeight: "1.6" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
                       <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.8 }}>Click to hide</p>
                     </div>

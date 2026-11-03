@@ -114,7 +114,7 @@ export default function RedeemPage() {
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--ink-0)', color: 'white', padding: '20px' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '20px' }}>Redeem Your Code</h1>
         <p style={{ marginBottom: '30px', opacity: 0.7 }}>Please login to your Pajji Learn account first.</p>
-        <Link href="/" style={{ padding: '12px 24px', background: 'var(--jade)', borderRadius: '8px', color: '#04150D', fontWeight: 'bold', textDecoration: 'none' }}>
+        <Link href="/" style={{ padding: '12px 24px', background: 'var(--jade)', borderRadius: '8px', color: 'var(--ink-on-accent)', fontWeight: 'bold', textDecoration: 'none' }}>
           Back to Home
         </Link>
       </div>
@@ -160,7 +160,7 @@ export default function RedeemPage() {
               padding: '14px', 
               background: 'var(--jade)', 
               borderRadius: '12px', 
-              color: '#04150D', 
+              color: 'var(--ink-on-accent)', 
               fontWeight: 'bold', 
               textDecoration: 'none',
               transition: 'transform 0.2s'
@@ -208,7 +208,7 @@ export default function RedeemPage() {
                 padding: '16px',
                 background: isSubmitting ? 'var(--jade-d)' : 'var(--jade)',
                 borderRadius: '12px',
-                color: '#04150D',
+                color: 'var(--ink-on-accent)',
                 fontWeight: 'bold',
                 fontSize: '1rem',
                 border: 'none',

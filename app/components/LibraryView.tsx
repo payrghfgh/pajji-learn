@@ -49,7 +49,7 @@ const getSubjectStyle = (title: string, iconOverride?: string): SubjectStyle => 
       gradient: "linear-gradient(150deg, #0F3D2E, #0A2A20)",
       color: "var(--jade)",
       badgeBg: "var(--jade)",
-      badgeColor: "#04150D",
+      badgeColor: "var(--ink-on-accent)",
       rotation: "-5deg",
       barColor: "default",
     };
@@ -82,7 +82,7 @@ const getSubjectStyle = (title: string, iconOverride?: string): SubjectStyle => 
       gradient: "linear-gradient(150deg, #0F3D2E, #071F17)",
       color: "var(--jade)",
       badgeBg: "var(--jade)",
-      badgeColor: "#04150D",
+      badgeColor: "var(--ink-on-accent)",
       rotation: "5deg",
       barColor: "default",
     };

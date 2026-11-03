@@ -62,7 +62,7 @@ export default function AuthPage() {
               type=submit routes click and Enter through one path. */}
           <button
             type="submit"
-            className="w-full bg-[var(--jade)] text-[#04150D] font-bold p-2 rounded hover:bg-[#5FE0AC]"
+            className="w-full bg-[var(--jade)] text-[var(--ink-on-accent)] font-bold p-2 rounded hover:bg-[var(--jade-light)]"
           >
             {isLogin ? "Login" : "Sign Up"}
           </button>

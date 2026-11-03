@@ -43,6 +43,14 @@
     --coral: #FF6B6B;
     --coral-d: #96302F;
     --coral-soft: rgba(255, 107, 107, 0.14);
+    /* Foreground for text and icons sitting on a solid accent surface.
+       Measures 8.18:1 on --jade. Was the literal hex #04150D in 28 places,
+       always for this one purpose. */
+    --ink-on-accent: #04150D;
+    /* Light end of the jade gradient: --accent-grad, --brand-gradient and the
+       progress bar all end here. Promoted from a repeated literal so hover
+       states have something to point at. */
+    --jade-light: #5FE0AC;
     --r-s: 10px;
     --r-m: 16px;
     --r-l: 22px;
@@ -184,7 +192,7 @@
 
   .flashcard-back {
     background: var(--accent-grad);
-    color: #04150D;
+    color: var(--ink-on-accent);
     transform: rotateY(180deg);
   }
 
@@ -331,7 +339,7 @@
 
   .sa-btn-p {
     background: var(--jade);
-    color: #04150D;
+    color: var(--ink-on-accent);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   .sa-btn-p:active {
@@ -708,7 +716,7 @@
     font-family: var(--disp);
     font-weight: 800;
     font-size: 19px;
-    color: #04150D;
+    color: var(--ink-on-accent);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   }
 
