@@ -20,6 +20,12 @@ import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signInAnonymously, onAuthStateChanged, signOut
 } from "firebase/auth";
+import { parseFlashcardsFromCsv } from "./lib/study-import";
+import { ChapterListView } from "./components/ChapterListView";
+import { CreditsView } from "./components/CreditsView";
+import { AnimatedCounter, CursorTrail, FloatingParticles, FocusGarden as FocusGardenVisual } from "./components/AppOverlays";
+import { AppNavigation } from "./components/AppNavigation";
+import { AppShell } from "./components/AppShell";
 
 // --- FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -105,138 +111,6 @@ const ADMIN_EMAILS = new Set([
   "rushianbindra@gmail.com",
 ].map(toCanonicalEmail));
 
-const normalizeCsvCell = (value: string) =>
-  `${value ?? ""}`
-    .replace(/^\uFEFF/, "")
-    .trim()
-    .replace(/\s+/g, " ");
-
-const detectCsvDelimiter = (text: string) => {
-  const sample = text
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .find((line) => line.trim().length > 0) || "";
-  const delimiters = [",", "\t", ";", "|"];
-  let bestDelimiter = ",";
-  let bestScore = -1;
-
-  delimiters.forEach((delimiter) => {
-    let score = 0;
-    let inQuotes = false;
-    for (let i = 0; i < sample.length; i += 1) {
-      const ch = sample[i];
-      if (ch === '"') {
-        if (inQuotes && sample[i + 1] === '"') {
-          i += 1;
-        } else {
-          inQuotes = !inQuotes;
-        }
-        continue;
-      }
-      if (!inQuotes && ch === delimiter) score += 1;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestDelimiter = delimiter;
-    }
-  });
-
-  return bestDelimiter;
-};
-
-const parseDelimitedText = (text: string, delimiter: string) => {
-  const normalized = text
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n");
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < normalized.length; i += 1) {
-    const ch = normalized[i];
-    if (ch === '"') {
-      if (inQuotes && normalized[i + 1] === '"') {
-        cell += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (!inQuotes && ch === delimiter) {
-      row.push(cell);
-      cell = "";
-      continue;
-    }
-    if (!inQuotes && ch === "\n") {
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-      continue;
-    }
-    cell += ch;
-  }
-
-  row.push(cell);
-  if (row.some((value) => value.trim().length > 0)) {
-    rows.push(row);
-  }
-
-  return rows.map((currentRow) => currentRow.map((value) => normalizeCsvCell(value)));
-};
-
-const headerMatches = (headerCell: string, aliases: string[]) => {
-  const value = normalizeCsvCell(headerCell).toLowerCase();
-  return aliases.some((alias) => {
-    const key = alias.toLowerCase();
-    if (key.length <= 2) return value === key;
-    return (
-      value === key ||
-      value.startsWith(`${key} `) ||
-      value.startsWith(`${key}_`) ||
-      value.startsWith(`${key}-`) ||
-      value.includes(` ${key} `)
-    );
-  });
-};
-
-const parseFlashcardsFromCsv = (text: string) => {
-  const delimiter = detectCsvDelimiter(text);
-  const rows = parseDelimitedText(text, delimiter).filter((row) => row.some((cell) => cell.trim().length > 0));
-  if (rows.length === 0) return [];
-
-  const header = rows[0];
-  const questionAliases = ["question", "front", "prompt", "term", "cue", "flashcard front", "card front", "front side", "q"];
-  const answerAliases = ["answer", "back", "response", "definition", "flashcard back", "card back", "back side", "a"];
-  const questionIndex = header.findIndex((cell) => headerMatches(cell, questionAliases));
-  const answerIndex = header.findIndex((cell) => headerMatches(cell, answerAliases));
-  const hasHeader = questionIndex >= 0 || answerIndex >= 0;
-  const dataRows = hasHeader ? rows.slice(1) : rows;
-  const seen = new Set<string>();
-  const cards: Array<{ q: string; a: string }> = [];
-
-  dataRows.forEach((row) => {
-    const question = hasHeader
-      ? normalizeCsvCell(row[questionIndex >= 0 ? questionIndex : 0] || "")
-      : normalizeCsvCell(row[0] || "");
-    const answer = hasHeader
-      ? normalizeCsvCell(row[answerIndex >= 0 ? answerIndex : 1] || "")
-      : normalizeCsvCell(row[1] || "");
-
-    if (!question || !answer) return;
-    const fingerprint = `${question.toLowerCase()}::${answer.toLowerCase()}`;
-    if (seen.has(fingerprint)) return;
-    seen.add(fingerprint);
-    cards.push({ q: question, a: answer });
-  });
-
-  return cards;
-};
 
 export default function Home() {
   return (
@@ -442,27 +316,6 @@ function AppContent() {
     return () => window.removeEventListener("keydown", handler);
   }, [fireworksMode, godMode, isZenMode]);
 
-  // Cursor Trail
-  const CursorTrail = () => {
-    const mouse = { x: useMotionValue(0), y: useMotionValue(0) };
-    useEffect(() => {
-      const move = (e: MouseEvent) => { mouse.x.set(e.clientX); mouse.y.set(e.clientY); };
-      window.addEventListener("mousemove", move);
-      return () => window.removeEventListener("mousemove", move);
-    }, []);
-    return (
-      <motion.div
-        style={{
-          position: "fixed", top: -20, left: -20, width: 40, height: 40,
-          borderRadius: "50%", background: "var(--accent)", opacity: 0.15,
-          filter: "blur(20px)", pointerEvents: "none", zIndex: 9999,
-          x: useSpring(mouse.x, { damping: 20, stiffness: 200 }),
-          y: useSpring(mouse.y, { damping: 20, stiffness: 200 })
-        }}
-      />
-    );
-  };
-
   // Update session time
   useEffect(() => {
     const timer = setInterval(() => {
@@ -502,95 +355,8 @@ function AppContent() {
     setPrevLevel(currentLvl);
   }, [userXP, prevLevel]);
 
-  // Components for animations
-  const FocusGarden = () => (
-    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", padding: "20px" }}>
-      {[...Array(gardenPlants)].map((_, i) => {
-        const isUltra = memTier === "ultra";
-        return (
-          <motion.div
-            key={i}
-            className={`leaf-grow ${isUltra ? "ultra-glow" : ""}`}
-            initial={{ scale: 0, rotate: -20 }}
-            animate={{ scale: 1, rotate: 0 }}
-            whileHover={{ opacity: 0.8 }}
-            style={{ width: "24px", height: "40px", color: isUltra ? "#FFD700" : "var(--accent)", filter: isUltra ? "drop-shadow(0 0 8px rgba(255,215,0,0.5))" : "none" }}
-          >
-            <svg viewBox="0 0 100 100">
-              <path d="M 50 100 C 20 70 20 30 50 0 C 80 30 80 70 50 100" fill="currentColor" />
-            </svg>
-          </motion.div>
-        );
-      })}
-      {gardenPlants === 0 && (
-        <div style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "700" }}>
-          Start focusing to grow your garden...
-        </div>
-      )}
-    </div>
-  );
+  const FocusGarden = () => <FocusGardenVisual gardenPlants={gardenPlants} memTier={memTier} />;
 
-  const AnimatedCounter = ({ value }: { value: number }) => {
-    const [displayValue, setDisplayValue] = useState(value);
-    useEffect(() => {
-      let start = displayValue;
-      const end = value;
-      if (start === end) return;
-      const duration = 1000;
-      let timer: any;
-      const step = () => {
-        const diff = end - start;
-        if (Math.abs(diff) < 1) {
-          setDisplayValue(end);
-          return;
-        }
-        start += diff * 0.1;
-        setDisplayValue(Math.round(start));
-        timer = requestAnimationFrame(step);
-      };
-      timer = requestAnimationFrame(step);
-      return () => cancelAnimationFrame(timer);
-    }, [value]);
-    return <span>{displayValue}</span>;
-  };
-
-  const FloatingParticles = useMemo(() => {
-    return () => (
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{
-              x: Math.random() * 100 + "%",
-              y: Math.random() * 100 + "%",
-              opacity: 0.1
-            }}
-            animate={{
-              y: [null, "-20%", "120%"],
-              x: [null, `${Math.random() * 100}%`],
-              opacity: [0.1, 0.2, 0.1]
-            }}
-            transition={{
-              duration: 25 + Math.random() * 25,
-              repeat: Infinity,
-              ease: "linear",
-              delay: i * -8
-            }}
-            style={{
-              position: "absolute",
-              width: Math.random() * 200 + 100 + "px",
-              height: Math.random() * 200 + 100 + "px",
-              background: "radial-gradient(circle, var(--accent-soft) 0%, transparent 70%)",
-              borderRadius: "50%",
-              filter: "blur(60px)",
-              willChange: "transform, opacity",
-              transform: "translateZ(0)"
-            }}
-          />
-        ))}
-      </div>
-    );
-  }, []);
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -813,13 +579,8 @@ function AppContent() {
   }, [curBook]);
 
   useEffect(() => {
-    const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const storedTheme = window.localStorage.getItem("theme") as 'dark' | 'light';
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else {
-      setTheme(darkQuery.matches ? 'dark' : 'light');
-    }
+    // Redesign mandates dark mode unconditionally for the app shell and screens
+    setTheme('dark');
     const storedUiTheme = window.localStorage.getItem("uiTheme");
     if (storedUiTheme) setUiTheme(storedUiTheme);
     const storedTextSize = window.localStorage.getItem("textSize");
@@ -832,14 +593,6 @@ function AppContent() {
     if (storedQuickSettings === "1" || storedQuickSettings === "0") setMobileQuickSettings(storedQuickSettings === "1");
     const storedSound = window.localStorage.getItem("soundEnabled");
     if (storedSound === "1" || storedSound === "0") setSoundEnabled(storedSound === "1");
-
-    // Only follow system theme if no manual preference is set
-    const themeListener = (e: MediaQueryListEvent) => {
-      if (!window.localStorage.getItem("theme")) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    darkQuery.addEventListener('change', themeListener);
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -906,7 +659,6 @@ function AppContent() {
     });
 
     return () => {
-      darkQuery.removeEventListener('change', themeListener);
       unsubAuth();
     };
   }, []);
@@ -1025,7 +777,7 @@ function AppContent() {
         setMembershipExpiry(data.membershipExpiry || "");
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
-        if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
+        // theme is locked to dark unconditionally (option c) — never read from stored prefs
         if (prefs.textSize && (prefs.textSize === "compact" || prefs.textSize === "default" || prefs.textSize === "large")) setTextSize(prefs.textSize);
         setReduceMotion(!!prefs.reduceMotion);
         setHighContrast(!!prefs.highContrast);
@@ -3017,7 +2769,7 @@ function AppContent() {
   };
   const applyThemePreset = (preset: "study" | "night" | "focus") => {
     if (preset === "study") {
-      setTheme("light");
+      // theme stays dark — locked unconditionally (option c)
       setUiTheme("paper");
       setTextSize("default");
       setReduceMotion(false);
@@ -3195,7 +2947,7 @@ function AppContent() {
   }
 
   return (
-    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass} min-h-screen font-sans`} style={customThemeVars as any}>
+    <AppShell className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass} min-h-screen font-sans`} style={customThemeVars as any}>
       <FloatingParticles />
       <CursorTrail />
 
@@ -4501,288 +4253,51 @@ function AppContent() {
         }
       `}</style>
 
-      <motion.div
-        className={`sidebar style-${sidebarStyle}`}
-        style={{
-          ...(sidebarStyle === "floating" ? {
-            height: "calc(100vh - 40px)",
-            margin: "20px",
-            borderRadius: "24px",
-            border: "1px solid var(--border)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.3)"
-          } : sidebarStyle === "minimal" ? {
-            width: "80px",
-            padding: "32px 10px",
-            alignItems: "center"
-          } : {})
-        }}
-      >
-        <div className="sidebar-extras" style={{ marginBottom: "40px" }}>
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ fontSize: sidebarStyle === "minimal" ? "14px" : "24px", textAlign: "center", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)" }}
+      {/* ── Desktop Nav Rail (Mockup: .side) ── */}
+      <AppNavigation
+        view={view}
+        setView={setView}
+        fetchLeaderboard={fetchLeaderboard}
+        onFocusFlight={() => { window.location.href = "/focus-flight"; }}
+        onSignOut={() => signOut(auth)}
+        userXP={userXP}
+        userLevel={userLevel}
+      />
+
+      {/* ── Main Canvas (Mockup: .main) ── */}
+      <div className="sa-main" ref={mainContentRef}>
+        {/* Mockup In-flow Topbar */}
+        <header className="sa-topbar">
+          <div
+            className="sa-search"
+            onClick={() => setIsSpotlightOpen(true)}
+            role="button"
+            tabIndex={0}
           >
-            P{sidebarStyle !== "minimal" && <span>AJJI <span style={{ color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)" }}>LEARN</span></span>}
-          </motion.h1>
-
-          {sidebarStyle !== "minimal" && (
-            <motion.div
-              whileHover={{ opacity: 0.9 }}
-              className={`card ${memTier === "ultra" ? "ultra-glow" : ""}`}
-              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
-            >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-              <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
-                {profilePic ? (
-                  <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
-                ) : (
-                  <User size={24} color="white" />
-                )}
-              </div>
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Rank: {userLevel >= 10 ? "ELITE" : "NOVICE"}</p>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <h3 style={{ fontSize: "15px", fontWeight: "800" }}>{getUserName(user).split(' ')[0]}</h3>
-                  {(() => {
-                    const mem = (membership || "").toUpperCase().replace(/[\s_]+/g, "");
-                    return (
-                      <>
-                        {(mem === "PAJJIPLUS" || mem === "PLUS") && (
-                          <span style={{
-                            background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)",
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))",
-                            fontWeight: "900",
-                            fontSize: "18px",
-                            position: "relative",
-                            top: "-2px",
-                            marginLeft: "6px"
-                          }}>+</span>
-                        )}
-                        {(mem === "PAJJIPRO" || mem === "PRO") && (
-                          <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#goldGrad)" stroke="url(#goldGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <defs>
-                                <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
-                                  <stop offset="0%" stopColor="#ffd700" />
-                                  <stop offset="50%" stopColor="#ffb300" />
-                                  <stop offset="100%" stopColor="#fff8b0" />
-                                </linearGradient>
-                              </defs>
-                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-                            </svg>
-                          </span>
-                        )}
-                        {(mem === "PAJJIULTRA" || mem === "ULTRA") && (
-                          <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <defs>
-                                <linearGradient id="goldGradU" x1="0" y1="0" x2="1" y2="1">
-                                  <stop offset="0%" stopColor="#ffd700" />
-                                  <stop offset="50%" stopColor="#ffb300" />
-                                  <stop offset="100%" stopColor="#fff8b0" />
-                                </linearGradient>
-                                <mask id="u-slit-mask">
-                                  <rect width="24" height="24" fill="white" />
-                                  <line x1="2" y1="4" x2="10" y2="12" stroke="black" strokeWidth="4" />
-                                </mask>
-                              </defs>
-                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGradU)" strokeWidth="4" strokeLinecap="round" mask="url(#u-slit-mask)" />
-                            </svg>
-                          </span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-            <div style={{ height: "6px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(userXP % 1000) / 10}%` }}
-                transition={{ duration: 1.5, type: "spring" }}
-                style={{ height: "100%", background: "var(--accent-grad)", borderRadius: "10px" }}
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
-              <p style={{ fontSize: "11px", fontWeight: "800", opacity: 0.6 }}>{userXP} XP</p>
-              <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>Lvl {userLevel + 1}</p>
-            </div>
-          </motion.div>
-        )}
-      </div>
-
-        <nav className="sidebar-nav">
-          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
-            <LayoutDashboard size={20} />
-            {sidebarStyle !== "minimal" && <span>Dashboard</span>}
-          </button>
-          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}>
-            <BookOpen size={20} />
-            {sidebarStyle !== "minimal" && <span>Library</span>}
-          </button>
-          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}>
-            <Trophy size={20} />
-            {sidebarStyle !== "minimal" && <span>Leaderboard</span>}
-          </button>
-          <button className="nav-btn" onClick={() => window.location.href = '/focus-flight'}>
-            <Plane size={20} />
-            {sidebarStyle !== "minimal" && <span>Focus Flight</span>}
-          </button>
-          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}>
-            <Settings size={20} />
-            {sidebarStyle !== "minimal" && <span>Settings</span>}
-          </button>
-        </nav>
-
-        <div className="sidebar-extras" style={{ marginTop: "auto" }}>
-          <button
-            onClick={() => signOut(auth)}
-            className="nav-btn"
-            style={{ color: "#ef4444" }}
-          >
-            <LogOut size={20} />
-            {sidebarStyle !== "minimal" && <span>Logout</span>}
-          </button>
-        </div>
-      </motion.div>
-
-      <div className="main-content" ref={mainContentRef}>
-        <div className="status-bar-wrapper">
-          <motion.div
-            drag
-            dragConstraints={{ left: -100, right: 100, top: 0, bottom: 400 }}
-            dragElastic={0.1}
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="status-bar"
-            whileDrag={{ cursor: "grabbing", scale: 1.02, boxShadow: "0 15px 45px rgba(0,0,0,0.6)" }}
-          >
-            {/* Level Badge */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "800" }}>
-              <div style={{ background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>LVL {userLevel}</div>
-              {leaderboard.length > 0 && user && (
-                <div style={{ background: "var(--input-bg)", color: "var(--text)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>
-                  #{leaderboard.sort((a, b) => (b.xp || 0) - (a.xp || 0)).findIndex(p => p.uid === user.uid) + 1}
-                </div>
-              )}
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800" }}>
-              <Zap size={14} color="var(--accent)" />
-              <span style={{ color: "var(--accent)" }}>{sessionXP} <span className="mobile-hide">XP SESSION</span></span>
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800", color: "white" }}>
-              <Clock size={14} />
-              <span>{sessionTime}m</span>
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-
-            {/* Streak & Goal & Wins */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#f59e0b" }}>
-                <Flame size={14} />
-                <span>{streakCount}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#ec4899" }}>
-                <span style={{ fontSize: "10px" }}>W</span>
-                <span>{dailyCompleted}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#3b82f6" }}>
-                <Trophy size={14} />
-                <span>{Math.round(goalProgressPct)}%</span>
-              </div>
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              {[
-                { id: "lofi", icon: <Music size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", label: "Lofi Focus" },
-                { id: "rain", icon: <CloudRain size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", label: "Rainy Day" },
-                { id: "focus", icon: <Brain size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", label: "Deep Work" },
-                { id: "chill", icon: <Coffee size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", label: "Chill Vibes" },
-                { id: "synth", icon: <Zap size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", label: "Synth Night" },
-                { id: "wind", icon: <Wind size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", label: "Forest Wind" },
-                { id: "waves", icon: <Waves size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", label: "Deep Sea" },
-                { id: "zen", icon: <Sparkles size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", label: "Ultra Zen 💎", premium: true },
-                { id: "ocean", icon: <Heart size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3", label: "Ocean Mist 💎", premium: true },
-              ].map(track => {
-                const hasAccess = !track.premium || memTier === "ultra" || memTier === "pro";
-                return (
-                  <button
-                    key={track.id}
-                    title={hasAccess ? track.label : "Premium Only 💎"}
-                    onClick={() => hasAccess && setActiveAudio(activeAudio === track.url ? null : track.url)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: activeAudio === track.url ? "var(--accent)" : hasAccess ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
-                      cursor: hasAccess ? "pointer" : "not-allowed",
-                      display: "grid",
-                      placeItems: "center",
-                      transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                      transform: activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)",
-                      animation: activeAudio === track.url ? "music-pulse 2s infinite ease-in-out" : "none"
-                    }}
-                    onMouseEnter={(e) => { if (hasAccess) { e.currentTarget.style.color = "white"; if (activeAudio !== track.url) e.currentTarget.style.transform = "scale(1.3) translateY(-2px)"; } }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : hasAccess ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)";
-                      e.currentTarget.style.transform = activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)";
-                    }}
-                  >
-                    {track.icon}
-                  </button>
-                );
-              })}
-              <div style={{ width: "1px", height: "12px", background: "var(--border)", margin: "0 4px" }} />
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", display: "grid", placeItems: "center" }}
-              >
-                {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
-              </button>
-            </div>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 10px var(--accent)", animation: "pulse 2s infinite" }} />
-          </motion.div>
-          {activeAudio && <audio src={activeAudio} autoPlay loop style={{ display: "none" }} />}
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mobile-header"
-        >
-          <h1 style={{ fontSize: "18px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI <span style={{ color: "var(--accent)" }}>LEARN</span></h1>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div 
-              className="xp-badge"
-              onClick={(e) => {
-                const emojis = ["⭐", "✨", "🔥", "💥", "🎉", "🚀", "💫", "🏆"];
-                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-                const el = document.createElement("div");
-                el.className = "xp-float-emoji";
-                el.textContent = emoji;
-                el.style.left = `${e.clientX - 10}px`;
-                el.style.top = `${e.clientY - 10}px`;
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 1000);
-              }}
-              style={{ fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)", cursor: "pointer", userSelect: "none", transition: "transform 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
-              ⚡ {userXP} XP
-            </div>
-            {mobileQuickSettings && (
-              <button onClick={() => setView("settings")} style={{ background: "var(--input-bg)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px", color: "var(--text)", cursor: "pointer" }}>
-                <Settings size={18} />
-              </button>
-            )}
+            <span>⌕ Search chapters, formulas, notes…</span>
+            <span className="sa-kbd">⌘K</span>
           </div>
-        </motion.div>
 
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "12px" }}>
+            <span className="sa-badge sa-b-jade">🔥 {streakCount}</span>
+            <span className="sa-badge sa-b-amber">⚡ {userXP.toLocaleString()} XP</span>
+            <div
+              className="sa-av sa-av-user"
+              onClick={() => setView("settings")}
+              style={{
+                width: "34px",
+                height: "34px",
+                borderRadius: "10px",
+                cursor: "pointer",
+                border: "1px solid var(--line-2)",
+              }}
+              title={getUserName(user)}
+            />
+          </div>
+        </header>
+
+        {/* Scrollable View Body */}
+        <div className="sa-body">
         <AnimatePresence mode="wait">
           {view === "dashboard" && (
             <DynamicDashboard
@@ -4838,6 +4353,11 @@ function AppContent() {
               sortedFilteredBooks={sortedFilteredBooks}
               setCurBook={setCurBook}
               setView={setView}
+              libraryFilter={libraryFilter}
+              setLibraryFilter={setLibraryFilter}
+              completedLessons={completedLessons}
+              openLesson={openLesson}
+              resumeLesson={resumeLesson}
             />
           )}
 
@@ -4905,53 +4425,7 @@ function AppContent() {
             />
           )}
 
-          {view === "credits" && (
-            <motion.div
-              key="credits"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: -20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="page-shell" style={{ maxWidth: "600px" }}
-            >
-              <button onClick={() => setView("settings")} className="btn-link" style={{ marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <ChevronLeft size={18} /> Back to Settings
-              </button>
-
-              <h1 className="page-title" style={{ marginBottom: "32px" }}>Credits 🏆</h1>
-
-              <div className="card" style={{ padding: "40px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-                <div style={{ padding: "20px", borderRadius: "50%", background: "var(--accent-soft)", color: "var(--accent)", width: "80px", height: "80px", display: "grid", placeItems: "center" }}>
-                  <Heart size={40} fill="currentColor" />
-                </div>
-
-                <div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI LEARN</h2>
-                  <p style={{ color: "var(--muted)", maxWidth: "300px", margin: "12px auto" }}>Built with passion for modern students.</p>
-                </div>
-
-                <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  <div>
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Lead Developer</p>
-                    <p style={{ fontSize: "20px", fontWeight: "700" }}>Rushan</p>
-                  </div>
-
-                  <div>
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Main Tester</p>
-                    <p style={{ fontSize: "20px", fontWeight: "700" }}>Arjun</p>
-                  </div>
-                </div>
-
-                <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
-
-                <p style={{ fontSize: "14px", fontWeight: "700", fontStyle: "italic", opacity: 0.8 }}>
-
-                </p>
-              </div>
-            </motion.div>
-          )}
+          {view === "credits" && <CreditsView onBack={() => setView("settings")} />}
 
           {view === "membership" && (
             <DynamicMembership
@@ -5014,25 +4488,15 @@ function AppContent() {
         </AnimatePresence>
 
         {view === "chapters" && curBook && (
-          <div className="page-shell" style={{ maxWidth: "880px" }}>
-            <button onClick={() => setView("library")} className="btn-link" style={{ marginBottom: "16px" }}>← Library 📚</button>
-            <div className="page-header">
-              <h1 className="page-title">{curBook.title}</h1>
-              {isOwner && <button onClick={addLesson} className="btn btn-primary">+ Add Lesson</button>}
-            </div>
-            {(curBook.chapters || []).map((ch: any) => (
-              <div key={ch.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px" }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: "17px", fontWeight: "700" }}>{ch.title}</span>
-                  {completedLessons.includes(ch.id) && <span style={{ marginLeft: "12px", fontSize: "11px", color: "var(--accent)", fontWeight: "900", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "10px" }}>✓ MASTERED</span>}
-                </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={() => openLesson(curBook, ch)} className="btn btn-primary" style={{ padding: "8px 20px" }}>Study</button>
-                  {isOwner && (<button onClick={() => { setCurChapter(ch); setTempChapter(ch); setView("edit"); }} className="btn btn-secondary" style={{ padding: "8px 12px" }}>✎</button>)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ChapterListView
+            book={curBook}
+            completedLessons={completedLessons}
+            isOwner={isOwner}
+            onBack={() => setView("library")}
+            onAddLesson={addLesson}
+            onStudy={(chapter) => openLesson(curBook, chapter)}
+            onEdit={(chapter) => { setCurChapter(chapter); setTempChapter(chapter); setView("edit"); }}
+          />
         )}
 
         {view === "study" && curChapter && (
@@ -5204,7 +4668,56 @@ function AppContent() {
           </>
         )}
         <CommandPalette />
+        </div>
+
+        {/* ── Mobile Pinned Tab Bar (Mockup: .mob bottom bar) ── */}
+        <nav className="sa-mob-bottom-bar" aria-label="Mobile navigation">
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "dashboard" ? "on" : ""}`}
+            onClick={() => setView("dashboard")}
+          >
+            <span className="sa-mob-tab-icon">▦</span>
+            <span className="sa-mob-tab-lbl">Home</span>
+          </button>
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "library" || view === "chapters" ? "on" : ""}`}
+            onClick={() => setView("library")}
+          >
+            <span className="sa-mob-tab-icon">▤</span>
+            <span className="sa-mob-tab-lbl">Library</span>
+          </button>
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "study" ? "on" : ""}`}
+            onClick={() => setView("study")}
+          >
+            <span className="sa-mob-tab-icon">✦</span>
+            <span className="sa-mob-tab-lbl">Cards</span>
+          </button>
+          <button
+            type="button"
+            className="sa-mob-tab"
+            onClick={() => { window.location.href = "/focus-flight"; }}
+          >
+            <span className="sa-mob-tab-icon">✈</span>
+            <span className="sa-mob-tab-lbl">Focus</span>
+          </button>
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "leaderboard" ? "on" : ""}`}
+            onClick={() => {
+              setView("leaderboard");
+              fetchLeaderboard();
+            }}
+          >
+            <span className="sa-mob-tab-icon">▲</span>
+            <span className="sa-mob-tab-lbl">Ranks</span>
+          </button>
+        </nav>
       </div>
-    </div>
+    </AppShell>
   );
 }
+
