@@ -1,7 +1,6 @@
 "use client";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import Head from "next/head";
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring, useTransform, useMotionTemplate } from "framer-motion";
 import {
@@ -115,11 +114,6 @@ const ADMIN_EMAILS = new Set([
 export default function Home() {
   return (
     <>
-      <Head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet" />
-      </Head>
       <AppContent />
     </>
   );
@@ -3027,12 +3021,8 @@ function AppContent() {
       </motion.button>
 
       <style>{`
-        :root {
-          --font-main: 'Outfit', sans-serif;
-        }
-
         body {
-          font-family: var(--font-main);
+          font-family: var(--body);
           letter-spacing: -0.01em;
           background: var(--bg);
         }
