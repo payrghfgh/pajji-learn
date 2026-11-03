@@ -184,7 +184,7 @@
 
   .flashcard-back {
     background: var(--accent-grad);
-    color: white;
+    color: #04150D;
     transform: rotateY(180deg);
   }
 
