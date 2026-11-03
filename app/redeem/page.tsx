@@ -103,7 +103,7 @@ export default function RedeemPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', color: 'white' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--ink-0)', color: 'white' }}>
         <p>Loading...</p>
       </div>
     );
@@ -111,10 +111,10 @@ export default function RedeemPage() {
 
   if (!user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', color: 'white', padding: '20px' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--ink-0)', color: 'white', padding: '20px' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '20px' }}>Redeem Your Code</h1>
         <p style={{ marginBottom: '30px', opacity: 0.7 }}>Please login to your Pajji Learn account first.</p>
-        <Link href="/" style={{ padding: '12px 24px', background: '#10b981', borderRadius: '8px', color: 'black', fontWeight: 'bold', textDecoration: 'none' }}>
+        <Link href="/" style={{ padding: '12px 24px', background: 'var(--jade)', borderRadius: '8px', color: '#04150D', fontWeight: 'bold', textDecoration: 'none' }}>
           Back to Home
         </Link>
       </div>
@@ -124,7 +124,7 @@ export default function RedeemPage() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: '#0a0a0a', 
+      background: 'var(--ink-0)', 
       color: 'white', 
       display: 'flex', 
       flexDirection: 'column', 
@@ -144,7 +144,7 @@ export default function RedeemPage() {
         textAlign: 'center',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
       }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800', background: 'linear-gradient(to right, #10b981, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800', background: 'linear-gradient(to right, var(--jade), var(--azure))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
           Redeem Code
         </h1>
         <p style={{ marginBottom: '32px', opacity: 0.6 }}>Enter your special code to unlock premium features.</p>
@@ -158,9 +158,9 @@ export default function RedeemPage() {
             <Link href="/" style={{ 
               display: 'block',
               padding: '14px', 
-              background: '#10b981', 
+              background: 'var(--jade)', 
               borderRadius: '12px', 
-              color: 'black', 
+              color: '#04150D', 
               fontWeight: 'bold', 
               textDecoration: 'none',
               transition: 'transform 0.2s'
@@ -190,12 +190,12 @@ export default function RedeemPage() {
                 outline: 'none',
                 transition: 'border-color 0.2s'
               }}
-              onFocus={(e) => e.target.style.borderColor = '#10b981'}
+              onFocus={(e) => e.target.style.borderColor = 'var(--jade)'}
               onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
             />
 
             {status.type === 'error' && (
-              <p style={{ color: '#ef4444', marginBottom: '16px', fontSize: '0.9rem', fontWeight: '500' }}>
+              <p style={{ color: 'var(--coral)', marginBottom: '16px', fontSize: '0.9rem', fontWeight: '500' }}>
                 {status.message}
               </p>
             )}
@@ -206,9 +206,9 @@ export default function RedeemPage() {
               style={{
                 width: '100%',
                 padding: '16px',
-                background: isSubmitting ? '#065f46' : '#10b981',
+                background: isSubmitting ? 'var(--jade-d)' : 'var(--jade)',
                 borderRadius: '12px',
-                color: 'black',
+                color: '#04150D',
                 fontWeight: 'bold',
                 fontSize: '1rem',
                 border: 'none',
