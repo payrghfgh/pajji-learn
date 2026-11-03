@@ -516,9 +516,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             ) : (
               // Honest empty state. The old fallback rendered three hardcoded
               // example pins beside a "0 saved" count -- the app lying on screen.
+              // The real affordance is StudyView's 'Pin Key Point' box on the My
+              // Notes tab: type a takeaway, press Pin. There is no per-key-point
+              // Pin, so the copy names the actual control and where it lives.
               <p style={{ margin: 0, fontSize: "13.5px", lineHeight: "1.4", color: "var(--dim)" }}>
-                Nothing pinned yet. Open a lesson and tap{" "}
-                <b style={{ color: "var(--text)" }}>Pin</b> on a key point to keep it here.
+                Nothing pinned yet. Open a lesson, go to{" "}
+                <b style={{ color: "var(--text)" }}>My Notes</b>, and add a takeaway with{" "}
+                <b style={{ color: "var(--text)" }}>Pin Key Point</b>.
               </p>
             )}
           </div>
