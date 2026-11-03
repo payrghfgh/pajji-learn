@@ -3,6 +3,7 @@
 import { Inter, Syne, Bricolage_Grotesque, Plus_Jakarta_Sans, Azeret_Mono } from "next/font/google";
 import "./globals.css";
 import { PremiumBackground } from "./components/PremiumBackground";
+import { MotionProvider } from "./components/MotionProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -42,10 +43,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${syne.variable} ${bricolage.variable} ${jakarta.variable} ${azeret.variable}`}>
       <body className="font-sans antialiased" style={{ color: "var(--text)", backgroundColor: "var(--bg)" }}>
-        <PremiumBackground />
-        <main className="relative z-0 min-h-screen">
-          {children}
-        </main>
+        <MotionProvider>
+          <PremiumBackground />
+          <main className="relative z-0 min-h-screen">
+            {children}
+          </main>
+        </MotionProvider>
       </body>
     </html>
   )
