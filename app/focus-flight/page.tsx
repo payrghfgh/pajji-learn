@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, BarChart3, Globe, Navigation } from 'lucide-react';
 import { getActiveFlight, setActiveFlight, saveFlightSession, getFlightHistory, elapsedFocusMs, pausedTotal, FlightSession, FlightHistory, Route } from '@/lib/focus-flight';
@@ -20,6 +20,7 @@ export default function FocusFlightPage() {
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const cruiseRef = useRef<HTMLDivElement>(null);
 
   // PROGRESS TRACKER
   useEffect(() => {
@@ -124,10 +125,16 @@ export default function FocusFlightPage() {
     setActiveFlight(updated);
   }, [activeFlight, isPaused]);
 
+  // Move focus into the full-screen flight view on mount, so it is announced and
+  // the first Tab lands inside it rather than on the inert background.
+  useEffect(() => {
+    if (phase === 'cruise') cruiseRef.current?.focus();
+  }, [phase]);
+
   return (
     <div className="min-h-screen bg-[var(--ink-0)] text-[var(--text)] overflow-hidden relative selection:bg-[var(--jade-soft)]">
       {/* MAP BACKGROUND ENGINE */}
-      <div className="absolute inset-0 z-0">
+      <div inert={phase === 'cruise'} className="absolute inset-0 z-0">
         <FlightMap 
           origin={activeFlight?.route.from.coords || { lat: 20, lng: 77 }}
           destination={activeFlight?.route.to.coords || { lat: 20, lng: 77 }}
@@ -137,7 +144,7 @@ export default function FocusFlightPage() {
       </div>
 
       {/* TOP NAVIGATION */}
-      <nav className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--ink-1)_40%,transparent)] backdrop-blur-2xl">
+      <nav inert={phase === 'cruise'} className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--ink-1)_40%,transparent)] backdrop-blur-2xl">
         <div className="flex items-center gap-5">
           <div className="w-14 h-14 bg-[var(--jade)] rounded-[22px] flex items-center justify-center shadow-[0_12px_34px_rgba(0,0,0,0.5)] border border-[var(--jade-soft)]">
             <Plane className="w-8 h-8 text-[var(--ink-on-accent)] -rotate-12" />
@@ -204,7 +211,12 @@ export default function FocusFlightPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[200] bg-transparent"
+              ref={cruiseRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Focus flight in progress"
+              tabIndex={-1}
+              className="fixed inset-0 z-[200] bg-transparent outline-none"
             >
               <CruisePhase 
                 session={activeFlight} 

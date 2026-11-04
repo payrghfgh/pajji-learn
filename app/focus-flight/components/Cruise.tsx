@@ -94,7 +94,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
       </div>
 
       {/* ROUTE HUD (TOP) */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 flex items-center gap-12 px-12 py-5 bg-[color-mix(in_oklab,var(--ink-1)_60%,transparent)] border border-[var(--line-2)] rounded-3xl backdrop-blur-2xl z-40">
+      <div inert={isInterrupted} className="absolute top-10 left-1/2 -translate-x-1/2 flex items-center gap-12 px-12 py-5 bg-[color-mix(in_oklab,var(--ink-1)_60%,transparent)] border border-[var(--line-2)] rounded-3xl backdrop-blur-2xl z-40">
         <div className="text-right space-y-0.5">
           <p className="text-[11px] font-black text-[var(--faint)] uppercase tracking-widest">Origin Hub</p>
           <p className="font-black text-xl text-[var(--text)] uppercase italic">{route.from.name} <span className="text-[var(--jade)] text-xs ml-1">{route.from.code}</span></p>
@@ -117,7 +117,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
       </div>
 
       {/* MISSION CONTROL CORE */}
-      <div className="relative z-10 flex flex-col items-center gap-16">
+      <div inert={isInterrupted} className="relative z-10 flex flex-col items-center gap-16">
         <div className="text-center space-y-8">
           <div className="space-y-4">
             <motion.div 
@@ -162,7 +162,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
       </div>
 
       {/* CONTROLS */}
-      <div className="absolute bottom-16 left-0 right-0 px-16 flex justify-between items-center z-50">
+      <div inert={isInterrupted} className="absolute bottom-16 left-0 right-0 px-16 flex justify-between items-center z-50">
         <div className="flex gap-6">
           <button
             onClick={() => setIsMuted(!isMuted)}
@@ -198,6 +198,9 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Critical deviation"
             className="absolute inset-0 z-[100] bg-[color-mix(in_oklab,var(--ink-0)_98%,transparent)] backdrop-blur-3xl flex flex-col items-center justify-center p-8 text-center"
           >
             <div className="w-32 h-32 bg-[color-mix(in_oklab,var(--amber)_10%,transparent)] rounded-full flex items-center justify-center mb-10 border border-[color-mix(in_oklab,var(--amber)_20%,transparent)] animate-pulse">
