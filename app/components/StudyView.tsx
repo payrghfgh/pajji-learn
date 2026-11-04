@@ -6,8 +6,11 @@ import { Zap, ChevronLeft, ChevronRight, BookOpen, Clock, CheckCircle2, Sparkles
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+const STUDY_TOOLS = ["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"];
+
 interface StudyViewProps {
   curChapter: any;
+  curBook?: any;
   setView: (v: string) => void;
   quickReviewMode: boolean;
   setQuickReviewMode: (v: boolean) => void;
@@ -89,7 +92,7 @@ interface StudyViewProps {
 }
 
 export const StudyView: React.FC<StudyViewProps> = ({
-  curChapter, setView, quickReviewMode, setQuickReviewMode,
+  curChapter, curBook, setView, quickReviewMode, setQuickReviewMode,
   completedLessons, markCompleted, unmasterLesson,
   isSpeedReadOpen, setIsSpeedReadOpen, speedReadIndex, setSpeedReadIndex,
   isZenMode, FocusGarden, switchStudyTab, activeTab,
@@ -108,6 +111,56 @@ export const StudyView: React.FC<StudyViewProps> = ({
   lessonFlashcards, flashcardIndex, setFlashcardIndex, flashcardReveal, setFlashcardReveal, soundEnabled
 }) => {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+
+  // Card-level known/review split, persisted per chapter in localStorage.
+  // Deliberately not Firestore: the user document is shared with AdminHub, and
+  // weakLessonIds is the quiz's signal -- repurposing it would corrupt what the
+  // dashboard calls a Turbulence Zone.
+  const [cardSplit, setCardSplit] = React.useState<{ known: string[]; review: string[] }>({ known: [], review: [] });
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !curChapter?.id) return;
+    try {
+      const raw = window.localStorage.getItem(`flashcardSplit:${curChapter.id}`);
+      const parsed = raw ? JSON.parse(raw) : null;
+      setCardSplit({
+        known: Array.isArray(parsed?.known) ? parsed.known : [],
+        review: Array.isArray(parsed?.review) ? parsed.review : [],
+      });
+    } catch {
+      setCardSplit({ known: [], review: [] });
+    }
+  }, [curChapter?.id]);
+
+  const recordCard = (kind: "known" | "review") => {
+    const q = lessonFlashcards[flashcardIndex]?.q;
+    if (!q || !curChapter?.id) return;
+    const next = {
+      known: cardSplit.known.filter((x: string) => x !== q),
+      review: cardSplit.review.filter((x: string) => x !== q),
+    };
+    next[kind].push(q);
+    setCardSplit(next);
+    try {
+      window.localStorage.setItem(`flashcardSplit:${curChapter.id}`, JSON.stringify(next));
+    } catch { }
+    setFlashcardReveal(false);
+    setFlashcardIndex((prev: number) => Math.min(lessonFlashcards.length - 1, prev + 1));
+  };
+
+  // Space flips the card, but never while typing in the AI bar.
+  React.useEffect(() => {
+    if (activeTab !== "Flashcards") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      setFlashcardReveal(!flashcardReveal);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeTab, flashcardReveal, setFlashcardReveal]);
 
   return (
     <div className="page-shell" style={{ maxWidth: "1000px" }}>
@@ -161,11 +214,15 @@ export const StudyView: React.FC<StudyViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
-        {["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
-          <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
-        ))}
-      </div>
+      {/* The flashcards view carries its own compact tool row, directly under the
+          deck bar. Every other panel keeps this one. */}
+      {activeTab !== "Flashcards" && (
+        <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
+          {STUDY_TOOLS.map(t => (
+            <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
+          ))}
+        </div>
+      )}
       <div className="card" style={{ minHeight: "500px", padding: "32px" }}>
         {["Summary", "Spellings"].includes(activeTab) && <div style={{ whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)" }}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
         {activeTab === "AI Explanation" && (
@@ -621,19 +678,46 @@ export const StudyView: React.FC<StudyViewProps> = ({
 
         {activeTab === "Flashcards" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div style={{ textAlign: "center", marginBottom: "12px" }}>
-              <p style={{ fontSize: "13px", color: "var(--muted)", fontWeight: "700" }}>
-                Master your knowledge with 3D Flashcards. Click to flip!
-              </p>
-              <p style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>
-                Progress: {Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length}
-              </p>
+            {/* Topbar row: book pill, chevron, chapter name, Exit */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              {curBook?.title && (
+                <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "4px 10px", whiteSpace: "nowrap" }}>
+                  ◆ {curBook.title}
+                </span>
+              )}
+              <span style={{ flexShrink: 0, color: "var(--faint)", fontSize: "13px" }}>›</span>
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13px", fontWeight: "700", color: "var(--text)" }}>
+                {curChapter.title}
+              </span>
+              <div style={{ flex: 1 }} />
+              <button onClick={() => setView("chapters")} style={{ flexShrink: 0, padding: "6px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: "700", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--dim)", cursor: "pointer" }}>
+                Exit
+              </button>
+            </div>
+
+            {/* Deck bar: thin, full width, jade fill, count right-aligned */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ flex: 1, height: "4px", borderRadius: "999px", background: "var(--ink-4)", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: "999px", background: "var(--jade)", width: `${lessonFlashcards.length ? Math.round(((Math.min(flashcardIndex + 1, lessonFlashcards.length)) / lessonFlashcards.length) * 100) : 0}%` }} />
+              </div>
+              <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: "700", color: "var(--faint)", fontVariantNumeric: "tabular-nums" }}>
+                {Math.min(flashcardIndex + 1, lessonFlashcards.length)} / {lessonFlashcards.length} cards
+              </span>
+            </div>
+
+            {/* The eleven tools, compact and scrollable. The plan draws no tab row;
+                this is the deliberate addition that keeps all ten others reachable. */}
+            <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
+              {STUDY_TOOLS.map(t => (
+                <button key={t} onClick={() => switchStudyTab(t)} style={{ flexShrink: 0, padding: "5px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: "700", whiteSpace: "nowrap", cursor: "pointer", background: activeTab === t ? "var(--jade)" : "var(--ink-2)", color: activeTab === t ? "var(--ink-on-accent)" : "var(--dim)", border: `1px solid ${activeTab === t ? "var(--jade)" : "var(--line)"}` }}>
+                  {t}
+                </button>
+              ))}
             </div>
 
             {lessonFlashcards.length > 0 ? (
               <>
                 <div
-                  className={`flashcard-scene ${flashcardReveal ? "is-flipped" : ""}`}
                   onClick={() => {
                     setFlashcardReveal(!flashcardReveal);
                     if (soundEnabled) {
@@ -642,38 +726,51 @@ export const StudyView: React.FC<StudyViewProps> = ({
                       } catch (e) { }
                     }
                   }}
+                  style={{ maxWidth: "460px", width: "100%", margin: "0 auto", minHeight: "220px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "14px", padding: "32px 28px", textAlign: "center", background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "var(--r-l)", cursor: "pointer" }}
                 >
-                  <div className="flashcard-inner">
-                    <div className="flashcard-front">
-                      <span style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Question</span>
-                      <h2 style={{ fontSize: "24px", fontWeight: "800", lineHeight: "1.4" }}>{lessonFlashcards[flashcardIndex]?.q}</h2>
-                      <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.5 }}>Click to Reveal Answer</p>
-                    </div>
-                    <div className="flashcard-back">
-                      <span style={{ fontSize: "12px", color: "var(--ink-on-accent)", opacity: 0.8, fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Answer</span>
-                      <p style={{ fontSize: "20px", fontWeight: "700", lineHeight: "1.6" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
-                      <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.8 }}>Click to hide</p>
-                    </div>
-                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--faint)" }}>
+                    Question {Math.min(flashcardIndex + 1, lessonFlashcards.length)} of {lessonFlashcards.length}
+                  </span>
+                  <p style={{ margin: 0, fontSize: "27px", fontWeight: "700", lineHeight: 1.3, color: "var(--text)" }}>
+                    {flashcardReveal ? lessonFlashcards[flashcardIndex]?.a : lessonFlashcards[flashcardIndex]?.q}
+                  </p>
+                  <span style={{ fontSize: "12px", color: "var(--faint)" }}>
+                    {flashcardReveal ? "Tap to flip back" : (
+                      <>
+                        Tap the card or press{" "}
+                        <kbd style={{ fontFamily: "inherit", fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "6px", background: "var(--ink-4)", border: "1px solid var(--line-2)", color: "var(--dim)" }}>
+                          Space
+                        </kbd>{" "}
+                        to flip
+                      </>
+                    )}
+                  </span>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev: number) => Math.max(0, prev - 1)); setFlashcardReveal(false); }}
-                    disabled={flashcardIndex === 0}
-                    style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev: number) => Math.min(lessonFlashcards.length - 1, prev + 1)); setFlashcardReveal(false); }}
-                    disabled={flashcardIndex >= lessonFlashcards.length - 1}
-                    style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
-                  >
-                    <ChevronRight size={24} />
-                  </button>
+                {flashcardReveal && (
+                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", maxWidth: "460px", width: "100%", margin: "0 auto" }}>
+                    <button
+                      onClick={() => recordCard("review")}
+                      style={{ flex: "1 1 180px", padding: "16px", borderRadius: "var(--r-m)", fontSize: "14px", fontWeight: "700", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--text)", cursor: "pointer" }}
+                    >
+                      🤔 Not yet
+                    </button>
+                    <button
+                      onClick={() => recordCard("known")}
+                      style={{ flex: "1 1 180px", padding: "16px", borderRadius: "var(--r-m)", fontSize: "14px", fontWeight: "700", background: "var(--jade)", border: "1px solid var(--jade)", color: "var(--ink-on-accent)", cursor: "pointer" }}
+                    >
+                      ✓ I know this
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "4px 10px" }}>
+                    ✓ {cardSplit.known.length} known
+                  </span>
+                  <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--coral)", background: "var(--coral-soft)", border: "1px solid var(--coral-soft)", borderRadius: "999px", padding: "4px 10px" }}>
+                    ✗ {cardSplit.review.length} to review
+                  </span>
                 </div>
               </>
             ) : (
@@ -683,6 +780,30 @@ export const StudyView: React.FC<StudyViewProps> = ({
                 <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>Import from Notes</button>
               </div>
             )}
+
+            {/* Reuses the existing AI panel's handler -- no second call path. */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 16px", background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "var(--r-m)" }}>
+              <div style={{ flexShrink: 0, width: "36px", height: "36px", borderRadius: "var(--r-s)", background: "var(--jade-soft)", display: "grid", placeItems: "center" }}>
+                <Sparkles size={18} color="var(--jade)" />
+              </div>
+              <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "var(--text)" }}>Ask Pajji AI</p>
+                <p style={{ margin: 0, fontSize: "11px", color: "var(--faint)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {curChapter.title} · what should I focus on?
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setAiExplainQuestion(`Explain ${curChapter.title} in simple terms`);
+                  switchStudyTab("AI Explanation");
+                  setTimeout(() => askAiExplanation(), 100);
+                }}
+                disabled={aiExplainLoading}
+                style={{ flexShrink: 0, padding: "8px 16px", borderRadius: "999px", fontSize: "12px", fontWeight: "800", border: "none", background: "var(--jade)", color: "var(--ink-on-accent)", cursor: aiExplainLoading ? "not-allowed" : "pointer", opacity: aiExplainLoading ? 0.6 : 1 }}
+              >
+                Ask →
+              </button>
+            </div>
           </div>
         )}
         {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => {
