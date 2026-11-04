@@ -2,14 +2,16 @@
 /**
  * check-design-tokens — a RATCHET, not a clean bill of health.
  *
- * THIS SCRIPT PASSES WITH 281 HARDCODED COLOUR REFERENCES STILL IN THE REPO.
- * They all live in app/focus-flight/**, which is whitelisted because that suite
- * has never been migrated: 256 Tailwind colour utilities, 18 raw hex values and
- * 7 rgb()/rgba() calls across 8 files.
+ * THIS SCRIPT PASSES WITH ZERO WHITELISTED PATHS AND 112 DOCUMENTED
+ * EXCEPTIONS. Every screen is covered by every rule. The exceptions are the
+ * identity colours the design system keeps on purpose -- medals, tier
+ * gradients, gold celebration glows -- plus the handful of literals a non-DOM
+ * renderer cannot read a CSS variable from (canvas-confetti, Mapbox paint).
+ * Each one is listed with the reason it exists.
  *
- * app/admin/** was tokenised screen by screen and is NO LONGER whitelisted. It
- * is covered by every rule below, which is why removing an entry is the last
- * act of a migration rather than the first.
+ * app/admin/** and app/focus-flight/** were migrated screen by screen. Removing
+ * a whitelist entry is the LAST act of a migration, not the first -- which is
+ * why the list is empty rather than shrinking in parallel with the work.
  *
  * A green run therefore does NOT mean "the app is clean". It means exactly two
  * things:
@@ -61,7 +63,8 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "lib"];
-const WHITELIST = ["app/focus-flight/"];
+// Empty. Every screen in the app is now covered by every rule.
+const WHITELIST = [];
 const EXTENSIONS = new Set([".tsx", ".ts", ".css"]);
 
 // ── documented exceptions ──────────────────────────────────────────────────
@@ -76,6 +79,8 @@ const ALLOWED_HEX = new Map([
   ["#1d4ed8", "tier gradient stop — Pajji Pro, dark end"],
   ["#7c3aed", "tier gradient stop — Pajji Plus, light end"],
   ["#6d28d9", "tier gradient stop — Pajji Plus, dark end"],
+  ["#ffb300", "gold gradient mid-stop — 1st-place medal"],
+  ["#fff8b0", "gold gradient end — 1st-place medal"],
   ["#000", "ultra card foreground — near-black ink on gold"],
   ["#fff", "pro / plus card foreground — white on blue or purple"],
 ]);
@@ -179,6 +184,41 @@ const RULE_2B = {
   // Allows one level of nesting so rgba(var(--x-rgb), .14) is matched whole.
   re: /rgba?\((?:[^()]|\([^()]*\))*\)/g,
 };
+
+// ── rule 4: literals the rules above structurally cannot see ───────────────
+// 1a needs a palette family name, 1b needs bg-[#hex], 2a/2b need a style
+// object, 2c needs a <style> block. None of them sees an SVG attribute, a
+// Mapbox paint property, or a literal buried in an arbitrary className value.
+// FlightMap carried three such literals, including the retired #10b981.
+
+const RULE_4A = {
+  id: "svg-colour-attribute",
+  label: "Colour attribute with a literal colour",
+  re: /\b(?:fill|stroke|stopColor|floodColor)=["'](#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))["']/g,
+};
+
+const RULE_4B = {
+  id: "paint-key-literal",
+  label: "Paint key with a literal colour",
+  re: /['"](?:line|fill|background|circle|text|icon)-color['"]\s*:\s*['"](#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))['"]/g,
+};
+
+const RULE_4C = {
+  id: "arbitrary-value-literal",
+  label: "Literal colour inside an arbitrary className value",
+};
+
+/**
+ * Literals that must stay literal for a technical reason, per file. These are
+ * not identity colours -- they are values a non-DOM renderer cannot read a CSS
+ * variable from.
+ */
+const ALLOWED_FILE_LITERALS = new Map([
+  ["app/focus-flight/components/FlightMap.tsx",
+    new Set(["#19c37d"])],  // Mapbox paint: the map renderer cannot read var()
+  ["app/focus-flight/components/Landing.tsx",
+    new Set(["#4ea8ff", "#19c37d", "#eef2f6"])],  // canvas-confetti paints to a canvas
+]);
 
 const RULE_3 = [
   { id: "transition-all-css", label: "transition: all", re: /transition\s*:\s*all\b/g },
@@ -289,7 +329,8 @@ const allowed = [];
 const skippedFiles = [];
 
 const LABELS = new Map(
-  [RULE_1A, RULE_1B, RULE_2A, RULE_2B, ...RULE_3].map((r) => [r.id, r.label])
+  [RULE_1A, RULE_1B, RULE_2A, RULE_2B, RULE_4A, RULE_4B, RULE_4C, ...RULE_3]
+    .map((r) => [r.id, r.label])
 );
 
 function record(rule, file, src, index, match, context) {
@@ -369,6 +410,49 @@ function checkFile(full) {
         }
       }
     }
+
+    // 4 — literals the rules above structurally cannot see
+    const fileAllowed = ALLOWED_FILE_LITERALS.get(rel) ?? new Set();
+
+    for (const rule of [RULE_4A, RULE_4B]) {
+      rule.re.lastIndex = 0;
+      let m;
+      while ((m = rule.re.exec(src))) {
+        const colour = m[1];
+        if (inDataBlock(m.index)) continue;
+        const key = colour.toLowerCase();
+        if (ALLOWED_HEX.has(key) || fileAllowed.has(key)) {
+          allowed.push({ file: rel, line: lineOf(src, m.index), match: colour,
+                         why: ALLOWED_HEX.get(key) ?? "literal required by a non-DOM renderer" });
+          continue;
+        }
+        record(rule.id, rel, src, m.index, m[0], snippet(src, m.index));
+      }
+    }
+
+    // 4c — a literal inside an arbitrary className value. var() fallbacks are
+    // skipped: a fallback is the documented value for a token that may be
+    // missing, not a hardcoded colour.
+    for (const { value, index } of classNameValues(src)) {
+      const bracket = /\[[^\]]*\]/g;
+      let bm;
+      while ((bm = bracket.exec(value))) {
+        const seg = bm[0];
+        const inner = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g;
+        let cm;
+        while ((cm = inner.exec(seg))) {
+          if (seg.slice(0, cm.index).includes("var(--")) continue;
+          const colour = cm[0];
+          if (colour.startsWith("#")) {
+            const key = colour.toLowerCase();
+            if (ALLOWED_HEX.has(key) || fileAllowed.has(key)) continue;
+          } else if (ALLOWED_RGB_CATEGORIES.some((a) => a.re.test(colour))) {
+            continue;
+          }
+          record(RULE_4C.id, rel, src, index, colour, snippet(value, bm.index));
+        }
+      }
+    }
   }
 
   // 3 — both TSX and CSS
@@ -392,6 +476,7 @@ for (const dir of SCAN_DIRS) {
 const order = [
   "tw-colour-utility", "tw-arbitrary-hex",
   "raw-hex-in-style", "raw-rgb-in-style",
+  "svg-colour-attribute", "paint-key-literal", "arbitrary-value-literal",
   "transition-all-css", "transition-all-class", "font-syne", "font-main",
 ];
 
@@ -422,8 +507,9 @@ console.log("=".repeat(66));
 console.log(`violations outside the whitelist: ${violations.length}`);
 console.log(`allowed by documented exception:  ${allowed.length}`);
 console.log("");
-console.log("Whitelisted and NOT clean: focus-flight/** (281 hardcoded colour");
-console.log("references). Green means no new ones and the swept screens stayed");
-console.log("swept. It does not mean the app is clean.");
+console.log(`Whitelisted: ${WHITELIST.length ? WHITELIST.join(", ") : "none"}. Every screen is covered.`);
+console.log("Green means no new violations and the swept screens stayed swept.");
+console.log(`It still does not mean the app is clean -- the ${allowed.length} exceptions are`);
+console.log("documented decisions, and each one is a colour not under token control.");
 console.log("");
 process.exit(violations.length === 0 ? 0 : 1);

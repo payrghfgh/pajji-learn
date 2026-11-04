@@ -58,7 +58,10 @@ export default function FlightMap({ origin, destination, progress, isActive }: F
         source: 'route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#10b981',
+          // Mapbox paint properties are evaluated by the map renderer, not the
+          // DOM, so they cannot read CSS custom properties. Literal, matching
+          // --jade, and allowlisted by file in check-design-tokens.
+          'line-color': '#19C37D',
           'line-width': 2,
           'line-opacity': 0.3,
           'line-dasharray': [3, 3],
@@ -71,7 +74,7 @@ export default function FlightMap({ origin, destination, progress, isActive }: F
       el.style.transition = 'transform 0.2s linear';
       el.innerHTML = `
         <div style="filter: none">
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="#10b981">
+          <svg viewBox="0 0 24 24" width="40" height="40" style="fill: var(--jade)">
             <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
           </svg>
         </div>
@@ -162,7 +165,7 @@ export default function FlightMap({ origin, destination, progress, isActive }: F
     <div className="absolute inset-0 w-full h-full">
       <div ref={mapContainer} className="w-full h-full" />
       {/* Vignette Overlay */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(10,10,11,0.4)_70%,rgba(10,10,11,0.8)_100%)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,color-mix(in_oklab,var(--ink-0)_40%,transparent)_70%,color-mix(in_oklab,var(--ink-0)_80%,transparent)_100%)]" />
     </div>
   );
 }
