@@ -131,6 +131,25 @@ export default function FocusFlightPage() {
     if (phase === 'cruise') cruiseRef.current?.focus();
   }, [phase]);
 
+  // Weekly flight log, derived from history.sessions (startTime + route.duration).
+  // The dashboard's seven bars are study activity, not flights -- different source,
+  // so this card reads flight sessions directly rather than reusing heatmapData.
+  const weeklyLog = (() => {
+    const sessions = (history?.sessions || []).filter((s: any) => s?.status === 'completed');
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - (6 - i));
+      const start = d.getTime();
+      const end = start + 24 * 60 * 60 * 1000;
+      return sessions.filter((s: any) => s.startTime >= start && s.startTime < end).length;
+    });
+    const weekStart = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d.getTime(); })();
+    const thisWeek = sessions.filter((s: any) => s.startTime >= weekStart);
+    const totalMin = thisWeek.reduce((acc: number, s: any) => acc + (s.route?.duration || 0), 0);
+    return { days, max: Math.max(...days, 1), count: thisWeek.length, totalMin };
+  })();
+
   return (
     <div className="min-h-screen bg-[var(--ink-0)] text-[var(--text)] overflow-hidden relative selection:bg-[var(--jade-soft)]">
       {/* MAP BACKGROUND ENGINE */}
@@ -193,8 +212,13 @@ export default function FocusFlightPage() {
                 <span style={{ alignSelf: "flex-start", marginBottom: "16px", fontSize: "12px", fontWeight: "500", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px", letterSpacing: "0.02em" }}>
                   ◈ Departing now
                 </span>
+                {/* Plan's literal copy is 'Boarding to Deep Focus', which names a
+                    route. There is no selected route behind this headline, so it
+                    would read identically whatever you board -- the XP pill's
+                    problem in prose. Generic until an active-flight concept exists;
+                    the plan's wording is logged for when it does. */}
                 <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "58px", lineHeight: 0.98, letterSpacing: "-.035em", color: "var(--text)" }}>
-                  Boarding<br />to <span style={{ color: "var(--jade)" }}>Deep Focus</span>
+                  Board your<br />next <span style={{ color: "var(--jade)" }}>focus</span>
                 </div>
                 <p style={{ color: "var(--dim)", margin: "18px 0 26px", maxWidth: "430px", fontSize: "15px" }}>
                   Phones down, notifications off, one subject. Land in 25 minutes with a chapter done.
@@ -204,8 +228,35 @@ export default function FocusFlightPage() {
                   <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px" }}>♪ Cabin sounds</span>
                 </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0, gap: "16px" }}>
                 <AirportHub history={history} onSelectRoute={initiateBoarding} />
+
+                {/* This week's log. Bars and the summary both come from
+                    history.sessions, so the label and the data agree. */}
+                <div className="card" style={{ padding: "18px" }}>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>
+                    This week's log
+                  </span>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "14px", alignItems: "flex-end", height: "64px" }}>
+                    {weeklyLog.days.map((n, i) => (
+                      <i
+                        key={i}
+                        style={{
+                          flex: 1,
+                          height: `${n === 0 ? 12 : Math.max(15, Math.round((n / weeklyLog.max) * 100))}%`,
+                          background: n === 0 ? "var(--ink-4)" : n === weeklyLog.max ? "var(--jade)" : "var(--azure)",
+                          opacity: n === 0 ? 1 : n === weeklyLog.max ? 1 : 0.65,
+                          borderRadius: "6px",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", gap: "10px", flexWrap: "wrap" }}>
+                    <span style={{ color: "var(--dim)", fontSize: "12.5px" }}>
+                      {weeklyLog.count} {weeklyLog.count === 1 ? "flight" : "flights"} · {Math.floor(weeklyLog.totalMin / 60)}h {weeklyLog.totalMin % 60}m of focus
+                    </span>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
