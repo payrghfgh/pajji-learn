@@ -106,7 +106,7 @@ export default function FocusFlightPage() {
   }, [completeFlight]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white overflow-hidden relative selection:bg-emerald-500/30">
+    <div className="min-h-screen bg-[var(--ink-0)] text-[var(--text)] overflow-hidden relative selection:bg-[var(--jade-soft)]">
       {/* MAP BACKGROUND ENGINE */}
       <div className="absolute inset-0 z-0">
         <FlightMap 
@@ -118,16 +118,16 @@ export default function FocusFlightPage() {
       </div>
 
       {/* TOP NAVIGATION */}
-      <nav className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-2xl">
+      <nav className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--ink-1)_40%,transparent)] backdrop-blur-2xl">
         <div className="flex items-center gap-5">
-          <div className="w-14 h-14 bg-emerald-600 rounded-[22px] flex items-center justify-center shadow-[0_20px_40px_rgba(5,150,105,0.3)] border border-emerald-400/20">
-            <Plane className="w-8 h-8 text-white -rotate-12" />
+          <div className="w-14 h-14 bg-[var(--jade)] rounded-[22px] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-[var(--jade-soft)]">
+            <Plane className="w-8 h-8 text-[var(--ink-on-accent)] -rotate-12" />
           </div>
           <div className="space-y-0.5">
             <h1 className="text-3xl font-black tracking-tighter italic leading-none uppercase">Focus Flight</h1>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.4em]">Route Network: Active</p>
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--jade)] animate-pulse" />
+              <p className="text-[11px] text-[var(--faint)] font-black uppercase tracking-[0.4em]">Route Network: Active</p>
             </div>
           </div>
         </div>
@@ -135,13 +135,13 @@ export default function FocusFlightPage() {
         <div className="flex items-center gap-8">
           <button 
             onClick={() => setPhase('stats')}
-            className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${phase === 'stats' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest ${phase === 'stats' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'text-[var(--faint)] hover:text-[var(--text)] hover:bg-[var(--ink-2)]'}`}
           >
             <BarChart3 size={18} /> Pilot Log
           </button>
           <button 
             onClick={() => setPhase('hub')}
-            className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${phase === 'hub' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+            className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest ${phase === 'hub' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'text-[var(--faint)] hover:text-[var(--text)] hover:bg-[var(--ink-2)]'}`}
           >
             <Globe size={18} /> Terminal
           </button>
