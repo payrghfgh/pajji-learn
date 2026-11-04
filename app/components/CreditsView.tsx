@@ -26,7 +26,7 @@ export const CreditsView = ({ onBack }: { onBack: () => void }) => (
         <div><p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Main Tester</p><p style={{ fontSize: "20px", fontWeight: "700" }}>Arjun</p></div>
       </div>
       <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
-      <p style={{ fontSize: "14px", fontWeight: "700", fontStyle: "italic", opacity: 0.8 }} />
+      <p style={{ fontSize: "14px", fontWeight: "700", opacity: 0.8 }} />
     </div>
   </motion.div>
 );

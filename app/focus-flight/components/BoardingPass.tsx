@@ -37,7 +37,7 @@ export default function BoardingPass({ route, onBoard, onCancel }: BoardingPassP
   return (
     <div className="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[70vh] gap-16 py-12">
       <div className="text-center space-y-3">
-        <h2 className="text-5xl font-black italic tracking-tighter text-[var(--text)] uppercase">Pre-Flight Check</h2>
+        <h2 className="text-5xl font-black tracking-tighter text-[var(--text)] uppercase">Pre-Flight Check</h2>
         <p className="text-[var(--faint)] uppercase tracking-[0.3em] text-xs font-bold">Validating Route: {route.from.name} to {route.to.name}</p>
       </div>
 
@@ -50,7 +50,7 @@ export default function BoardingPass({ route, onBoard, onCancel }: BoardingPassP
           <div className="flex justify-between items-start">
             <div className="space-y-1">
               <p className="text-[11px] font-black uppercase tracking-widest text-[var(--faint)]">Carrier</p>
-              <h3 className="text-2xl font-black italic tracking-tighter text-[var(--jade)] uppercase">Pajji Air</h3>
+              <h3 className="text-2xl font-black tracking-tighter text-[var(--jade)] uppercase">Pajji Air</h3>
             </div>
             <div className="px-6 py-2 bg-[var(--jade)] text-[var(--ink-on-accent)] rounded-full text-[11px] font-black uppercase tracking-widest shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
               Active Mission
@@ -140,7 +140,7 @@ export default function BoardingPass({ route, onBoard, onCancel }: BoardingPassP
         <button
           onClick={handleBoard}
           disabled={!task.trim()}
-          className="px-16 py-6 bg-[var(--jade)] text-[var(--ink-on-accent)] rounded-[24px] font-black italic tracking-tighter text-xl flex items-center gap-4 hover:bg-[var(--jade-light)] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_8px_rgba(0,0,0,0.3)] group"
+          className="px-16 py-6 bg-[var(--jade)] text-[var(--ink-on-accent)] rounded-[24px] font-black tracking-tighter text-xl flex items-center gap-4 hover:bg-[var(--jade-light)] disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_8px_rgba(0,0,0,0.3)] group"
         >
           START JOURNEY <Plane size={24} className="group-hover:translate-x-2 transition-transform duration-300" />
         </button>

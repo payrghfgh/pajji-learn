@@ -44,6 +44,9 @@
  *  3a. transition: all.
  *  3b. the transition-all Tailwind class.
  *  3c. font-syne or --font-main — the pre-redesign type system.
+ *  5.  italic, in any form: font-style, fontStyle, or the italic class. The
+ *      design system sets hierarchy on weight, and the plan's type is upright
+ *      everywhere. Nothing in app/ should be italic.
  *
  * ── allowlist policy ───────────────────────────────────────────────────────
  *
@@ -220,6 +223,12 @@ const ALLOWED_FILE_LITERALS = new Map([
     new Set(["#4ea8ff", "#19c37d", "#eef2f6"])],  // canvas-confetti paints to a canvas
 ]);
 
+const RULE_5 = {
+  id: "italic",
+  label: "Italic — hierarchy is weight, the plan's type is upright",
+  re: /font-style\s*:\s*italic|fontStyle\s*:\s*["']italic["']/gi,
+};
+
 const RULE_3 = [
   { id: "transition-all-css", label: "transition: all", re: /transition\s*:\s*all\b/g },
   { id: "transition-all-class", label: "transition-all class", re: /(?<![\w-])transition-all(?![\w-])/g },
@@ -329,7 +338,7 @@ const allowed = [];
 const skippedFiles = [];
 
 const LABELS = new Map(
-  [RULE_1A, RULE_1B, RULE_2A, RULE_2B, RULE_4A, RULE_4B, RULE_4C, ...RULE_3]
+  [RULE_1A, RULE_1B, RULE_2A, RULE_2B, RULE_4A, RULE_4B, RULE_4C, RULE_5, ...RULE_3]
     .map((r) => [r.id, r.label])
 );
 
@@ -365,6 +374,13 @@ function checkFile(full) {
         while ((m = rule.re.exec(value))) {
           record(rule.id, rel, src, index, m[0], snippet(value, m.index));
         }
+      }
+
+      // 5 — the italic class is font-style: italic by another name
+      const it = /\bitalic\b/g;
+      let im;
+      while ((im = it.exec(value))) {
+        record(RULE_5.id, rel, src, index, im[0], snippet(value, im.index));
       }
     }
 
@@ -455,6 +471,14 @@ function checkFile(full) {
     }
   }
 
+  // 5 — font-style: italic in CSS or a style object
+  RULE_5.re.lastIndex = 0;
+  let m5;
+  while ((m5 = RULE_5.re.exec(src))) {
+    if (inDataBlock(m5.index)) continue;
+    record(RULE_5.id, rel, src, m5.index, m5[0], snippet(src, m5.index));
+  }
+
   // 3 — both TSX and CSS
   for (const rule of RULE_3) {
     rule.re.lastIndex = 0;
@@ -478,6 +502,7 @@ const order = [
   "raw-hex-in-style", "raw-rgb-in-style",
   "svg-colour-attribute", "paint-key-literal", "arbitrary-value-literal",
   "transition-all-css", "transition-all-class", "font-syne", "font-main",
+  "italic",
 ];
 
 const byRule = new Map();

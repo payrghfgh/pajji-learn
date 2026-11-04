@@ -85,13 +85,13 @@ export default function AirportHub({ history, onSelectRoute }: AirportHubProps) 
           <div className="p-10 bg-gradient-to-br from-[var(--jade-soft)] to-transparent border border-[var(--line-2)] rounded-[32px] relative overflow-hidden group">
             <div className="relative z-10 space-y-6">
               <div className="space-y-2">
-                <h4 className="text-2xl font-black tracking-tight text-[var(--text)] uppercase italic">Route Planning</h4>
+                <h4 className="text-2xl font-black tracking-tight text-[var(--text)] uppercase">Route Planning</h4>
                 <p className="text-[var(--dim)] text-sm max-w-lg leading-relaxed">Select a mission from the departures board or use quick-boarding to initiate a real-time journey between global hubs.</p>
               </div>
               <div className="flex gap-4">
                 <button 
                   onClick={() => onSelectRoute(ROUTES[0])}
-                  className="px-8 py-4 bg-[var(--jade)] text-[var(--ink-on-accent)] rounded-2xl font-black italic tracking-tighter text-lg flex items-center gap-3 hover:bg-[var(--jade-light)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+                  className="px-8 py-4 bg-[var(--jade)] text-[var(--ink-on-accent)] rounded-2xl font-black tracking-tighter text-lg flex items-center gap-3 hover:bg-[var(--jade-light)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
                 >
                   START QUICK FLIGHT <ArrowRight size={20} />
                 </button>
@@ -116,7 +116,7 @@ export default function AirportHub({ history, onSelectRoute }: AirportHubProps) 
                   className="w-full flex justify-between items-center p-6 bg-[var(--ink-3)] border border-[var(--line)] rounded-2xl hover:border-[var(--jade)] hover:bg-[var(--ink-4)] transition-colors group"
                 >
                   <div className="text-left space-y-1">
-                    <p className="font-bold text-[var(--text)] text-lg group-hover:text-[var(--jade)] transition-colors uppercase italic">{route.from.code} → {route.to.code}</p>
+                    <p className="font-bold text-[var(--text)] text-lg group-hover:text-[var(--jade)] transition-colors uppercase">{route.from.code} → {route.to.code}</p>
                     <p className="text-[11px] text-[var(--faint)] font-black uppercase tracking-widest">{route.duration} MINS | {route.difficulty}</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-[var(--ink-4)] flex items-center justify-center group-hover:bg-[var(--jade)] transition-colors">

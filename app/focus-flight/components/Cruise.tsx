@@ -97,7 +97,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
       <div inert={isInterrupted} className="absolute top-10 left-1/2 -translate-x-1/2 flex items-center gap-12 px-12 py-5 bg-[color-mix(in_oklab,var(--ink-1)_60%,transparent)] border border-[var(--line-2)] rounded-3xl backdrop-blur-2xl z-40">
         <div className="text-right space-y-0.5">
           <p className="text-[11px] font-black text-[var(--faint)] uppercase tracking-widest">Origin Hub</p>
-          <p className="font-black text-xl text-[var(--text)] uppercase italic">{route.from.name} <span className="text-[var(--jade)] text-xs ml-1">{route.from.code}</span></p>
+          <p className="font-black text-xl text-[var(--text)] uppercase">{route.from.name} <span className="text-[var(--jade)] text-xs ml-1">{route.from.code}</span></p>
         </div>
         
         <div className="flex flex-col items-center gap-2">
@@ -112,7 +112,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
 
         <div className="text-left space-y-0.5">
           <p className="text-[11px] font-black text-[var(--faint)] uppercase tracking-widest">Destination</p>
-          <p className="font-black text-xl text-[var(--text)] uppercase italic">{route.to.name} <span className="text-[var(--jade)] text-xs ml-1">{route.to.code}</span></p>
+          <p className="font-black text-xl text-[var(--text)] uppercase">{route.to.name} <span className="text-[var(--jade)] text-xs ml-1">{route.to.code}</span></p>
         </div>
       </div>
 
@@ -172,7 +172,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
           </button>
           <button
             onClick={onTogglePause}
-            className={`px-10 h-16 rounded-[24px] border flex items-center gap-4 font-black italic tracking-tighter backdrop-blur-xl ${
+            className={`px-10 h-16 rounded-[24px] border flex items-center gap-4 font-black tracking-tighter backdrop-blur-xl ${
               isPaused 
                 ? 'bg-[var(--amber)] text-[var(--ink-on-accent)] border-[var(--amber)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' 
                 : 'bg-[var(--ink-2)] text-[var(--dim)] border-[var(--line-2)] hover:bg-[var(--ink-3)] hover:text-[var(--text)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]'
@@ -185,7 +185,7 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
 
         <button
           onClick={onCancel}
-          className="flex items-center gap-4 px-10 h-16 rounded-[24px] bg-[var(--coral-soft)] border border-[var(--coral-soft)] text-[var(--coral)] font-black italic tracking-tighter hover:bg-[var(--coral)] hover:text-[var(--ink-on-accent)] group shadow-[0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-xl"
+          className="flex items-center gap-4 px-10 h-16 rounded-[24px] bg-[var(--coral-soft)] border border-[var(--coral-soft)] text-[var(--coral)] font-black tracking-tighter hover:bg-[var(--coral)] hover:text-[var(--ink-on-accent)] group shadow-[0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-xl"
         >
           <X size={20} className="group-hover:rotate-90 transition-transform duration-300" /> ABORT MISSION
         </button>
@@ -206,13 +206,13 @@ export default function CruisePhase({ session, progress, isPaused, onTogglePause
             <div className="w-32 h-32 bg-[color-mix(in_oklab,var(--amber)_10%,transparent)] rounded-full flex items-center justify-center mb-10 border border-[color-mix(in_oklab,var(--amber)_20%,transparent)] animate-pulse">
               <AlertTriangle size={64} className="text-[var(--amber)]" />
             </div>
-            <h3 className="text-6xl font-black italic tracking-tighter mb-6 text-[var(--text)] uppercase">Critical Deviation</h3>
+            <h3 className="text-6xl font-black tracking-tighter mb-6 text-[var(--text)] uppercase">Critical Deviation</h3>
             <p className="text-[var(--dim)] max-w-xl mb-14 text-xl leading-relaxed">
               Flight PA2026 has deviated from its assigned route. Immediate re-entry required to complete the journey to {route.to.name}.
             </p>
             <button
               onClick={() => setIsInterrupted(false)}
-              className="px-20 py-8 bg-[var(--jade)] rounded-[32px] font-black italic tracking-tighter text-2xl text-[var(--ink-on-accent)] hover:bg-[var(--jade-light)] shadow-[0_2px_8px_rgba(0,0,0,0.3)] uppercase"
+              className="px-20 py-8 bg-[var(--jade)] rounded-[32px] font-black tracking-tighter text-2xl text-[var(--ink-on-accent)] hover:bg-[var(--jade-light)] shadow-[0_2px_8px_rgba(0,0,0,0.3)] uppercase"
             >
               Re-Engage Cockpit
             </button>

@@ -43,7 +43,7 @@ export default function StatsPhase({ history, onNewFlight }: StatsProps) {
     <div className="max-w-6xl mx-auto space-y-10 pb-20">
       <div className="flex justify-between items-end">
         <div className="space-y-2">
-          <h2 className="text-4xl font-black italic tracking-tighter">PILOT ANALYTICS</h2>
+          <h2 className="text-4xl font-black tracking-tighter">PILOT ANALYTICS</h2>
           <p className="text-[var(--dim)]">Review your flight history and performance trends.</p>
         </div>
         <button
@@ -59,7 +59,7 @@ export default function StatsPhase({ history, onNewFlight }: StatsProps) {
         {[
           { label: 'Total Airtime', value: `${history.totalDistance}m`, icon: <Calendar className="text-[var(--jade)]" /> },
           { label: 'Avg Focus', value: `${avgFocus}/5`, icon: <TrendingUp className="text-[var(--jade)]" /> },
-          { label: 'Current Streak', value: `${history.streak} Days`, icon: <TrendingUp className="text-[var(--amber)]" /> },
+          { label: 'Current Streak', value: `${history.streak} ${history.streak === 1 ? 'Day' : 'Days'}`, icon: <TrendingUp className="text-[var(--amber)]" /> },
           { label: 'Total Missions', value: history.sessions.length, icon: <BarChart3 className="text-[var(--azure)]" /> },
         ].map((stat, i) => (
           <motion.div
@@ -103,7 +103,7 @@ export default function StatsPhase({ history, onNewFlight }: StatsProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div>
-                      <p className="font-bold text-[var(--text)] uppercase italic tracking-tighter">{s.route.from.code} → {s.route.to.code}</p>
+                      <p className="font-bold text-[var(--text)] uppercase tracking-tighter">{s.route.from.code} → {s.route.to.code}</p>
                       <div className="flex gap-2 text-[11px] text-[var(--faint)] font-black uppercase tracking-widest">
                         <span className="uppercase">{s.task || 'General'}</span>
                         <span>•</span>
@@ -197,7 +197,7 @@ export default function StatsPhase({ history, onNewFlight }: StatsProps) {
               </div>
 
               <div className="pt-6 border-t border-[var(--line)]">
-                <p className="text-xs text-[var(--faint)] italic">
+                <p className="text-xs text-[var(--faint)]">
                   "The distance you travel depends on the consistency of your engine."
                 </p>
               </div>

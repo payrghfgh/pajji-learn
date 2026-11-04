@@ -45,7 +45,7 @@ export default function LandingPhase({ session, onFinish }: LandingProps) {
         >
           <Trophy className="w-12 h-12 text-[var(--jade)]" />
         </motion.div>
-        <h2 className="text-4xl font-black italic">MISSION ACCOMPLISHED</h2>
+        <h2 className="text-4xl font-black">MISSION ACCOMPLISHED</h2>
         <p className="text-[var(--dim)]">Flight PA-2026 has landed safely. Review your performance to log the mission.</p>
       </div>
 

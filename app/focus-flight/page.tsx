@@ -150,7 +150,7 @@ export default function FocusFlightPage() {
             <Plane className="w-8 h-8 text-[var(--ink-on-accent)] -rotate-12" />
           </div>
           <div className="space-y-0.5">
-            <h1 className="text-3xl font-black tracking-tighter italic leading-none uppercase">Focus Flight</h1>
+            <h1 className="text-3xl font-black tracking-tighter leading-none uppercase">Focus Flight</h1>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-[var(--jade)] animate-pulse" />
               <p className="text-[11px] text-[var(--faint)] font-black uppercase tracking-[0.4em]">Route Network: Active</p>

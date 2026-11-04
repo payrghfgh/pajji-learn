@@ -159,7 +159,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
               </ul>
             </div>
 
-            <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "700", marginTop: "16px", fontStyle: "italic", opacity: 0.8, textAlign: "center" }}>
+            <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "700", marginTop: "16px", opacity: 0.8, textAlign: "center" }}>
               Please contact Rushan either on WhatsApp or face to face if applied
             </p>
           </>
@@ -170,7 +170,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
             </div>
             <div>
               <h2 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "8px" }}>No Active Membership</h2>
-              <p style={{ fontSize: "14px", color: "var(--accent)", fontWeight: "700", lineHeight: "1.6", maxWidth: "300px", margin: "12px auto 0", fontStyle: "italic" }}>
+              <p style={{ fontSize: "14px", color: "var(--accent)", fontWeight: "700", lineHeight: "1.6", maxWidth: "300px", margin: "12px auto 0" }}>
                 Please contact Rushan either on WhatsApp or face to face if applied
               </p>
             </div>
