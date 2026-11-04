@@ -175,35 +175,35 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#020617] p-4 text-white md:p-10" style={{ fontFamily: 'Syne, Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen bg-[var(--ink-0)] p-4 text-[var(--text)] md:p-10" style={{ fontFamily: 'var(--disp)' }}>
       <div className="mx-auto max-w-6xl">
         <header className="mb-12 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
-            <h1 className="text-4xl font-black tracking-tighter text-white md:text-6xl">ADMIN<span className="text-emerald-500">HUB</span></h1>
+            <h1 className="text-4xl font-black tracking-tighter text-[var(--text)] md:text-6xl">ADMIN<span className="text-[var(--jade)]">HUB</span></h1>
             <p className="mt-2 text-lg font-bold opacity-40">System Management & User Control</p>
           </div>
-          <Link href="/" className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-3 font-bold transition-all hover:bg-white/10">
+          <Link href="/" className="group flex items-center gap-2 rounded-2xl border border-[var(--line-2)] bg-[var(--ink-2)] px-6 py-3 font-bold hover:bg-[var(--ink-3)]">
             Exit Dashboard <ChevronRight size={18} />
           </Link>
         </header>
 
         {/* Tabs */}
-        <div className="mb-10 flex gap-2 rounded-3xl bg-white/5 p-2 backdrop-blur-xl">
+        <div className="mb-10 flex gap-2 rounded-3xl bg-[var(--ink-2)] p-2 backdrop-blur-xl">
           <button 
             onClick={() => setActiveTab('codes')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 font-black transition-all ${activeTab === 'codes' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'hover:bg-white/5 text-white/50'}`}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 font-black ${activeTab === 'codes' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'hover:bg-[var(--ink-2)] text-[var(--dim)]'}`}
           >
             <Ticket size={20} /> PROMO CODES
           </button>
           <button 
             onClick={() => setActiveTab('users')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 font-black transition-all ${activeTab === 'users' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'hover:bg-white/5 text-white/50'}`}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 font-black ${activeTab === 'users' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'hover:bg-[var(--ink-2)] text-[var(--dim)]'}`}
           >
             <Users size={20} /> USER MANAGEMENT
           </button>
           <button 
             onClick={() => setActiveTab('ai')}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 font-black transition-all ${activeTab === 'ai' ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' : 'hover:bg-white/5 text-white/50'}`}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 font-black ${activeTab === 'ai' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'hover:bg-[var(--ink-2)] text-[var(--dim)]'}`}
           >
             <Bot size={20} /> AI ENGINE
           </button>
@@ -211,9 +211,9 @@ export default function AdminPage() {
 
         {activeTab === 'codes' && (
           <div className="grid gap-10 lg:grid-cols-3">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+            <div className="rounded-3xl border border-[var(--line-2)] bg-[var(--ink-2)] p-8 backdrop-blur-xl">
               <h2 className="mb-6 flex items-center gap-2 text-xl font-black">
-                <Zap size={20} className="text-yellow-400" /> GENERATE CODES
+                <Zap size={20} className="text-[var(--amber)]" /> GENERATE CODES
               </h2>
               <form onSubmit={handleAddCodes}>
                 <div className="mb-6">
@@ -222,7 +222,7 @@ export default function AdminPage() {
                     value={newCodes}
                     onChange={(e) => setNewCodes(e.target.value)}
                     placeholder="PAJJI-2026-X\nPROMO-123-Y"
-                    className="h-40 w-full rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-white outline-none focus:border-emerald-500/50"
+                    className="h-40 w-full rounded-2xl border border-[var(--line-2)] bg-[var(--input-bg)] p-4 font-mono text-[var(--text)] outline-none focus:border-[var(--jade)]"
                   />
                 </div>
                 <div className="mb-6 grid grid-cols-2 gap-4">
@@ -231,7 +231,7 @@ export default function AdminPage() {
                     <select 
                       value={tier} 
                       onChange={(e) => setTier(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 p-3 font-bold outline-none"
+                      className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--input-bg)] p-3 font-bold outline-none"
                     >
                       <option value="plus">Plus</option>
                       <option value="pro">Pro</option>
@@ -244,14 +244,14 @@ export default function AdminPage() {
                       type="number" 
                       value={duration} 
                       onChange={(e) => setDuration(parseInt(e.target.value))}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 p-3 font-bold outline-none"
+                      className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--input-bg)] p-3 font-bold outline-none"
                     />
                   </div>
                 </div>
                 <button 
                   type="submit" 
                   disabled={isAdding || !newCodes.trim()}
-                  className="w-full rounded-2xl bg-white py-4 font-black text-black transition-all hover:bg-white/90 disabled:opacity-30"
+                  className="w-full rounded-2xl bg-[var(--jade)] py-4 font-black text-[var(--ink-on-accent)] hover:bg-[var(--jade-light)] disabled:opacity-30"
                 >
                   {isAdding ? 'Adding...' : 'GENERATE CODES'}
                 </button>
@@ -260,12 +260,12 @@ export default function AdminPage() {
 
             <div className="lg:col-span-2">
               <h2 className="mb-6 flex items-center gap-2 text-xl font-black">
-                <Award size={20} className="text-emerald-500" /> ACTIVE PROMO INVENTORY ({codes.length})
+                <Award size={20} className="text-[var(--jade)]" /> ACTIVE PROMO INVENTORY ({codes.length})
               </h2>
-              <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl">
+              <div className="overflow-hidden rounded-3xl border border-[var(--line-2)] bg-[var(--ink-2)] backdrop-blur-xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/40">
+                    <thead className="bg-[var(--ink-3)] text-[11px] font-black uppercase tracking-widest text-[var(--faint)]">
                       <tr>
                         <th className="p-6">Code</th>
                         <th className="p-6">Tier</th>
@@ -273,23 +273,23 @@ export default function AdminPage() {
                         <th className="p-6">Created</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-[var(--line)]">
                       {codes.map(c => (
-                        <tr key={c.id} className="group hover:bg-white/[0.02]">
+                        <tr key={c.id} className="group hover:bg-[var(--ink-3)]">
                           <td className="p-6 font-mono font-black">{c.code}</td>
                           <td className="p-6">
-                            <span className={`rounded-lg px-2 py-1 text-[10px] font-black uppercase ${c.tier === 'ultra' ? 'bg-amber-500 text-black' : c.tier === 'pro' ? 'bg-blue-500 text-black' : 'bg-emerald-500 text-black'}`}>
+                            <span className={`rounded-lg px-2 py-1 text-[11px] font-black uppercase ${c.tier === 'ultra' ? 'bg-[var(--amber)] text-[var(--ink-on-accent)]' : c.tier === 'pro' ? 'bg-[var(--azure)] text-[var(--ink-on-accent)]' : 'bg-[var(--jade)] text-[var(--ink-on-accent)]'}`}>
                               {c.tier}
                             </span>
                           </td>
                           <td className="p-6">
                             {c.isUsed ? (
-                              <span className="flex items-center gap-2 text-xs font-bold text-red-400"><span className="h-1.5 w-1.5 rounded-full bg-red-400" /> Used</span>
+                              <span className="flex items-center gap-2 text-xs font-bold text-[var(--coral)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--coral)]" /> Used</span>
                             ) : (
-                              <span className="flex items-center gap-2 text-xs font-bold text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Available</span>
+                              <span className="flex items-center gap-2 text-xs font-bold text-[var(--jade)]"><span className="h-1.5 w-1.5 rounded-full bg-[var(--jade)] animate-pulse" /> Available</span>
                             )}
                           </td>
-                          <td className="p-6 text-xs font-bold text-white/30">
+                          <td className="p-6 text-xs font-bold text-[var(--faint)]">
                             {c.createdAt?.toDate?.() ? c.createdAt.toDate().toLocaleDateString() : '---'}
                           </td>
                         </tr>
