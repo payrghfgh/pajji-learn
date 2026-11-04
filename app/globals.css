@@ -1071,3 +1071,28 @@ a:active {
     transform: none !important;
   }
 }
+
+/* Settings layout — values from the plan's Settings frame.
+   Two-column split at 1.15fr / 1fr with a 16px gutter, themes grid at 5 across
+   with a 12px gutter, both collapsing to one column below 900px. */
+.settings-split {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.settings-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .settings-split {
+    grid-template-columns: 1fr;
+  }
+  .settings-themes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

@@ -196,28 +196,32 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: -20 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="page-shell" style={{ maxWidth: "800px" }}
+      className="page-shell" style={{ maxWidth: "none", padding: "26px 30px" }}
     >
-      <header style={{ marginBottom: "24px" }}>
-        <h1 style={{ margin: 0, fontSize: "30px", fontWeight: "700", letterSpacing: "-0.02em", color: "var(--text)" }}>Settings</h1>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" }}>
+      {/* Heading row: title left, the four pills right, baseline-aligned on one line. */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "18px", gap: "16px", flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0, fontSize: "32px", fontWeight: "800", letterSpacing: "-0.025em", lineHeight: 1.05, color: "var(--text)" }}>Settings</h1>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           {[
-            { label: "Ready", n: gateCounts.ready, color: "var(--jade)", bg: "var(--jade-soft)" },
+            { label: "ready", n: gateCounts.ready, color: "var(--jade)", bg: "var(--jade-soft)" },
             { label: "Plus", n: gateCounts.plus, color: "var(--azure)", bg: "var(--azure-soft)" },
-            { label: "By achievement", n: gateCounts.achievement, color: "var(--amber)", bg: "color-mix(in oklab, var(--amber) 14%, transparent)" },
-            { label: "Ultra", n: gateCounts.ultra, color: "var(--coral)", bg: "var(--coral-soft)" },
+            { label: "by achievement", n: gateCounts.achievement, color: "var(--dim)", bg: "transparent" },
+            { label: "Ultra", n: gateCounts.ultra, color: "var(--amber)", bg: "color-mix(in oklab, var(--amber) 14%, transparent)" },
           ].map(p => (
-            <span key={p.label} style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: p.color, background: p.bg, border: `1px solid ${p.bg}`, borderRadius: "999px", padding: "4px 10px", whiteSpace: "nowrap" }}>
-              {p.label} {p.n}
+            <span key={p.label} style={{ fontSize: "12px", fontWeight: "500", color: p.color, background: p.bg, border: p.bg === "transparent" ? "1px solid var(--line)" : `1px solid ${p.bg}`, borderRadius: "999px", padding: "5px 10px", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
+              {p.n} {p.label}
             </span>
           ))}
         </div>
-      </header>
+      </div>
 
       <AnimatePresence mode="wait">
+        {/* Profile and study preferences sit side by side at 1.15fr / 1fr, per the
+            plan's Settings frame. One column below 900px via .settings-split. */}
+        <div className="settings-split">
         {(
-          <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
-            <div className="card" style={{ padding: "24px" }}>
+          <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+            <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "24px" }}>
                 <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "80px", height: "80px", borderRadius: "24px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
                   {profilePic ? (
@@ -262,8 +266,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         {/* Study preferences. The daily goal is the only study preference the app
             actually stores and persists, so it is the only control here. */}
-        <motion.div key="study-prefs" className="settings-section" style={{ marginBottom: "24px" }}>
-          <div className="card" style={{ padding: "24px" }}>
+        <motion.div key="study-prefs" className="settings-section">
+          <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
             <h3 className="section-title">Study preferences</h3>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
               <div style={{ minWidth: 0 }}>
@@ -292,6 +296,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
         </motion.div>
+        </div>
 
         {(
           <motion.div key="appearance-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
@@ -313,7 +318,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {/* 5 x 3. Each card carries the real gate as its status line, read
                     from the same maps hasThemeAccess uses -- so a card can never
                     claim a gate the check does not apply. */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px" }}>
+                <div className="settings-themes-grid">
                   {builtInThemeCards.map((t) => {
                     const locked = !hasThemeAccess(t.key);
                     const requiredId = themeAchievementRequirements[t.key];
@@ -333,22 +338,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         aria-disabled={locked}
                         title={locked ? `Locked — ${status}` : t.label}
                         style={{
-                          padding: "10px",
+                          padding: 0,
                           borderRadius: "var(--r-m)",
-                          border: uiTheme === t.key ? "2px solid var(--jade)" : "1px solid var(--line)",
-                          background: t.bg,
+                          border: uiTheme === t.key ? "1px solid var(--jade)" : "1px solid var(--line-2)",
+                          background: "var(--ink-2)",
                           cursor: locked ? "not-allowed" : "pointer",
                           textAlign: "left",
                           opacity: locked ? 0.55 : 1,
+                          overflow: "hidden",
                           display: "flex",
-                          flexDirection: "column",
-                          gap: "4px",
-                          minHeight: "64px",
-                          justifyContent: "center"
+                          flexDirection: "column"
                         }}
                       >
-                        <span style={{ color: t.accent, fontWeight: "800", fontSize: "12px" }}>{t.label}</span>
-                        <span style={{ color: t.accent, opacity: 0.75, fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em" }}>{status}</span>
+                        <span style={{ height: "66px", width: "100%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: t.bg }}>
+                          <span style={{ position: "absolute", top: "8px", right: "8px", width: "16px", height: "16px", borderRadius: "5px", background: t.accent, boxShadow: "0 0 0 2px var(--line-2)" }} />
+                          <span style={{ color: t.accent, fontWeight: "800", fontSize: "22px", letterSpacing: "-0.02em", opacity: 0.85 }}>Aa</span>
+                        </span>
+                        <span style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start", width: "100%" }}>
+                          <b style={{ fontSize: "12px", fontWeight: "700", color: "var(--text)" }}>{t.label}</b>
+                          <span style={{ fontSize: "11px", fontWeight: "500", color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "3px 7px", whiteSpace: "nowrap" }}>{status}</span>
+                        </span>
                       </button>
                     );
                   })}
