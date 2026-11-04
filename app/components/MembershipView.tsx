@@ -125,13 +125,14 @@ export const MembershipView: React.FC<MembershipViewProps> = ({ memTier, setView
             You help out with Pajji Services, you get the perks back. That's the whole system. Contact Rushan on WhatsApp or face to face to get set up.
           </div>
         </div>
-        <button
-          aria-disabled="true"
-          title="No contact link configured yet"
-          style={{ flex: "0 0 auto", padding: "10px 18px", borderRadius: "12px", background: "var(--ink-3)", color: "var(--faint)", fontWeight: 800, border: "1px solid var(--line)", cursor: "not-allowed", opacity: 0.7 }}
+        <a
+          href="https://pajji-services.netlify.app/#memberships"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ flex: "0 0 auto", padding: "10px 18px", borderRadius: "12px", background: "var(--jade)", color: "var(--ink-on-accent)", fontWeight: 800, border: "none", cursor: "pointer", textDecoration: "none", display: "inline-block" }}
         >
           Contact Rushan →
-        </button>
+        </a>
       </div>
 
       <div className="membership-tiers">
@@ -187,13 +188,29 @@ export const MembershipView: React.FC<MembershipViewProps> = ({ memTier, setView
                   {t.footer}
                 </div>
               ) : (
-                <button
-                  aria-disabled="true"
-                  title="No contact link configured yet"
-                  style={{ marginTop: "auto", padding: "9px 14px", borderRadius: "12px", fontWeight: 800, fontSize: "13px", border: "1px solid var(--line)", background: "var(--ink-3)", color: "var(--faint)", cursor: "not-allowed", opacity: 0.7 }}
+                <a
+                  href="https://pajji-services.netlify.app/#memberships"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    marginTop: "auto",
+                    padding: "9px 14px",
+                    borderRadius: "12px",
+                    fontWeight: 800,
+                    fontSize: "13px",
+                    textDecoration: "none",
+                    textAlign: "center",
+                    display: "block",
+                    cursor: "pointer",
+                    ...(t.key === "ultra"
+                      ? { background: "var(--amber)", color: "var(--ink-on-accent)", border: "none" }
+                      : t.key === "pro"
+                        ? { background: "var(--jade)", color: "var(--ink-on-accent)", border: "none" }
+                        : { background: "transparent", color: "var(--text)", border: "1px solid var(--line-2)" }),
+                  }}
                 >
                   {t.button}
-                </button>
+                </a>
               )}
             </div>
           );
