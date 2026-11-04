@@ -120,7 +120,7 @@ export default function FocusFlightPage() {
       {/* TOP NAVIGATION */}
       <nav className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--ink-1)_40%,transparent)] backdrop-blur-2xl">
         <div className="flex items-center gap-5">
-          <div className="w-14 h-14 bg-[var(--jade)] rounded-[22px] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.3)] border border-[var(--jade-soft)]">
+          <div className="w-14 h-14 bg-[var(--jade)] rounded-[22px] flex items-center justify-center shadow-[0_12px_34px_rgba(0,0,0,0.5)] border border-[var(--jade-soft)]">
             <Plane className="w-8 h-8 text-[var(--ink-on-accent)] -rotate-12" />
           </div>
           <div className="space-y-0.5">
