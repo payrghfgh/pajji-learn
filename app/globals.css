@@ -1096,3 +1096,11 @@ a:active {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Admin layout — the plan fixes these at 1440. Scoped to >=1024px so the
+   Tailwind responsive behaviour below that is untouched. */
+@media (min-width: 1024px) {
+  .adm-split-codes { grid-template-columns: 390px 1fr; }
+  .adm-split-ai { grid-template-columns: 1.5fr 1fr; }
+  .adm-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}

@@ -210,7 +210,7 @@ export default function AdminPage() {
         </div>
 
         {activeTab === 'codes' && (
-          <div className="grid gap-10 lg:grid-cols-3">
+          <div className="adm-split-codes grid gap-10 lg:grid-cols-3">
             <div className="rounded-3xl border border-[var(--line-2)] bg-[var(--ink-2)] p-8 backdrop-blur-xl">
               <h2 className="mb-6 flex items-center gap-2 text-xl font-black">
                 <Zap size={20} className="text-[var(--amber)]" /> GENERATE CODES
@@ -320,7 +320,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className="adm-grid-3 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {filteredUsers.map(u => (
                 <div key={u.id} className="group relative rounded-3xl border border-[var(--line-2)] bg-[var(--ink-2)] p-6 backdrop-blur-xl hover:border-[var(--jade)] hover:bg-[var(--ink-3)]">
                   <div className="mb-4 flex items-start justify-between">
@@ -399,7 +399,7 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="adm-split-ai grid gap-6 md:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-xs font-black uppercase tracking-widest opacity-40">LLM Model</label>
                     <select 
