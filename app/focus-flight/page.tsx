@@ -257,6 +257,25 @@ export default function FocusFlightPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Landing streak. history.streak is maintained by saveFlightSession
+                    (lib/focus-flight.ts:79-88) and counts consecutive DAYS with a
+                    flight, not consecutive flights -- so it is labelled days. The
+                    plan's 'two more unlocks Frequent Flyer' line is not drawn: no
+                    such badge exists in the achievement catalog. */}
+                <div className="card" style={{ padding: "16px 18px", display: "flex", gap: "14px", alignItems: "center" }}>
+                  <div style={{ width: "46px", height: "46px", borderRadius: "14px", display: "grid", placeItems: "center", fontSize: "20px", flexShrink: 0, background: "color-mix(in oklab, var(--amber) 14%, transparent)", color: "var(--amber)" }}>
+                    🏅
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>
+                      Landing streak: {history?.streak || 0} {(history?.streak || 0) === 1 ? "day" : "days"}
+                    </div>
+                    <div style={{ color: "var(--dim)", fontSize: "12.5px" }}>
+                      Consecutive days with a completed flight.
+                    </div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
