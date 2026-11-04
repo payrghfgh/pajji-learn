@@ -62,8 +62,8 @@ export default function AirportHub({ history, onSelectRoute }: AirportHubProps) 
             removing the bar is structural and belongs to a rebuild. */}
         <div className="flex gap-4 p-2 bg-[var(--ink-2)] border border-[var(--line-2)] rounded-[20px] backdrop-blur-xl">
           <button aria-disabled="true" title="Not built yet — this is the screen you are already on" className="px-8 py-3 rounded-xl bg-[var(--jade)] text-[var(--ink-on-accent)] font-black text-xs uppercase tracking-widest shadow-[0_2px_8px_rgba(0,0,0,0.3)]">TERMINAL</button>
-          <button aria-disabled="true" title="Not built yet — the Logbook destination does not exist" className="px-8 py-3 rounded-xl text-[var(--faint)] opacity-45 font-black text-xs uppercase tracking-widest cursor-not-allowed">LOGBOOK</button>
-          <button aria-disabled="true" title="Not built yet — the Gates destination does not exist" className="px-8 py-3 rounded-xl text-[var(--faint)] opacity-45 font-black text-xs uppercase tracking-widest cursor-not-allowed">GATES</button>
+          <button aria-disabled="true" title="Not built yet — the Logbook destination does not exist" className="px-8 py-3 rounded-xl text-[var(--faint)] opacity-60 font-black text-xs uppercase tracking-widest cursor-not-allowed">LOGBOOK</button>
+          <button aria-disabled="true" title="Not built yet — the Gates destination does not exist" className="px-8 py-3 rounded-xl text-[var(--faint)] opacity-60 font-black text-xs uppercase tracking-widest cursor-not-allowed">GATES</button>
         </div>
       </div>
 
