@@ -373,18 +373,28 @@ export default function AdminPage() {
 
         {activeTab === 'ai' && (
           <div className="mx-auto max-w-3xl space-y-8">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 backdrop-blur-xl">
+            <div className="rounded-3xl border border-[var(--line-2)] bg-[var(--ink-2)] p-10 backdrop-blur-xl">
               <h2 className="mb-8 flex items-center gap-3 text-2xl font-black">
-                <Bot size={32} className="text-emerald-500" /> AI ENGINE CONTROL
+                <Bot size={32} className="text-[var(--jade)]" /> AI ENGINE CONTROL
               </h2>
               
               <div className="space-y-6">
                 <div>
                   <label className="mb-2 block text-xs font-black uppercase tracking-widest opacity-40">System Instruction (Persona)</label>
+                  {/* TODO(data): settings/ai_config is written by this screen but
+                      never read anywhere else in the repo -- grep for it and the
+                      only hits are the three lines in this file. So systemPrompt,
+                      model and maxTokens below are stored and ignored: the real
+                      calls live in lib/ai-backend.ts, which hardcodes
+                      llama-3.1-8b-instant, llama-3.3-70b-versatile and
+                      meta-llama/llama-4-scout-17b-16e-instruct with max_tokens: 300,
+                      plus a genkit flow on gemini15Flash. Not correcting the
+                      labels to match the code, or the reverse, until the wiring
+                      is decided. */}
                   <textarea 
                     value={aiConfig.systemPrompt}
                     onChange={(e) => setAiConfig({...aiConfig, systemPrompt: e.target.value})}
-                    className="h-48 w-full rounded-2xl border border-white/10 bg-black/40 p-5 font-bold text-white outline-none focus:border-emerald-500/50"
+                    className="h-48 w-full rounded-2xl border border-[var(--line-2)] bg-[var(--input-bg)] p-5 font-bold text-[var(--text)] outline-none focus:border-[var(--jade)]"
                     placeholder="Enter instructions for the AI..."
                   />
                 </div>
@@ -395,10 +405,14 @@ export default function AdminPage() {
                     <select 
                       value={aiConfig.model}
                       onChange={(e) => setAiConfig({...aiConfig, model: e.target.value})}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 p-4 font-black outline-none focus:border-emerald-500/50"
+                      className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--input-bg)] p-4 font-black outline-none focus:border-[var(--jade)]"
                     >
                       <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Versatile)</option>
                       <option value="llama-3.1-8b-instant">Llama 3.1 8B (Instant/Cheap)</option>
+                      {/* TODO(data): no code path uses mixtral-8x7b-32768, and the
+                          backend's third model, meta-llama/llama-4-scout-17b-16e-instruct,
+                          is not offered here. The list and the code disagree in
+                          both directions. */}
                       <option value="mixtral-8x7b-32768">Mixtral 8x7b</option>
                     </select>
                   </div>
@@ -408,7 +422,7 @@ export default function AdminPage() {
                       type="number"
                       value={aiConfig.maxTokens}
                       onChange={(e) => setAiConfig({...aiConfig, maxTokens: parseInt(e.target.value)})}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 p-4 font-black outline-none focus:border-emerald-500/50"
+                      className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--input-bg)] p-4 font-black outline-none focus:border-[var(--jade)]"
                     />
                   </div>
                 </div>
@@ -416,14 +430,18 @@ export default function AdminPage() {
                 <button 
                   onClick={handleSaveAIConfig}
                   disabled={isSavingAI}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-500 py-5 text-lg font-black text-black transition-all hover:bg-emerald-400 disabled:opacity-30"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[var(--jade)] py-5 text-lg font-black text-[var(--ink-on-accent)] hover:bg-[var(--jade-light)] disabled:opacity-30"
                 >
                   <Save size={20} /> {isSavingAI ? 'Saving Settings...' : 'PUBLISH AI UPDATES'}
                 </button>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-dashed border-white/10 p-8 text-center">
+            {/* TODO(data): the sentence below is false today. Nothing reads
+                ai_config, so saving changes nothing for any user. Left as-is
+                rather than rewritten, because what the copy should say depends
+                on whether the read path gets built. */}
+            <div className="rounded-3xl border border-dashed border-[var(--line-2)] p-8 text-center">
               <Settings size={32} className="mx-auto mb-4 opacity-20" />
               <p className="text-sm font-bold opacity-30">
                 These settings take effect globally for all users instantly upon saving.
