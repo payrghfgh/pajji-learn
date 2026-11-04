@@ -50,6 +50,7 @@ export default function DeparturesBoard({ items }: DeparturesBoardProps) {
 // or open details? onSelectRoute already exists, which makes wiring tempting and
 // is exactly why it should be decided deliberately rather than by convenience.
 function BoardRow({ item, index }: { item: any; index: number }) {
+  const status = String(item.status ?? '').toLowerCase();
   return (
     <motion.div 
       initial={{ opacity: 0, x: -20 }}
@@ -65,15 +66,15 @@ function BoardRow({ item, index }: { item: any; index: number }) {
       <div className="col-span-2 text-[var(--dim)] font-mono font-bold">{item.duration}</div>
       <div className="col-span-2 text-[var(--dim)] font-mono font-bold">{item.gate}</div>
       <div className="col-span-3 text-right">
-        {/* TODO(data): these branches never match. AirportHub builds status as
-            'ARRIVED' or 'ON TIME' (upper case); this compares against 'Boarding'
-            and 'On Time' (title case). So the pulse pill is dead and every row
-            falls through to the default jade badge. Not normalising the strings
-            here -- which casing is authoritative is a decision, and guessing it
-            would silently change what the board reports. */}
+        {/* Compared case-insensitively so it works whichever casing the
+            producer uses -- the previous exact match never fired against
+            AirportHub's 'ON TIME'.
+            TODO(feature): 'boarding' is still unreachable. AirportHub emits
+            only 'ARRIVED' and 'ON TIME', so no boarding state exists to
+            display. Building it is a feature, not a casing fix. */}
         <span className={`text-[11px] font-black uppercase px-2 py-1 rounded ${
-          item.status === 'Boarding' ? 'bg-[var(--amber)] text-[var(--ink-on-accent)] animate-pulse' :
-          item.status === 'On Time' ? 'bg-[var(--jade-soft)] text-[var(--jade)] border border-[var(--jade-soft)]' :
+          status === 'boarding' ? 'bg-[var(--amber)] text-[var(--ink-on-accent)] animate-pulse' :
+          status === 'on time' ? 'bg-[var(--jade-soft)] text-[var(--jade)] border border-[var(--jade-soft)]' :
           'bg-[var(--jade-soft)] text-[var(--jade)] border border-[var(--jade-soft)]'
         }`}>
           {item.status}
