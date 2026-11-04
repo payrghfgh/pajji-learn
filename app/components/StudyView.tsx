@@ -214,16 +214,16 @@ export const StudyView: React.FC<StudyViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      {/* The flashcards view carries its own compact tool row, directly under the
-          deck bar. Every other panel keeps this one. */}
-      {activeTab !== "Flashcards" && (
-        <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
-          {STUDY_TOOLS.map(t => (
-            <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
-          ))}
-        </div>
-      )}
-      <div className="card" style={{ minHeight: "500px", padding: "32px" }}>
+      {/* One tool row, one position, every tab. Buttons refuse to shrink so the
+          row scrolls when it overflows instead of ellipsising the last pill. */}
+      <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
+        {STUDY_TOOLS.map(t => (
+          <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{t}</button>
+        ))}
+      </div>
+      {/* No panel: content sits directly on --ink-0. The .card wrapper was adding
+          a surface, border, radius and shadow the plan does not draw. */}
+      <div style={{ minHeight: "500px" }}>
         {["Summary", "Spellings"].includes(activeTab) && <div style={{ whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)" }}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
         {activeTab === "AI Explanation" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -705,15 +705,6 @@ export const StudyView: React.FC<StudyViewProps> = ({
               </span>
             </div>
 
-            {/* The eleven tools, compact and scrollable. The plan draws no tab row;
-                this is the deliberate addition that keeps all ten others reachable. */}
-            <div style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "2px" }}>
-              {STUDY_TOOLS.map(t => (
-                <button key={t} onClick={() => switchStudyTab(t)} style={{ flexShrink: 0, padding: "5px 10px", borderRadius: "999px", fontSize: "11px", fontWeight: "700", whiteSpace: "nowrap", cursor: "pointer", background: activeTab === t ? "var(--jade)" : "var(--ink-2)", color: activeTab === t ? "var(--ink-on-accent)" : "var(--dim)", border: `1px solid ${activeTab === t ? "var(--jade)" : "var(--line)"}` }}>
-                  {t}
-                </button>
-              ))}
-            </div>
 
             {lessonFlashcards.length > 0 ? (
               <>
