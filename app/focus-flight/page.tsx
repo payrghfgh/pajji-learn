@@ -144,38 +144,42 @@ export default function FocusFlightPage() {
       </div>
 
       {/* TOP NAVIGATION */}
-      <nav inert={phase === 'cruise'} className="relative z-[150] px-10 py-8 flex justify-between items-center border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--ink-1)_40%,transparent)] backdrop-blur-2xl">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 bg-[var(--jade)] rounded-[22px] flex items-center justify-center shadow-[0_12px_34px_rgba(0,0,0,0.5)] border border-[var(--jade-soft)]">
-            <Plane className="w-8 h-8 text-[var(--ink-on-accent)] -rotate-12" />
+      <nav inert={phase === 'cruise'} className="relative z-[150] flex items-center gap-[30px] h-[74px] px-[54px] border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--ink-1)_40%,transparent)] backdrop-blur-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-[var(--jade)] rounded-[13px] flex items-center justify-center shadow-[0_12px_34px_rgba(0,0,0,0.5)] border border-[var(--jade-soft)]">
+            <Plane className="w-5 h-5 text-[var(--ink-on-accent)] -rotate-12" />
           </div>
-          <div className="space-y-0.5">
-            <h1 className="text-3xl font-black tracking-tighter leading-none uppercase">Focus Flight</h1>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[var(--jade)] animate-pulse" />
-              <p className="text-[11px] text-[var(--faint)] font-black uppercase tracking-[0.4em]">Route Network: Active</p>
-            </div>
-          </div>
+          <h1 className="text-[15px] font-black tracking-tighter leading-none uppercase">Focus Flight</h1>
         </div>
 
-        <div className="flex items-center gap-8">
-          <button 
-            onClick={() => setPhase('stats')}
-            className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest ${phase === 'stats' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'text-[var(--faint)] hover:text-[var(--text)] hover:bg-[var(--ink-2)]'}`}
-          >
-            <BarChart3 size={18} /> Pilot Log
-          </button>
-          <button 
+        {/* Plan draws three plain spans with no current marker. Keeping the app's
+            active state rather than removing a working affordance to match a
+            drawing -- a nav with no current marker is a defect, not a style. */}
+        <div className="flex items-center gap-[26px] text-[14px] font-semibold">
+          <button
             onClick={() => setPhase('hub')}
-            className={`flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest ${phase === 'hub' ? 'bg-[var(--jade)] text-[var(--ink-on-accent)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' : 'text-[var(--faint)] hover:text-[var(--text)] hover:bg-[var(--ink-2)]'}`}
+            className={phase === 'hub' ? 'text-[var(--jade)]' : 'text-[var(--dim)] hover:text-[var(--text)]'}
           >
-            <Globe size={18} /> Terminal
+            Departures
+          </button>
+          <button
+            aria-disabled="true"
+            title="No My flights screen yet"
+            className="text-[var(--faint)] cursor-not-allowed opacity-60"
+          >
+            My flights
+          </button>
+          <button
+            onClick={() => setPhase('stats')}
+            className={phase === 'stats' ? 'text-[var(--jade)]' : 'text-[var(--dim)] hover:text-[var(--text)]'}
+          >
+            Stats
           </button>
         </div>
       </nav>
 
       {/* VIEWPORT CONTROLLER */}
-      <main className="relative z-10 container mx-auto px-10 py-12 h-[calc(100vh-120px)] bg-transparent overflow-y-auto">
+      <main className={`relative z-10 container mx-auto h-[calc(100vh-120px)] bg-transparent overflow-y-auto ${phase === 'hub' ? 'px-0 py-0' : 'px-10 py-12'}`}>
         <AnimatePresence mode="wait">
           {phase === 'hub' && (
             <motion.div
@@ -183,9 +187,26 @@ export default function FocusFlightPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="flex-1"
+              style={{ display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: "36px", padding: "38px 54px" }}
             >
-              <AirportHub history={history} onSelectRoute={initiateBoarding} />
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+                <span style={{ alignSelf: "flex-start", marginBottom: "16px", fontSize: "12px", fontWeight: "500", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px", letterSpacing: "0.02em" }}>
+                  ◈ Departing now
+                </span>
+                <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "58px", lineHeight: 0.98, letterSpacing: "-.035em", color: "var(--text)" }}>
+                  Boarding<br />to <span style={{ color: "var(--jade)" }}>Deep Focus</span>
+                </div>
+                <p style={{ color: "var(--dim)", margin: "18px 0 26px", maxWidth: "430px", fontSize: "15px" }}>
+                  Phones down, notifications off, one subject. Land in 25 minutes with a chapter done.
+                </p>
+                <div style={{ display: "flex", gap: "12px", marginTop: "22px", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "5px 10px" }}>✓ No phone</span>
+                  <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px" }}>♪ Cabin sounds</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+                <AirportHub history={history} onSelectRoute={initiateBoarding} />
+              </div>
             </motion.div>
           )}
 
