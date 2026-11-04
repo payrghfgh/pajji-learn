@@ -18,7 +18,7 @@ export const PremiumBackground = () => {
           repeat: Infinity,
           ease: "linear",
         }}
-        className="absolute -top-[20%] -left-[10%] h-[70%] w-[70%] rounded-full bg-[var(--accent-soft,rgba(25,195,125,0.13))] blur-[120px]"
+        className="absolute -top-[20%] -left-[10%] h-[110%] w-[110%] rounded-full bg-[radial-gradient(circle,var(--accent-soft,rgba(25,195,125,0.13))_0%,transparent_50%)] blur-[160px]"
       />
       <motion.div
         animate={{
@@ -31,7 +31,7 @@ export const PremiumBackground = () => {
           repeat: Infinity,
           ease: "linear",
         }}
-        className="absolute -bottom-[20%] -right-[10%] h-[70%] w-[70%] rounded-full bg-[color-mix(in_oklab,var(--accent,#19C37D)_20%,transparent)] blur-[120px]"
+        className="absolute -bottom-[20%] -right-[10%] h-[110%] w-[110%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--accent,#19C37D)_20%,transparent)_0%,transparent_50%)] blur-[160px]"
       />
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150" />
       
