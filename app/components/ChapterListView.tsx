@@ -14,22 +14,114 @@ type ChapterListViewProps = {
 
 export const ChapterListView: React.FC<ChapterListViewProps> = ({ book, completedLessons, isOwner, onBack, onAddLesson, onStudy, onEdit }) => (
   <div className="page-shell" style={{ maxWidth: "880px" }}>
-    <button onClick={onBack} className="btn-link" style={{ marginBottom: "16px" }}>← Library 📚</button>
+    <button
+      onClick={onBack}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        padding: "6px 14px",
+        marginBottom: "20px",
+        background: "var(--ink-2)",
+        border: "1px solid var(--line)",
+        borderRadius: "999px",
+        color: "var(--dim)",
+        fontSize: "12px",
+        fontWeight: "600",
+        cursor: "pointer",
+      }}
+    >
+      ← Library
+    </button>
+
     <div className="page-header">
-      <h1 className="page-title">{book.title}</h1>
+      <h1 className="page-title" style={{ fontWeight: "700" }}>{book.title}</h1>
       {isOwner && <button onClick={onAddLesson} className="btn btn-primary">+ Add Lesson</button>}
     </div>
-    {(book.chapters || []).map((chapter: any) => (
-      <div key={chapter.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px" }}>
-        <div style={{ flex: 1 }}>
-          <span style={{ fontSize: "17px", fontWeight: "700" }}>{chapter.title}</span>
-          {completedLessons.includes(chapter.id) && <span style={{ marginLeft: "12px", fontSize: "11px", color: "var(--accent)", fontWeight: "900", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "10px" }}>✓ MASTERED</span>}
-        </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <button onClick={() => onStudy(chapter)} className="btn btn-primary" style={{ padding: "8px 20px" }}>Study</button>
-          {isOwner && <button onClick={() => onEdit(chapter)} className="btn btn-secondary" style={{ padding: "8px 12px" }}>✎</button>}
-        </div>
-      </div>
-    ))}
+
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {(book.chapters || []).map((chapter: any) => {
+        const mastered = completedLessons.includes(chapter.id);
+        return (
+          <div
+            key={chapter.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              height: "56px",
+              padding: "0 18px",
+              background: "var(--ink-2)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-m)",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "16px",
+                fontWeight: "500",
+                color: "var(--text)",
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {chapter.title}
+            </span>
+            {mastered && (
+              <span
+                style={{
+                  flexShrink: 0,
+                  fontSize: "11px",
+                  fontWeight: "800",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--jade)",
+                  background: "var(--jade-soft)",
+                  border: "1px solid var(--jade-soft)",
+                  borderRadius: "999px",
+                  padding: "3px 9px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ✓ Mastered
+              </span>
+            )}
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => onStudy(chapter)}
+              className="btn btn-primary"
+              style={{ flexShrink: 0, padding: "8px 18px", fontSize: "14px" }}
+            >
+              Study
+            </button>
+            {isOwner && (
+              <button
+                onClick={() => onEdit(chapter)}
+                title="Edit chapter"
+                aria-label="Edit chapter"
+                style={{
+                  flexShrink: 0,
+                  width: "32px",
+                  height: "32px",
+                  display: "grid",
+                  placeItems: "center",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--faint)",
+                  cursor: "pointer",
+                  borderRadius: "var(--r-s)",
+                  fontSize: "15px",
+                  lineHeight: 1,
+                }}
+              >
+                ↗
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   </div>
 );
