@@ -156,15 +156,15 @@ export default function AdminPage() {
     }
   };
 
-  if (loading) return <div className="flex h-screen items-center justify-center bg-black text-white">Loading...</div>;
+  if (loading) return <div className="flex h-screen items-center justify-center bg-[var(--ink-0)] text-[var(--text)]">Loading...</div>;
 
   if (!user || !isAdmin(user.email)) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-black p-10 text-center text-white">
-        <ShieldAlert size={64} className="mb-4 text-red-500" />
-        <h1 className="text-4xl font-black text-red-500">ACCESS DENIED</h1>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--ink-0)] p-10 text-center text-[var(--text)]">
+        <ShieldAlert size={64} className="mb-4 text-[var(--coral)]" />
+        <h1 className="text-4xl font-black text-[var(--coral)]">ACCESS DENIED</h1>
         <p className="mt-2 opacity-50">You do not have administrative privileges.</p>
-        <Link href="/" className="mt-8 text-emerald-500 underline">Return to Pajji Learn</Link>
+        <Link href="/" className="mt-8 text-[var(--jade)] underline">Return to Pajji Learn</Link>
       </div>
     );
   }

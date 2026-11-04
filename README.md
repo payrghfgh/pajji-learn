@@ -33,11 +33,13 @@ The UI runs on CSS custom properties defined in `app/globals.css` (`--ink-*`,
 npm run check:tokens
 ```
 
-**It is a ratchet, not a clean bill of health.** It passes with roughly 1,331
-hardcoded colour references still in the repo, in `app/admin/**` and
-`app/focus-flight/**`, which are whitelisted because those screens were never
-migrated. Green means only that no *new* violations were added and the swept
-screens stayed swept.
+**It is a ratchet, not a clean bill of health.** It passes with 281 hardcoded
+colour references still in the repo, all in `app/focus-flight/**`, which is
+whitelisted because that suite has never been migrated. Green means only that
+no *new* violations were added and the swept screens stayed swept.
+
+`app/admin/**` was tokenised screen by screen and is no longer whitelisted, so
+it is covered by every rule.
 
 **It should run in CI when there is CI.** It is deliberately not wired into
 `build` or `prebuild`: a ratchet that blocks deploys on day one gets deleted on

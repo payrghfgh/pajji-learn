@@ -2,11 +2,14 @@
 /**
  * check-design-tokens — a RATCHET, not a clean bill of health.
  *
- * THIS SCRIPT PASSES WITH ROUGHLY 1,331 HARDCODED COLOUR REFERENCES STILL IN
- * THE REPO. They live in app/admin/** and app/focus-flight/**, which are
- * whitelisted because those screens were never migrated: admin is 431 Tailwind
- * utilities with 84 hardcoded colours, the Focus Flight suite is ~900 with
- * ~130. Neither has been through the design-system pass.
+ * THIS SCRIPT PASSES WITH 281 HARDCODED COLOUR REFERENCES STILL IN THE REPO.
+ * They all live in app/focus-flight/**, which is whitelisted because that suite
+ * has never been migrated: 256 Tailwind colour utilities, 18 raw hex values and
+ * 7 rgb()/rgba() calls across 8 files.
+ *
+ * app/admin/** was tokenised screen by screen and is NO LONGER whitelisted. It
+ * is covered by every rule below, which is why removing an entry is the last
+ * act of a migration rather than the first.
  *
  * A green run therefore does NOT mean "the app is clean". It means exactly two
  * things:
@@ -58,7 +61,7 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "lib"];
-const WHITELIST = ["app/admin/", "app/focus-flight/"];
+const WHITELIST = ["app/focus-flight/"];
 const EXTENSIONS = new Set([".tsx", ".ts", ".css"]);
 
 // ── documented exceptions ──────────────────────────────────────────────────
@@ -419,8 +422,8 @@ console.log("=".repeat(66));
 console.log(`violations outside the whitelist: ${violations.length}`);
 console.log(`allowed by documented exception:  ${allowed.length}`);
 console.log("");
-console.log("Whitelisted and NOT clean: admin/**, focus-flight/** (~1,331 hardcoded");
-console.log("colour references). Green means no new ones and the swept screens");
-console.log("stayed swept. It does not mean the app is clean.");
+console.log("Whitelisted and NOT clean: focus-flight/** (281 hardcoded colour");
+console.log("references). Green means no new ones and the swept screens stayed");
+console.log("swept. It does not mean the app is clean.");
 console.log("");
 process.exit(violations.length === 0 ? 0 : 1);
