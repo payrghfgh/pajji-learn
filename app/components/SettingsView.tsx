@@ -131,7 +131,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     cyber: "xp_1000",
     nebula: "streak_21",
     emerald: "xp_10000",
-    arctic: "hundred_masteries",
+    arctic: "fifty_masteries", // was hundred_masteries: no such achievement exists
   };
 
   const builtInThemeCards = [
@@ -151,6 +151,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     { key: "zenith", label: "Zenith Gold 💎", accent: "#FFD700", bg: "linear-gradient(135deg,#0f0f10,#2a2100)" },
     { key: "midnight", label: "Midnight 🌌", accent: "#A855F7", bg: "linear-gradient(135deg,#000,#1a0b2e)" },
   ];
+
+  // Display labels for the achievement gates. The gate ids live in
+  // themeAchievementRequirements above; this is presentation only.
+  const requirementLabel: Record<string, string> = {
+    five_masteries: "5 masteries",
+    streak_7: "7-day streak",
+    xp_1000: "1,000 XP",
+    streak_21: "21-day streak",
+    xp_10000: "10,000 XP",
+    fifty_masteries: "50 masteries",
+  };
 
   const hasThemeAccess = (themeId: string) => {
     const isAdminOnly = adminOnlyThemeIds.includes(themeId);
@@ -295,28 +306,44 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <h3 className="section-title">UI Theme Selection</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" }}>
+                <h3 className="section-title">Themes</h3>
+                {/* 5 x 3. Each card carries the real gate as its status line, read
+                    from the same maps hasThemeAccess uses -- so a card can never
+                    claim a gate the check does not apply. */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px" }}>
                   {builtInThemeCards.map((t) => {
                     const locked = !hasThemeAccess(t.key);
+                    const requiredId = themeAchievementRequirements[t.key];
+                    const status = ["zenith", "midnight"].includes(t.key)
+                      ? "Ultra only"
+                      : requiredId
+                        ? (requirementLabel[requiredId] || requiredId)
+                        : adminOnlyThemeIds.includes(t.key)
+                          ? "Admin only"
+                          : "Ready";
                     return (
                       <button
                         key={t.key}
                         onClick={() => !locked && setUiTheme(t.key)}
+                        aria-disabled={locked}
+                        title={locked ? `Locked — ${status}` : t.label}
                         style={{
-                          padding: "12px",
-                          borderRadius: "14px",
-                          border: uiTheme === t.key ? "2px solid var(--accent)" : "1px solid var(--border)",
+                          padding: "10px",
+                          borderRadius: "var(--r-m)",
+                          border: uiTheme === t.key ? "2px solid var(--jade)" : "1px solid var(--line)",
                           background: t.bg,
                           cursor: locked ? "not-allowed" : "pointer",
-                          position: "relative",
-                          overflow: "hidden",
-                          textAlign: "center",
-                          opacity: locked ? 0.5 : 1
+                          textAlign: "left",
+                          opacity: locked ? 0.55 : 1,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                          minHeight: "64px",
+                          justifyContent: "center"
                         }}
                       >
-                        <div style={{ color: t.accent, fontWeight: "800", fontSize: "13px" }}>{t.label}</div>
-                        {locked && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center" }}><Star size={14} color="white" fill="white" /></div>}
+                        <span style={{ color: t.accent, fontWeight: "800", fontSize: "12px" }}>{t.label}</span>
+                        <span style={{ color: t.accent, opacity: 0.75, fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.05em" }}>{status}</span>
                       </button>
                     );
                   })}

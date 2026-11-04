@@ -2599,7 +2599,7 @@ function AppContent() {
     cyber: "xp_1000",
     nebula: "streak_21",
     emerald: "xp_10000",
-    arctic: "hundred_masteries",
+    arctic: "fifty_masteries", // was hundred_masteries: no such achievement exists
   };
   const getThemeAchievementRequirement = (themeId: string) => themeAchievementRequirements[themeId] || "";
   const getAchievementTitleById = (achievementId: string) =>
