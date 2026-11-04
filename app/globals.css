@@ -1104,3 +1104,16 @@ a:active {
   .adm-split-ai { grid-template-columns: 1.5fr 1fr; }
   .adm-grid-3 { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* Membership tier grid — plan's repeat(4,1fr) / 16px, collapsing below 1100px. */
+.membership-tiers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .membership-tiers { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .membership-tiers { grid-template-columns: 1fr; }
+}

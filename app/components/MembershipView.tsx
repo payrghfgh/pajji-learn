@@ -1,8 +1,7 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, Crown, CheckCircle2, Star, Zap, Sparkles, Clock, Flame, Heart, Brain, Send } from "lucide-react";
-import { doc, setDoc } from "firebase/firestore";
+import { ChevronLeft } from "lucide-react";
 
 interface MembershipViewProps {
   memTier: string;
@@ -23,11 +22,55 @@ interface MembershipViewProps {
   setSaveStatus: (v: string) => void;
 }
 
-export const MembershipView: React.FC<MembershipViewProps> = ({
-  memTier, setView, handleCardMouseMove, handleCardMouseLeave,
-  rotateX, rotateY, shineBackground, user, getUserName, profilePic,
-  membershipExpiry, getDayDiff, getLocalDateKey, userData, db, setSaveStatus
-}) => {
+const FEATS: Record<string, string[]> = {
+  free: [
+    "All 4 subjects, 480 chapters",
+    "Flashcards & spaced repetition",
+    "Quizzes & AI study buddy",
+    "Notes, pinned key points & export",
+    "Leaderboard & achievements",
+    "Focus Flight focus timer",
+    "12 themes — 6 ready, 6 by achievement",
+  ],
+  plus: [
+    "Everything in Free",
+    "5% Pajji bonus",
+    "5% more food at the counter",
+    "Benefits across all Pajji apps",
+    "Basic PSS — stationery service",
+    "13 themes — adds Williams Blue",
+    "Quiz skips at 10 XP",
+    "Plus title beside your name",
+  ],
+  pro: [
+    "Everything in Plus",
+    "10% Pajji bonus",
+    "10% more food",
+    "Full PSS access",
+    "Free quiz skips (0 XP)",
+    "Premium focus music unlocked",
+    "Pro crown beside your name",
+  ],
+  ultra: [
+    "Everything in Pro",
+    "25% Pajji bonus",
+    "25% more food",
+    "Full PSS Premium + PPS protection",
+    "2× XP on every answer",
+    "All 15 themes, incl. Zenith Gold & Midnight",
+    "Custom study themes",
+    "Ultra title beside your name",
+  ],
+};
+
+const TIERS = [
+  { key: "free", label: "Free", labelColor: "var(--dim)", pill: "Your plan", pillColor: "var(--dim)", pillBg: "transparent", title: "Everything you need to study", button: null, footer: "Title: none", hot: false },
+  { key: "plus", label: "Plus", labelColor: "var(--azure)", pill: "+ title", pillColor: "var(--azure)", pillBg: "var(--azure-soft)", title: "A little extra, on the house", button: "Contact Rushan", footer: null, hot: false },
+  { key: "pro", label: "Pro", labelColor: "var(--jade)", pill: null, pillColor: "var(--jade)", pillBg: "var(--jade-soft)", title: "For the regulars", button: "Contact Rushan", footer: null, hot: true },
+  { key: "ultra", label: "◆ Ultra", labelColor: "var(--amber)", pill: null, pillColor: "var(--amber)", pillBg: "color-mix(in oklab, var(--amber) 14%, transparent)", title: "Everything, plus a human", button: "Contact Rushan", footer: null, hot: false },
+];
+
+export const MembershipView: React.FC<MembershipViewProps> = ({ memTier, setView }) => {
   return (
     <motion.div
       key="membership"
@@ -35,154 +78,144 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: -20 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="page-shell" style={{ maxWidth: "600px" }}
+      className="page-shell"
+      style={{ maxWidth: "none", padding: "26px 30px" }}
     >
-      <button onClick={() => setView("settings")} className="btn-link" style={{ marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
-        <ChevronLeft size={18} /> Back to Settings
+      <button
+        onClick={() => setView("settings")}
+        className="btn-link"
+        style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "6px", fontSize: "12px" }}
+      >
+        <ChevronLeft size={16} /> Back to Settings
       </button>
 
-      <h1 className="sa-h1" style={{ marginBottom: "20px" }}>Membership</h1>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "18px", gap: "16px", flexWrap: "wrap" }}>
+        <div>
+          <h1 className="sa-h1" style={{ margin: 0 }}>Membership</h1>
+          <p style={{ margin: "6px 0 0", color: "var(--dim)", fontSize: "13.5px" }}>
+            Free for the people who show up. No cards, no subscriptions, no checkout.
+          </p>
+        </div>
+        <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "5px 10px", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
+          ✓ Every study feature is free
+        </span>
+      </div>
 
-      <div className="card" style={{ padding: "32px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-        {memTier !== "free" && memTier !== "" ? (
-          <>
-            <motion.div 
-              onMouseMove={handleCardMouseMove}
-              onMouseLeave={handleCardMouseLeave}
-              style={{ 
-                width: "100%", 
-                maxWidth: "380px", 
-                aspectRatio: "1.586", 
-                background: memTier === "ultra" ? "linear-gradient(135deg, #FFD700, #F59E0B)" : memTier === "pro" ? "linear-gradient(135deg, #2563EB, #1D4ED8)" : "linear-gradient(135deg, #7C3AED, #6D28D9)", 
-                borderRadius: "20px", 
-                padding: "24px", 
-                display: "flex", 
-                flexDirection: "column", 
-                justifyContent: "space-between", 
-                boxShadow: memTier === "ultra" ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.3)", 
-                position: "relative", 
-                overflow: "hidden", 
-                color: memTier === "ultra" ? "#000" : "#FFF",
-                margin: "0 auto 8px auto",
-                perspective: "1000px",
-                rotateX,
-                rotateY,
-                transformStyle: "preserve-3d"
+      <div
+        className="card"
+        style={{
+          padding: "20px 22px",
+          display: "flex",
+          alignItems: "center",
+          gap: "18px",
+          marginBottom: "18px",
+          borderColor: "color-mix(in oklab, var(--jade) 35%, transparent)",
+          background: "linear-gradient(120deg,color-mix(in oklab, var(--jade) 10%, transparent),var(--ink-1))",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: "var(--jade-soft)", color: "var(--jade)", display: "grid", placeItems: "center", fontSize: "24px", flexShrink: 0 }}>
+          🤝
+        </div>
+        <div style={{ flex: 1, minWidth: "240px" }}>
+          <div style={{ fontFamily: "var(--disp)", fontWeight: 700, fontSize: "17px", letterSpacing: "-.015em", color: "var(--text)" }}>
+            It's not a purchase — it's a barter between friends.
+          </div>
+          <div style={{ color: "var(--dim)", fontSize: "13px", marginTop: "4px" }}>
+            You help out with Pajji Services, you get the perks back. That's the whole system. Contact Rushan on WhatsApp or face to face to get set up.
+          </div>
+        </div>
+        <button
+          aria-disabled="true"
+          title="No contact link configured yet"
+          style={{ flex: "0 0 auto", padding: "10px 18px", borderRadius: "12px", background: "var(--ink-3)", color: "var(--faint)", fontWeight: 800, border: "1px solid var(--line)", cursor: "not-allowed", opacity: 0.7 }}
+        >
+          Contact Rushan →
+        </button>
+      </div>
+
+      <div className="membership-tiers">
+        {TIERS.map((t) => {
+          const isCurrent = (memTier || "free") === t.key;
+          return (
+            <div
+              key={t.key}
+              style={{
+                borderRadius: "var(--r-xl)",
+                border: `1px solid ${t.hot ? "color-mix(in oklab, var(--jade) 55%, transparent)" : "var(--line-2)"}`,
+                background: t.hot ? "linear-gradient(180deg,color-mix(in oklab, var(--jade) 10%, transparent),var(--ink-1))" : "linear-gradient(180deg,var(--ink-2),var(--ink-1))",
+                padding: "26px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)", pointerEvents: "none" }} />
-              
-              {memTier === "ultra" && (
-                <motion.div 
-                  style={{
-                    position: "absolute",
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    background: "linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.05) 55%, transparent 100%)",
-                    backgroundSize: "200% 200%",
-                    zIndex: 2,
-                    pointerEvents: "none",
-                    mixBlendMode: "overlay"
-                  }}
-                  animate={{ backgroundPosition: ["0% 0%", "200% 200%"] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                />
+              {t.hot && (
+                <span style={{ position: "absolute", top: "14px", right: "14px", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "12px", letterSpacing: ".02em", padding: "7px 12px", borderRadius: "10px", background: "var(--jade)", color: "var(--ink-on-accent)", transform: "rotate(5deg)" }}>
+                  Recommended
+                </span>
               )}
-
-              <motion.div style={{ position: "absolute", inset: 0, background: shineBackground, zIndex: 3, pointerEvents: "none" }} />
-
-              <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", transform: "translateZ(20px)" }}>
-                <h3 style={{ fontFamily: "var(--disp)", fontWeight: "800", fontSize: "16px", margin: 0, letterSpacing: "0.5px" }}>PAJJI SERVICES</h3>
-                <div style={{ opacity: 0.8 }}>
-                  {memTier === "ultra" ? (
-                    <Crown size={20} />
-                  ) : memTier === "pro" ? (
-                    <Zap size={20} />
-                  ) : (
-                    <Star size={20} />
-                  )}
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: t.labelColor }}>
+                  {t.label}
+                </span>
+                {t.pill && (
+                  <span style={{ marginLeft: "auto", fontSize: "12px", color: t.pillColor, background: t.pillBg, border: `1px solid ${t.pillBg === "transparent" ? "var(--line)" : t.pillBg}`, borderRadius: "999px", padding: "4px 9px" }}>
+                    {t.pill}
+                  </span>
+                )}
+                {!t.pill && isCurrent && (
+                  <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--jade)", border: "1px solid var(--jade-soft)", background: "var(--jade-soft)", borderRadius: "999px", padding: "4px 9px" }}>
+                    Your plan
+                  </span>
+                )}
               </div>
-              
-              <div style={{ position: "relative", zIndex: 1, textAlign: "center", transform: "translateZ(40px)" }}>
-                <h2 style={{ fontFamily: "var(--disp)", fontSize: "28px", fontWeight: "800", margin: 0, letterSpacing: "1px", textTransform: "uppercase" }}>
-                  {memTier === "ultra" ? "Pajji Ultra" : memTier === "pro" ? "Pajji Pro" : "Pajji Plus"}
-                </h2>
+              <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "24px", letterSpacing: "-.02em", color: "var(--text)" }}>
+                {t.title}
               </div>
-
-              <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end", transform: "translateZ(20px)" }}>
-                <div>
-                  <p style={{ fontSize: "11px", fontWeight: "700", opacity: 0.7, textTransform: "uppercase", marginBottom: "2px" }}>Valid Thru</p>
-                  <p style={{ fontSize: "14px", fontWeight: "800", fontFamily: "monospace", letterSpacing: "1px" }}>
-                    {membershipExpiry ? new Date(membershipExpiry).toLocaleDateString("en-IN", { month: "2-digit", year: "2-digit" }) : "LIFETIME"}
-                  </p>
-                  {membershipExpiry && (
-                    (() => {
-                      const expired = new Date(membershipExpiry) < new Date();
-                      return !expired && (
-                        <div style={{ 
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          background: "rgba(0,0,0,0.25)",
-                          padding: "4px 8px",
-                          borderRadius: "8px",
-                          marginTop: "8px",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          backdropFilter: "blur(4px)"
-                        }}>
-                          <Clock size={10} />
-                          <p style={{ fontSize: "11px", fontWeight: "800", letterSpacing: "0.3px", margin: 0 }}>
-                            Expires in {Math.max(0, getDayDiff(getLocalDateKey(), membershipExpiry.split('T')[0]))} days
-                          </p>
-                        </div>
-                      );
-                    })()
-                  )}
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ fontSize: "14px", fontWeight: "800", textTransform: "uppercase", marginBottom: "2px" }}>{getUserName(user)}</p>
-                  <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
-                    {memTier === "ultra" && <Sparkles size={12} color="#FFD700" />}
-                    <CheckCircle2 size={12} color="rgba(255,255,255,0.5)" />
+              <div style={{ display: "flex", flexDirection: "column", gap: "9px", marginTop: "4px" }}>
+                {FEATS[t.key].map((f) => (
+                  <div key={f} style={{ display: "flex", gap: "10px", fontSize: "13.5px", color: "var(--dim)" }}>
+                    <b style={{ color: "var(--jade)" }}>✓</b> {f}
                   </div>
-                </div>
+                ))}
               </div>
-            </motion.div>
+              {t.footer ? (
+                <div style={{ marginTop: "auto", textAlign: "center", fontSize: "12px", color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "6px 10px" }}>
+                  {t.footer}
+                </div>
+              ) : (
+                <button
+                  aria-disabled="true"
+                  title="No contact link configured yet"
+                  style={{ marginTop: "auto", padding: "9px 14px", borderRadius: "12px", fontWeight: 800, fontSize: "13px", border: "1px solid var(--line)", background: "var(--ink-3)", color: "var(--faint)", cursor: "not-allowed", opacity: 0.7 }}
+                >
+                  {t.button}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-            <div style={{ width: "100%", background: "var(--input-bg)", borderRadius: "16px", padding: "20px", textAlign: "left", border: "1px solid var(--border)", marginTop: "16px" }}>
-              <p style={{ fontSize: "11px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", marginBottom: "12px", letterSpacing: "1px" }}>Benefits Included</p>
-              <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-                <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> 2× XP Multiplier (Level up twice as fast)</li>
-                <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unlimited Free Quiz Skips</li>
-                <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Full Access to All Premium Themes</li>
-                <li style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: "600" }}><div style={{ color: "var(--accent)" }}>✓</div> Unified Premium Badge Appearance</li>
-              </ul>
-            </div>
-
-            <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: "700", marginTop: "16px", opacity: 0.8, textAlign: "center" }}>
-              Please contact Rushan either on WhatsApp or face to face if applied
-            </p>
-          </>
-        ) : (
-          <>
-            <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "var(--input-bg)", display: "grid", placeItems: "center", border: "1px dashed var(--border)" }}>
-              <Star size={32} color="var(--muted)" />
-            </div>
-            <div>
-              <h2 style={{ fontSize: "22px", fontWeight: "900", marginBottom: "8px" }}>No Active Membership</h2>
-              <p style={{ fontSize: "14px", color: "var(--accent)", fontWeight: "700", lineHeight: "1.6", maxWidth: "300px", margin: "12px auto 0" }}>
-                Please contact Rushan either on WhatsApp or face to face if applied
-              </p>
-            </div>
-            <button
-              onClick={() => window.open('https://pajji-services.netlify.app/#memberships', '_blank')}
-              className="btn btn-primary"
-              style={{ width: "100%", padding: "16px", borderRadius: "16px", fontSize: "16px", fontWeight: "800", marginTop: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
-            >
-              Explore Memberships
-            </button>
-          </>
-        )}
+      <div className="card" style={{ marginTop: "18px", padding: "18px 22px", display: "flex", alignItems: "center", gap: "22px", flexWrap: "wrap" }}>
+        <span style={{ flex: "0 0 auto", fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>
+          What actually differs
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, flexWrap: "wrap" }}>
+          <span style={{ fontSize: "12px", color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "5px 10px" }}>Free · 12 themes (6 ready + 6 by achievement)</span>
+          <span style={{ color: "var(--faint)" }}>→</span>
+          <span style={{ fontSize: "12px", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px" }}>Plus · + Williams Blue (13)</span>
+          <span style={{ color: "var(--faint)" }}>→</span>
+          <span style={{ fontSize: "12px", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "5px 10px" }}>Pro · + premium music</span>
+          <span style={{ color: "var(--faint)" }}>→</span>
+          <span style={{ fontSize: "12px", color: "var(--amber)", background: "color-mix(in oklab, var(--amber) 14%, transparent)", border: "1px solid color-mix(in oklab, var(--amber) 14%, transparent)", borderRadius: "999px", padding: "5px 10px" }}>Ultra · all 15 + custom themes</span>
+        </div>
+        <span style={{ flex: "0 0 auto", fontSize: "12px", color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "5px 10px" }}>
+          Titles: none · + · ♛ · U
+        </span>
       </div>
     </motion.div>
   );
