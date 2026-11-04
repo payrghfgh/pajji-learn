@@ -437,14 +437,13 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* TODO(data): the sentence below is false today. Nothing reads
-                ai_config, so saving changes nothing for any user. Left as-is
-                rather than rewritten, because what the copy should say depends
-                on whether the read path gets built. */}
+            {/* States what happens, not what it achieves: nothing reads
+                ai_config yet, so any claim about effect would be false. Gets
+                richer when the read path exists. */}
             <div className="rounded-3xl border border-dashed border-[var(--line-2)] p-8 text-center">
               <Settings size={32} className="mx-auto mb-4 opacity-20" />
               <p className="text-sm font-bold opacity-30">
-                These settings take effect globally for all users instantly upon saving.
+                Saved to settings/ai_config.
               </p>
             </div>
           </div>
