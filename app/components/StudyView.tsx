@@ -10,7 +10,6 @@ const STUDY_TOOLS = ["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanati
 
 interface StudyViewProps {
   curChapter: any;
-  curBook?: any;
   setView: (v: string) => void;
   quickReviewMode: boolean;
   setQuickReviewMode: (v: boolean) => void;
@@ -92,7 +91,7 @@ interface StudyViewProps {
 }
 
 export const StudyView: React.FC<StudyViewProps> = ({
-  curChapter, curBook, setView, quickReviewMode, setQuickReviewMode,
+  curChapter, setView, quickReviewMode, setQuickReviewMode,
   completedLessons, markCompleted, unmasterLesson,
   isSpeedReadOpen, setIsSpeedReadOpen, speedReadIndex, setSpeedReadIndex,
   isZenMode, FocusGarden, switchStudyTab, activeTab,
@@ -178,6 +177,9 @@ export const StudyView: React.FC<StudyViewProps> = ({
               <button onClick={() => unmasterLesson(curChapter.id)} style={{ background: "none", border: "none", opacity: 0.5, cursor: "pointer" }}>↺</button>
             </div>
           )}
+          <button onClick={() => setView("chapters")} style={{ flexShrink: 0, padding: "8px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: "700", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--dim)", cursor: "pointer" }}>
+            Exit
+          </button>
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
@@ -678,23 +680,6 @@ export const StudyView: React.FC<StudyViewProps> = ({
 
         {activeTab === "Flashcards" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Topbar row: book pill, chevron, chapter name, Exit */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              {curBook?.title && (
-                <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "4px 10px", whiteSpace: "nowrap" }}>
-                  ◆ {curBook.title}
-                </span>
-              )}
-              <span style={{ flexShrink: 0, color: "var(--faint)", fontSize: "13px" }}>›</span>
-              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13px", fontWeight: "700", color: "var(--text)" }}>
-                {curChapter.title}
-              </span>
-              <div style={{ flex: 1 }} />
-              <button onClick={() => setView("chapters")} style={{ flexShrink: 0, padding: "6px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: "700", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--dim)", cursor: "pointer" }}>
-                Exit
-              </button>
-            </div>
-
             {/* Deck bar: thin, full width, jade fill, count right-aligned */}
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ flex: 1, height: "4px", borderRadius: "999px", background: "var(--ink-4)", overflow: "hidden" }}>

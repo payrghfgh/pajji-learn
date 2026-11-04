@@ -4481,7 +4481,6 @@ function AppContent() {
         {view === "study" && curChapter && (
           <DynamicStudy
             curChapter={curChapter}
-            curBook={curBook}
             setView={setView}
             quickReviewMode={quickReviewMode}
             setQuickReviewMode={setQuickReviewMode}
