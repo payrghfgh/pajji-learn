@@ -306,46 +306,46 @@ export default function AdminPage() {
           <div className="space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <h2 className="flex items-center gap-2 text-xl font-black uppercase tracking-tight">
-                <Users size={20} className="text-emerald-500" /> Database Users ({allUsers.length})
+                <Users size={20} className="text-[var(--jade)]" /> Database Users ({allUsers.length})
               </h2>
               <div className="relative flex-1 md:max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--faint)]" size={18} />
                 <input 
                   type="text" 
                   placeholder="Search by name or email..."
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-4 pl-12 pr-4 font-bold outline-none focus:border-emerald-500/50"
+                  className="w-full rounded-2xl border border-[var(--line-2)] bg-[var(--ink-2)] py-4 pl-12 pr-4 font-bold outline-none focus:border-[var(--jade)]"
                 />
               </div>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
               {filteredUsers.map(u => (
-                <div key={u.id} className="group relative rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-all hover:border-emerald-500/30 hover:bg-white/[0.08]">
+                <div key={u.id} className="group relative rounded-3xl border border-[var(--line-2)] bg-[var(--ink-2)] p-6 backdrop-blur-xl hover:border-[var(--jade)] hover:bg-[var(--ink-3)]">
                   <div className="mb-4 flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-xl font-black text-black">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--jade)] text-xl font-black text-[var(--ink-on-accent)]">
                         {u.displayName?.[0] || u.email?.[0] || '?'}
                       </div>
                       <div>
-                        <h3 className="font-black leading-tight text-white">{u.displayName || 'Unnamed Student'}</h3>
+                        <h3 className="font-black leading-tight text-[var(--text)]">{u.displayName || 'Unnamed Student'}</h3>
                         <p className="text-xs font-bold opacity-30">{u.email}</p>
                       </div>
                     </div>
-                    <span className={`rounded-lg px-2 py-1 text-[10px] font-black uppercase ${u.membership === 'ultra' ? 'bg-amber-500 text-black' : u.membership === 'pro' ? 'bg-blue-500 text-black' : 'bg-emerald-500 text-black'}`}>
+                    <span className={`rounded-lg px-2 py-1 text-[11px] font-black uppercase ${u.membership === 'ultra' ? 'bg-[var(--amber)] text-[var(--ink-on-accent)]' : u.membership === 'pro' ? 'bg-[var(--azure)] text-[var(--ink-on-accent)]' : 'bg-[var(--jade)] text-[var(--ink-on-accent)]'}`}>
                       {u.membership || 'Free'}
                     </span>
                   </div>
 
                   <div className="mb-6 grid grid-cols-2 gap-4">
-                    <div className="rounded-2xl bg-black/40 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Current XP</p>
-                      <p className="text-lg font-black text-emerald-500">{u.xp || 0}</p>
+                    <div className="rounded-2xl bg-[var(--input-bg)] p-3">
+                      <p className="text-[11px] font-black uppercase tracking-widest opacity-30">Current XP</p>
+                      <p className="text-lg font-black text-[var(--jade)]">{u.xp || 0}</p>
                     </div>
-                    <div className="rounded-2xl bg-black/40 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-30">Level</p>
-                      <p className="text-lg font-black text-yellow-400">{Math.floor((u.xp || 0) / 500) + 1}</p>
+                    <div className="rounded-2xl bg-[var(--input-bg)] p-3">
+                      <p className="text-[11px] font-black uppercase tracking-widest opacity-30">Level</p>
+                      <p className="text-lg font-black text-[var(--amber)]">{Math.floor((u.xp || 0) / 500) + 1}</p>
                     </div>
                   </div>
 
@@ -353,14 +353,14 @@ export default function AdminPage() {
                     <button 
                       onClick={() => handleGiftXP(u.id, u.xp)}
                       disabled={isUpdatingUser === u.id}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 py-2 text-xs font-black text-black transition-all hover:bg-emerald-400 disabled:opacity-30"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--jade)] py-2 text-xs font-black text-[var(--ink-on-accent)] hover:bg-[var(--jade-light)] disabled:opacity-30"
                     >
                       <Gift size={14} /> +500 XP
                     </button>
                     <button 
                       onClick={() => handleSetTier(u.id, 'ultra')}
                       disabled={isUpdatingUser === u.id}
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-amber-500 py-2 text-xs font-black text-black transition-all hover:bg-amber-400 disabled:opacity-30"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--amber)] py-2 text-xs font-black text-[var(--ink-on-accent)] hover:opacity-90 disabled:opacity-30"
                     >
                       <Star size={14} /> ULTRA
                     </button>
