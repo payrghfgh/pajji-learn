@@ -29,6 +29,11 @@ export interface FlightSession {
   lastActive: number;
   gate: string;
   seatClass: string;
+  /** Total ms spent paused so far, excluding any pause still in progress. */
+  pausedMs?: number;
+  /** Set while paused; cleared on resume. Persisted so a reload mid-pause
+   *  still has the span to subtract. */
+  pausedAt?: number | null;
 }
 
 export interface FlightHistory {
@@ -101,8 +106,21 @@ export const saveFlightSession = (session: FlightSession) => {
 export const getActiveFlight = (): FlightSession | null => {
   if (typeof window === 'undefined') return null;
   const data = localStorage.getItem(ACTIVE_FLIGHT_KEY);
-  return data ? JSON.parse(data) : null;
+  if (!data) return null;
+  const parsed = JSON.parse(data) as FlightSession;
+  // Sessions written before the paused-duration model have no pausedMs.
+  // Default it so a flight already in progress survives the deploy instead of
+  // being read as NaN.
+  return { ...parsed, pausedMs: parsed.pausedMs ?? 0, pausedAt: parsed.pausedAt ?? null };
 };
+
+/** Total paused time, including a pause that is still running. */
+export const pausedTotal = (session: Pick<FlightSession, 'pausedMs' | 'pausedAt'>): number =>
+  (session.pausedMs ?? 0) + (session.pausedAt ? Date.now() - session.pausedAt : 0);
+
+/** Elapsed ms of actual focus time, excluding every paused span. */
+export const elapsedFocusMs = (session: FlightSession): number =>
+  Date.now() - session.startTime - pausedTotal(session);
 
 export const setActiveFlight = (session: FlightSession | null) => {
   if (session) {

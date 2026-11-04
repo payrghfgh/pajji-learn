@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, BarChart3, Globe, Navigation } from 'lucide-react';
-import { getActiveFlight, setActiveFlight, saveFlightSession, getFlightHistory, FlightSession, FlightHistory, Route } from '@/lib/focus-flight';
+import { getActiveFlight, setActiveFlight, saveFlightSession, getFlightHistory, elapsedFocusMs, pausedTotal, FlightSession, FlightHistory, Route } from '@/lib/focus-flight';
 import AirportHub from './components/AirportHub';
 import BoardingPass from './components/BoardingPass';
 import CruisePhase from './components/Cruise';
@@ -29,7 +29,9 @@ export default function FocusFlightPage() {
     }
 
     const calculateProgress = () => {
-      const elapsedMs = Date.now() - activeFlight.startTime;
+      // Focus time, not wall time: elapsedFocusMs subtracts every paused span,
+      // including one still running.
+      const elapsedMs = elapsedFocusMs(activeFlight);
       const totalMs = activeFlight.route.duration * 60 * 1000;
       return Math.min(Math.max(elapsedMs / totalMs, 0), 1);
     };
@@ -55,8 +57,10 @@ export default function FocusFlightPage() {
       
       const savedActive = getActiveFlight();
       if (savedActive) {
-        // Calculate if flight is technically over
-        const elapsedMs = Date.now() - savedActive.startTime;
+        // Calculate if flight is technically over, excluding paused spans --
+        // pausedAt survives in localStorage, so a reload mid-pause resumes with
+        // the clock where it stopped rather than where wall time reached.
+        const elapsedMs = elapsedFocusMs(savedActive);
         const totalMs = savedActive.route.duration * 60 * 1000;
         
         if (elapsedMs >= totalMs) {
@@ -65,6 +69,7 @@ export default function FocusFlightPage() {
         } else {
           setActiveFlightState(savedActive);
           setPhase('cruise');
+          if (savedActive.pausedAt) setIsPaused(true);
         }
       }
     };
@@ -104,6 +109,20 @@ export default function FocusFlightPage() {
       completeFlight(0, 'Mission aborted by pilot manually.', 'interrupted');
     }
   }, [completeFlight]);
+
+  // Pause stamps pausedAt; resume folds the span into pausedMs and clears it.
+  // Both are persisted, so a reload mid-pause still knows how long it has been
+  // stopped and subtracts that span on resume.
+  const togglePause = useCallback(() => {
+    if (!activeFlight) return;
+    const next = !isPaused;
+    const updated: FlightSession = next
+      ? { ...activeFlight, pausedAt: Date.now() }
+      : { ...activeFlight, pausedMs: pausedTotal(activeFlight), pausedAt: null };
+    setIsPaused(next);
+    setActiveFlightState(updated);
+    setActiveFlight(updated);
+  }, [activeFlight, isPaused]);
 
   return (
     <div className="min-h-screen bg-[var(--ink-0)] text-[var(--text)] overflow-hidden relative selection:bg-[var(--jade-soft)]">
@@ -191,7 +210,7 @@ export default function FocusFlightPage() {
                 session={activeFlight} 
                 progress={progress}
                 isPaused={isPaused}
-                setIsPaused={setIsPaused}
+                onTogglePause={togglePause}
                 onComplete={() => setPhase('landing')}
                 onCancel={cancelFlight}
               />

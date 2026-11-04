@@ -3,18 +3,18 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Volume2, VolumeX, X, AlertTriangle, Cloud, Wind, Zap, Navigation, Globe } from 'lucide-react';
-import { FlightSession, setActiveFlight } from '@/lib/focus-flight';
+import { FlightSession, setActiveFlight, elapsedFocusMs } from '@/lib/focus-flight';
 
 interface CruiseProps {
   session: FlightSession;
   progress: number;
   isPaused: boolean;
-  setIsPaused: (paused: boolean) => void;
+  onTogglePause: () => void;
   onComplete: () => void;
   onCancel: () => void;
 }
 
-export default function CruisePhase({ session, progress, isPaused, setIsPaused, onComplete, onCancel }: CruiseProps) {
+export default function CruisePhase({ session, progress, isPaused, onTogglePause, onComplete, onCancel }: CruiseProps) {
   const { route } = session;
   
   const [isMuted, setIsMuted] = useState(true);
@@ -70,7 +70,9 @@ export default function CruisePhase({ session, progress, isPaused, setIsPaused, 
   }, [isPaused]);
 
   // HUD values
-  const timeLeftMs = Math.max((route.duration * 60 * 1000) - (Date.now() - session.startTime), 0);
+  // Focus time, not wall time: paused spans are subtracted so the countdown
+  // holds while paused and resumes where it stopped.
+  const timeLeftMs = Math.max((route.duration * 60 * 1000) - elapsedFocusMs(session), 0);
   const minutes = Math.floor(timeLeftMs / 60000);
   const seconds = Math.floor((timeLeftMs % 60000) / 1000);
 
@@ -169,7 +171,7 @@ export default function CruisePhase({ session, progress, isPaused, setIsPaused, 
             {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
           </button>
           <button
-            onClick={() => setIsPaused(!isPaused)}
+            onClick={onTogglePause}
             className={`px-10 h-16 rounded-[24px] border flex items-center gap-4 font-black italic tracking-tighter backdrop-blur-xl ${
               isPaused 
                 ? 'bg-[var(--amber)] text-[var(--ink-on-accent)] border-[var(--amber)] shadow-[0_2px_8px_rgba(0,0,0,0.3)]' 
