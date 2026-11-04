@@ -4375,6 +4375,8 @@ function AppContent() {
               auth={auth}
               memTier={memTier}
               streakCount={streakCount}
+              dailyGoal={dailyGoal}
+              updateDailyGoal={updateDailyGoal}
               theme={theme}
               setTheme={setTheme}
               uiTheme={uiTheme}

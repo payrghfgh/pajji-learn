@@ -30,6 +30,8 @@ interface SettingsViewProps {
   auth: any;
   memTier: string;
   streakCount: number;
+  dailyGoal: number;
+  updateDailyGoal: (n: number) => void;
 
   // New props for full settings
   theme: 'dark' | 'light';
@@ -83,6 +85,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   auth,
   memTier,
   streakCount,
+  dailyGoal, updateDailyGoal,
 
   theme, setTheme,
   uiTheme, setUiTheme,
@@ -100,7 +103,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   giftedThemes,
   customThemes
 }) => {
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"account" | "appearance" | "app" | "admin">("account");
+  // Sections render in one column now; the old tab switcher is gone. Feedback is
+  // still loaded for owners, once, guarded so a changing prop identity cannot
+  // loop it.
+  const adminFetched = React.useRef(false);
+  React.useEffect(() => {
+    if (isOwner && !adminFetched.current) {
+      adminFetched.current = true;
+      fetchFeedback();
+    }
+  }, [isOwner, fetchFeedback]);
 
   const tierLabel = (t: string) => {
     const n = (t || "").toUpperCase().replace(/[\s_]+/g, "");
@@ -150,6 +162,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     return adminAccess && achievementAccess && membershipAccess;
   };
 
+  // Derived from the same gate map the grid reads, so the header can never
+  // disagree with the cards. 'plus' stays 0 because no theme in the app is
+  // Plus-gated -- that is a real zero, not a placeholder.
+  const gateCounts = builtInThemeCards.reduce(
+    (acc, t) => {
+      if (["zenith", "midnight"].includes(t.key)) acc.ultra++;
+      else if (themeAchievementRequirements[t.key]) acc.achievement++;
+      else acc.ready++;
+      return acc;
+    },
+    { ready: 0, plus: 0, achievement: 0, ultra: 0 }
+  );
+
   return (
     <motion.div
       key="settings"
@@ -159,34 +184,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="page-shell" style={{ maxWidth: "800px" }}
     >
-      <header style={{ marginBottom: "32px", textAlign: "center" }}>
-        <h1 className="page-title syne-heading" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", fontSize: "48px" }}>
-          <span style={{ color: "var(--accent)" }}>Settings</span>
-          <Settings size={48} color="var(--accent)" />
-        </h1>
-        <p style={{ color: "var(--muted)", fontSize: "18px", marginTop: "8px" }}>Configure your Pajji Learn experience.</p>
+      <header style={{ marginBottom: "24px" }}>
+        <h1 style={{ margin: 0, fontSize: "30px", fontWeight: "700", letterSpacing: "-0.02em", color: "var(--text)" }}>Settings</h1>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "12px" }}>
+          {[
+            { label: "Ready", n: gateCounts.ready, color: "var(--jade)", bg: "var(--jade-soft)" },
+            { label: "Plus", n: gateCounts.plus, color: "var(--azure)", bg: "var(--azure-soft)" },
+            { label: "By achievement", n: gateCounts.achievement, color: "var(--amber)", bg: "color-mix(in oklab, var(--amber) 14%, transparent)" },
+            { label: "Ultra", n: gateCounts.ultra, color: "var(--coral)", bg: "var(--coral-soft)" },
+          ].map(p => (
+            <span key={p.label} style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: p.color, background: p.bg, border: `1px solid ${p.bg}`, borderRadius: "999px", padding: "4px 10px", whiteSpace: "nowrap" }}>
+              {p.label} {p.n}
+            </span>
+          ))}
+        </div>
       </header>
 
-      <div className="tab-container" style={{ display: "flex", gap: "8px", marginBottom: "24px", justifyContent: "center" }}>
-        <button onClick={() => setActiveSettingsTab("account")} className={`tab-btn ${activeSettingsTab === "account" ? "active" : ""}`}>
-          <User size={16} /> Account
-        </button>
-        <button onClick={() => setActiveSettingsTab("appearance")} className={`tab-btn ${activeSettingsTab === "appearance" ? "active" : ""}`}>
-          <Sparkles size={16} /> Look & Feel
-        </button>
-        <button onClick={() => setActiveSettingsTab("app")} className={`tab-btn ${activeSettingsTab === "app" ? "active" : ""}`}>
-          <Settings size={16} /> App Prefs
-        </button>
-        {isOwner && (
-          <button onClick={() => { setActiveSettingsTab("admin"); fetchFeedback(); }} className={`tab-btn ${activeSettingsTab === "admin" ? "active" : ""}`}>
-            <Crown size={16} /> Admin
-          </button>
-        )}
-      </div>
-
       <AnimatePresence mode="wait">
-        {activeSettingsTab === "account" && (
-          <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {(
+          <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "24px" }}>
                 <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "80px", height: "80px", borderRadius: "24px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
@@ -230,8 +246,41 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </motion.div>
         )}
 
-        {activeSettingsTab === "appearance" && (
-          <motion.div key="appearance-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {/* Study preferences. The daily goal is the only study preference the app
+            actually stores and persists, so it is the only control here. */}
+        <motion.div key="study-prefs" className="settings-section" style={{ marginBottom: "24px" }}>
+          <div className="card" style={{ padding: "24px" }}>
+            <h3 className="section-title">Study preferences</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ minWidth: 0 }}>
+                <h4 style={{ fontWeight: "700", margin: 0 }}>Daily goal</h4>
+                <p style={{ fontSize: "12px", color: "var(--muted)", margin: "4px 0 0" }}>Lessons you aim to finish each day.</p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                <button
+                  onClick={() => updateDailyGoal(dailyGoal - 1)}
+                  disabled={dailyGoal <= 1}
+                  aria-label="Decrease daily goal"
+                  style={{ width: "32px", height: "32px", borderRadius: "var(--r-s)", background: "var(--ink-3)", border: "1px solid var(--line)", color: "var(--text)", cursor: dailyGoal <= 1 ? "not-allowed" : "pointer", opacity: dailyGoal <= 1 ? 0.4 : 1 }}
+                >
+                  −
+                </button>
+                <span style={{ minWidth: "28px", textAlign: "center", fontSize: "16px", fontWeight: "800", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{dailyGoal}</span>
+                <button
+                  onClick={() => updateDailyGoal(dailyGoal + 1)}
+                  disabled={dailyGoal >= 10}
+                  aria-label="Increase daily goal"
+                  style={{ width: "32px", height: "32px", borderRadius: "var(--r-s)", background: "var(--ink-3)", border: "1px solid var(--line)", color: "var(--text)", cursor: dailyGoal >= 10 ? "not-allowed" : "pointer", opacity: dailyGoal >= 10 ? 0.4 : 1 }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {(
+          <motion.div key="appearance-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px" }}>
               <div style={{ marginBottom: "24px" }}>
                 <h3 className="section-title">Global Theme</h3>
@@ -277,8 +326,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </motion.div>
         )}
 
-        {activeSettingsTab === "app" && (
-          <motion.div key="app-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {(
+          <motion.div key="app-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
               <div className="setting-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -346,8 +395,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </motion.div>
         )}
 
-        {activeSettingsTab === "admin" && isOwner && (
-          <motion.div key="admin-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {isOwner && (
+          <motion.div key="admin-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px", marginBottom: "24px" }}>
               <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "16px" }}>🏆 Membership Manager</h3>
               <input
