@@ -95,8 +95,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
           </linearGradient>
         </defs>
       </svg>
-      <h1 className="page-title" style={{ textAlign: "center", marginBottom: "40px", fontFamily: "var(--disp)", fontWeight: "800" }}>Hall of Fame 🏆</h1>
-      <div style={{ display: "flex", justifyContent: "center", gap: "12px", marginBottom: "48px" }}>
+      <h1 className="sa-h1" style={{ marginBottom: "20px" }}>Hall of Pajji</h1>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "28px", flexWrap: "wrap" }}>
         <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{ borderRadius: "20px", background: leaderboardMode === "all" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "all" ? "var(--ink-on-accent)" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>All Time</button>
         <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{ borderRadius: "20px", background: leaderboardMode === "weekly" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "var(--ink-on-accent)" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>Weekly</button>
       </div>

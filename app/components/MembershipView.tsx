@@ -41,7 +41,7 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
         <ChevronLeft size={18} /> Back to Settings
       </button>
 
-      <h1 className="page-title" style={{ marginBottom: "32px" }}>Membership 🏅</h1>
+      <h1 className="sa-h1" style={{ marginBottom: "20px" }}>Membership</h1>
 
       <div className="card" style={{ padding: "32px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
         {memTier !== "free" && memTier !== "" ? (
