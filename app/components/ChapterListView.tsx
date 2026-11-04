@@ -39,7 +39,7 @@ export const ChapterListView: React.FC<ChapterListViewProps> = ({ book, complete
       {isOwner && <button onClick={onAddLesson} className="btn btn-primary">+ Add Lesson</button>}
     </div>
 
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
       {(book.chapters || []).map((chapter: any) => {
         const mastered = completedLessons.includes(chapter.id);
         return (
@@ -49,8 +49,8 @@ export const ChapterListView: React.FC<ChapterListViewProps> = ({ book, complete
               display: "flex",
               alignItems: "center",
               gap: "12px",
-              height: "56px",
-              padding: "0 18px",
+              padding: "16px 24px",
+              marginBottom: "12px",
               background: "var(--ink-2)",
               border: "1px solid var(--line)",
               borderRadius: "var(--r-m)",
@@ -59,7 +59,7 @@ export const ChapterListView: React.FC<ChapterListViewProps> = ({ book, complete
             <span
               style={{
                 fontSize: "16px",
-                fontWeight: "500",
+                fontWeight: "700",
                 color: "var(--text)",
                 minWidth: 0,
                 overflow: "hidden",
@@ -92,7 +92,7 @@ export const ChapterListView: React.FC<ChapterListViewProps> = ({ book, complete
             <button
               onClick={() => onStudy(chapter)}
               className="btn btn-primary"
-              style={{ flexShrink: 0, padding: "8px 18px", fontSize: "14px" }}
+              style={{ flexShrink: 0, padding: "9px 22px", fontSize: "14px" }}
             >
               Study
             </button>
@@ -103,10 +103,7 @@ export const ChapterListView: React.FC<ChapterListViewProps> = ({ book, complete
                 aria-label="Edit chapter"
                 style={{
                   flexShrink: 0,
-                  width: "32px",
-                  height: "32px",
-                  display: "grid",
-                  placeItems: "center",
+                  padding: "9px 14px",
                   background: "transparent",
                   border: "none",
                   color: "var(--faint)",
