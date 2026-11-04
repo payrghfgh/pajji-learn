@@ -57,6 +57,11 @@ const DynamicDashboard = dynamic(() => import("./components/DashboardView").then
   ssr: false
 });
 
+// Themes that require a paid tier at Plus or above. Defined once here and passed
+// to SettingsView, so the panel's cards and this file's access check cannot
+// drift apart.
+const PLUS_ONLY_THEME_IDS = ["williams"];
+
 const DynamicStudy = dynamic(() => import("./components/StudyView").then(mod => mod.StudyView), {
   loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Lesson...</div>,
   ssr: false
@@ -2611,7 +2616,8 @@ function AppContent() {
     const requiredAchievementId = getThemeAchievementRequirement(themeId);
     const achievementAccess = !requiredAchievementId || isOwner || allUnlockedAchievementIds.includes(requiredAchievementId);
     const membershipAccess = !isPremiumTheme(themeId) || memTier === "ultra" || isOwner;
-    return adminAccess && achievementAccess && membershipAccess;
+    const plusAccess = !PLUS_ONLY_THEME_IDS.includes(themeId) || memTier === "plus" || memTier === "pro" || memTier === "ultra" || isOwner;
+    return adminAccess && achievementAccess && membershipAccess && plusAccess;
   };
   const builtInThemeCards: ThemePreview[] = [
     { key: "default", label: "Default", accent: "#10b981", bg: "linear-gradient(135deg,#f8fafc,#ecfeff)", source: "builtIn" },
@@ -4377,6 +4383,7 @@ function AppContent() {
               streakCount={streakCount}
               dailyGoal={dailyGoal}
               updateDailyGoal={updateDailyGoal}
+              plusOnlyThemeIds={PLUS_ONLY_THEME_IDS}
               theme={theme}
               setTheme={setTheme}
               uiTheme={uiTheme}

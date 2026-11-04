@@ -32,6 +32,7 @@ interface SettingsViewProps {
   streakCount: number;
   dailyGoal: number;
   updateDailyGoal: (n: number) => void;
+  plusOnlyThemeIds: string[];
 
   // New props for full settings
   theme: 'dark' | 'light';
@@ -85,7 +86,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   auth,
   memTier,
   streakCount,
-  dailyGoal, updateDailyGoal,
+  dailyGoal, updateDailyGoal, plusOnlyThemeIds,
 
   theme, setTheme,
   uiTheme, setUiTheme,
@@ -170,15 +171,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const achievementAccess = !requiredAchievementId || isOwner || unlockedAchievements.includes(requiredAchievementId);
     const isPremium = ["zenith", "midnight"].includes(themeId);
     const membershipAccess = !isPremium || memTier === "ultra" || isOwner;
-    return adminAccess && achievementAccess && membershipAccess;
+    const plusAccess = !plusOnlyThemeIds.includes(themeId) || memTier === "plus" || memTier === "pro" || memTier === "ultra" || isOwner;
+    return adminAccess && achievementAccess && membershipAccess && plusAccess;
   };
 
   // Derived from the same gate map the grid reads, so the header can never
-  // disagree with the cards. 'plus' stays 0 because no theme in the app is
-  // Plus-gated -- that is a real zero, not a placeholder.
+  // disagree with the cards. Plus is checked before achievement because a
+  // Plus-gated theme could also carry an achievement requirement.
   const gateCounts = builtInThemeCards.reduce(
     (acc, t) => {
       if (["zenith", "midnight"].includes(t.key)) acc.ultra++;
+      else if (plusOnlyThemeIds.includes(t.key)) acc.plus++;
       else if (themeAchievementRequirements[t.key]) acc.achievement++;
       else acc.ready++;
       return acc;
@@ -316,11 +319,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     const requiredId = themeAchievementRequirements[t.key];
                     const status = ["zenith", "midnight"].includes(t.key)
                       ? "Ultra only"
-                      : requiredId
-                        ? (requirementLabel[requiredId] || requiredId)
-                        : adminOnlyThemeIds.includes(t.key)
-                          ? "Admin only"
-                          : "Ready";
+                      : plusOnlyThemeIds.includes(t.key)
+                        ? "Plus only"
+                        : requiredId
+                          ? (requirementLabel[requiredId] || requiredId)
+                          : adminOnlyThemeIds.includes(t.key)
+                            ? "Admin only"
+                            : "Ready";
                     return (
                       <button
                         key={t.key}
