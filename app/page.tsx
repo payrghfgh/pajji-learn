@@ -3690,6 +3690,14 @@ function AppContent() {
           --warning: var(--accent);
           --danger: #fb7185;
           --danger-rgb: 251, 113, 133;
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #0d0820;
+          --ink-1: #150c30;
+          --ink-2: #1b1038;
+          --card: #1b1038;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-emerald {
           --accent: #22c55e;
@@ -3703,6 +3711,14 @@ function AppContent() {
           --warning: var(--accent);
           --danger: #f87171;
           --danger-rgb: 248, 113, 113;
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #01140f;
+          --ink-1: #03201a;
+          --ink-2: #0a2a1f;
+          --card: #0a2a1f;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-arctic {
           --accent: #38bdf8;
@@ -3760,6 +3776,14 @@ function AppContent() {
           --accent-soft: rgba(225, 6, 0, 0.15);
           --accent-grad: linear-gradient(135deg, #e10600, #ff1a1a);
           --brand-gradient: linear-gradient(135deg, #a80400, #e10600);
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #0b0b0c;
+          --ink-1: #141417;
+          --ink-2: #1c1c20;
+          --card: #1c1c20;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-liquid {
           --accent: #3b82f6;
@@ -3774,6 +3798,14 @@ function AppContent() {
           --accent-soft: rgba(16, 185, 129, 0.15);
           --accent-grad: linear-gradient(135deg, #10b981, #34d399);
           --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #000000;
+          --ink-1: #050505;
+          --ink-2: #0b0b0b;
+          --card: #0b0b0b;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-paper {
           --accent: #8f704a;
@@ -3802,6 +3834,14 @@ function AppContent() {
           --accent-soft: rgba(34, 211, 238, 0.15);
           --accent-grad: linear-gradient(135deg, #22d3ee, #67e8f9);
           --brand-gradient: linear-gradient(135deg, #0891b2, #22d3ee);
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #0f172a;
+          --ink-1: #131d33;
+          --ink-2: #1e293b;
+          --card: #1e293b;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-f1.dark {
           --bg: #090909;
@@ -4123,6 +4163,14 @@ function AppContent() {
           --accent-soft: rgba(255, 215, 0, 0.15);
           --accent-grad: linear-gradient(135deg, #FFD700, #F59E0B);
           --brand-gradient: linear-gradient(135deg, #2a2100, #FFD700);
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #0f0f10;
+          --ink-1: #171410;
+          --ink-2: #2a2100;
+          --card: #2a2100;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-zenith.dark {
           --bg: #0a0a05;
@@ -4154,6 +4202,14 @@ function AppContent() {
           --accent-soft: rgba(168, 85, 247, 0.15);
           --accent-grad: linear-gradient(135deg, #7C3AED, #A855F7);
           --brand-gradient: linear-gradient(135deg, #1a0b2e, #A855F7);
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #000000;
+          --ink-1: #0d0617;
+          --ink-2: #1a0b2e;
+          --card: #1a0b2e;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
         }
         .theme-midnight.dark {
           --bg: #020105;
