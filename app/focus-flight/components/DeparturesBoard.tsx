@@ -28,12 +28,12 @@ export default function DeparturesBoard({ items }: DeparturesBoardProps) {
       </div>
       
       <div className="p-4 space-y-1">
-        <div className="grid grid-cols-12 gap-4 px-4 py-2 text-[11px] font-black text-[var(--faint)] uppercase tracking-widest">
-          <div className="col-span-1">Flight</div>
-          <div className="col-span-4">Destination</div>
-          <div className="col-span-2">Time</div>
-          <div className="col-span-2">Gate</div>
-          <div className="col-span-3 text-right">Status</div>
+        <div className="grid gap-3 px-4 py-2 text-[11px] font-black text-[var(--faint)] uppercase tracking-widest" style={{ gridTemplateColumns: "64px 1fr 56px 56px 84px" }}>
+          <div>Flight</div>
+          <div>Destination</div>
+          <div>Time</div>
+          <div>Gate</div>
+          <div className="text-right">Status</div>
         </div>
         
         {items.map((item, i) => (
@@ -56,16 +56,17 @@ function BoardRow({ item, index }: { item: any; index: number }) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="grid grid-cols-12 gap-4 px-4 py-3 bg-[var(--ink-3)] rounded-md border border-[var(--line)]"
+      className="grid gap-3 px-4 py-3 bg-[var(--ink-3)] rounded-md border border-[var(--line)]"
+      style={{ gridTemplateColumns: "64px 1fr 56px 56px 84px" }}
     >
-      <div className="col-span-1 text-[var(--amber)] font-mono font-bold tracking-tighter">PA{100 + index}</div>
-      <div className="col-span-4 flex items-center gap-2">
+      <div className="text-[var(--amber)] font-mono font-bold tracking-tighter">PA{100 + index}</div>
+      <div className="flex items-center gap-2 min-w-0">
         <span className="text-[var(--text)] font-bold tracking-tight uppercase">{item.destination}</span>
         <span className="text-[var(--faint)] font-mono text-[11px]">{item.code}</span>
       </div>
-      <div className="col-span-2 text-[var(--dim)] font-mono font-bold">{item.duration}</div>
-      <div className="col-span-2 text-[var(--dim)] font-mono font-bold">{item.gate}</div>
-      <div className="col-span-3 text-right">
+      <div className="text-[var(--dim)] font-mono font-bold">{item.duration}</div>
+      <div className="text-[var(--dim)] font-mono font-bold">{item.gate}</div>
+      <div className="text-right">
         {/* Compared case-insensitively so it works whichever casing the
             producer uses -- the previous exact match never fired against
             AirportHub's 'ON TIME'.

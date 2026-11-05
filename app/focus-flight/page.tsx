@@ -232,7 +232,7 @@ export default function FocusFlightPage() {
                 {/* The plan draws a live in-flight card here. There is no flight
                     running while you are on the terminal, so this is an honest
                     empty state rather than a panel that can never fill. */}
-                <div className="card" style={{ padding: "18px", display: "flex", gap: "16px", alignItems: "center", maxWidth: "470px", marginTop: "26px" }}>
+                <div className="card" style={{ padding: "18px", display: "flex", gap: "16px", alignItems: "center", maxWidth: "470px", marginTop: "26px", minHeight: "90px" }}>
                   <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--ink-3)", border: "1px solid var(--line-2)", display: "grid", placeItems: "center", flexShrink: 0, color: "var(--faint)" }}>
                     <Plane size={20} />
                   </div>
@@ -266,7 +266,8 @@ export default function FocusFlightPage() {
                         style={{
                           flex: 1,
                           height: `${n === 0 ? 12 : Math.max(15, Math.round((n / weeklyLog.max) * 100))}%`,
-                          background: n === 0 ? "var(--ink-4)" : n === weeklyLog.max ? "var(--jade)" : "var(--azure)",
+                          background: n === 0 ? "var(--ink-3)" : n === weeklyLog.max ? "var(--jade)" : "var(--azure)",
+                          border: n === 0 ? "1px solid var(--line)" : "none",
                           opacity: n === 0 ? 1 : n === weeklyLog.max ? 1 : 0.65,
                           borderRadius: "6px",
                         }}

@@ -81,15 +81,17 @@ export default function AirportHub({ history, onSelectRoute }: AirportHubProps) 
               onClick={() => onSelectRoute(route)}
               className="w-full flex justify-between items-center p-3.5 bg-[var(--ink-3)] border border-[var(--line)] rounded-[var(--r-s)] group/route"
             >
-              <div className="text-left space-y-0.5 min-w-0">
-                <p className="font-bold text-[var(--text)] text-[13px] uppercase truncate">{route.to.name}</p>
-                <p className="text-[11px] text-[var(--faint)] font-black uppercase tracking-widest">
+              {/* Spans, not divs and paragraphs: a button may only contain phrasing
+                  content, and block elements inside one raise validateDOMNesting. */}
+              <span className="text-left flex flex-col gap-0.5 min-w-0">
+                <span className="font-bold text-[var(--text)] text-[13px] uppercase truncate">{route.to.name}</span>
+                <span className="text-[11px] text-[var(--faint)] font-black uppercase tracking-widest">
                   {route.duration} MINS
-                </p>
-              </div>
-              <div className="w-9 h-9 shrink-0 rounded-[10px] bg-[var(--ink-4)] flex items-center justify-center">
+                </span>
+              </span>
+              <span className="w-9 h-9 shrink-0 rounded-[10px] bg-[var(--ink-4)] flex items-center justify-center">
                 <Navigation size={16} className="text-[var(--dim)]" />
-              </div>
+              </span>
             </button>
           ))}
         </div>
