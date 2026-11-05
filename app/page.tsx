@@ -3677,6 +3677,24 @@ function AppContent() {
           --warning: #f97316;
           --danger: #ef4444;
           --danger-rgb: 239, 68, 68;
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #fffbf5;
+          --ink-1: #fff2e0;
+          --ink-2: #ffffff;
+          --ink-3: #fde8cc;
+          --ink-4: #f8d9b0;
+          --card: #ffffff;
+          --bg: #fffbf5;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #fff2e0;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .theme-nebula {
           --accent: #a78bfa;
@@ -3733,6 +3751,24 @@ function AppContent() {
           --warning: var(--accent);
           --danger: #ef4444;
           --danger-rgb: 239, 68, 68;
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #f2f9ff;
+          --ink-1: #dbeafe;
+          --ink-2: #ffffff;
+          --ink-3: #d6e6fb;
+          --ink-4: #bcd4f3;
+          --card: #ffffff;
+          --bg: #f2f9ff;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #dbeafe;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .dark { 
           --bg: #020617; 
@@ -3791,6 +3827,24 @@ function AppContent() {
           --accent-soft: rgba(59, 130, 246, 0.15);
           --accent-grad: linear-gradient(135deg, #3b82f6, #60a5fa);
           --brand-gradient: linear-gradient(135deg, #1d4ed8, #3b82f6);
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #f3f8ff;
+          --ink-1: #e6f2ff;
+          --ink-2: #ffffff;
+          --ink-3: #dbeafe;
+          --ink-4: #c7ddf5;
+          --card: #ffffff;
+          --bg: #f3f8ff;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #e6f2ff;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .theme-amoled {
           --accent: #10b981;
@@ -3813,6 +3867,24 @@ function AppContent() {
           --accent-soft: rgba(143, 112, 74, 0.15);
           --accent-grad: linear-gradient(135deg, #8f704a, #b5956c);
           --brand-gradient: linear-gradient(135deg, #5c482f, #8f704a);
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #fffaf1;
+          --ink-1: #f4ecdd;
+          --ink-2: #fffdf8;
+          --ink-3: #eadfcd;
+          --ink-4: #ded1ba;
+          --card: #fffdf8;
+          --bg: #fffaf1;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #f4ecdd;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .theme-ocean {
           --accent: #0ea5e9;
@@ -3820,6 +3892,24 @@ function AppContent() {
           --accent-soft: rgba(14, 165, 233, 0.15);
           --accent-grad: linear-gradient(135deg, #0ea5e9, #38bdf8);
           --brand-gradient: linear-gradient(135deg, #0369a1, #0ea5e9);
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #f0f9ff;
+          --ink-1: #e0f2fe;
+          --ink-2: #ffffff;
+          --ink-3: #d3ecfb;
+          --ink-4: #b9dff5;
+          --card: #ffffff;
+          --bg: #f0f9ff;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #e0f2fe;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .theme-sunset {
           --accent: #f97316;
@@ -3827,6 +3917,24 @@ function AppContent() {
           --accent-soft: rgba(249, 115, 22, 0.15);
           --accent-grad: linear-gradient(135deg, #f97316, #fb923c);
           --brand-gradient: linear-gradient(135deg, #c2410c, #f97316);
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #fff5f0;
+          --ink-1: #ffe9e4;
+          --ink-2: #fffaf7;
+          --ink-3: #fbdcd2;
+          --ink-4: #f5c6b8;
+          --card: #fffaf7;
+          --bg: #fff5f0;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #ffe9e4;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .theme-cyber {
           --accent: #22d3ee;
@@ -4111,6 +4219,24 @@ function AppContent() {
           --accent-soft: rgba(50, 103, 212, 0.15);
           --accent-grad: linear-gradient(135deg, #3267D4, #4a7be0);
           --brand-gradient: linear-gradient(135deg, #1e3a8a, #3267D4);
+          /* Full light token set. A light surface without inverted text is
+             white-on-white, so the type tokens travel with the surfaces. */
+          --ink-0: #f5f7ff;
+          --ink-1: #e8ecff;
+          --ink-2: #ffffff;
+          --ink-3: #dde3f7;
+          --ink-4: #c8d1ee;
+          --card: #ffffff;
+          --bg: #f5f7ff;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #e8ecff;
+          --muted: #4A5568;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
         .theme-williams.dark {
           --bg: #050b18;
