@@ -1,42 +1,25 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 
+/**
+ * The shell background.
+ *
+ * This used to render two animated mesh gradients (jade at 14%, accent at 20%),
+ * a noise texture loaded from a third-party URL, and a grid overlay -- all fixed
+ * behind every screen. The plan draws none of it: every app screen sits on flat
+ * --ink-0, and the only deliberate atmosphere in the design is Focus Flight's
+ * .sky, which that screen renders for itself.
+ *
+ * The wash was also why Settings read green rather than near-black: a 22%-alpha
+ * jade radial covering the viewport tints the whole page, and no amount of
+ * tokenising the cards fixes a background that is not the background.
+ *
+ * Kept as a component so layout.tsx does not change, and so the flat surface has
+ * one owner.
+ */
 export const PremiumBackground = () => {
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-[var(--bg,#08090C)] transition-colors duration-500">
-      {/* Animated Mesh Gradients */}
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          x: [0, 100, 0],
-          y: [0, 50, 0],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-        className="absolute -top-[20%] -left-[10%] h-[110%] w-[110%] rounded-full bg-[radial-gradient(circle,var(--accent-soft,rgba(25,195,125,0.13))_0%,transparent_50%)] blur-[160px]"
-      />
-      <motion.div
-        animate={{
-          scale: [1, 1.5, 1],
-          x: [0, -100, 0],
-          y: [0, -50, 0],
-        }}
-        transition={{
-          duration: 25,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-        className="absolute -bottom-[20%] -right-[10%] h-[110%] w-[110%] rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--accent,#19C37D)_20%,transparent)_0%,transparent_50%)] blur-[160px]"
-      />
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150" />
-      
-      {/* Grid Pattern overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
-    </div>
+    <div className="fixed inset-0 -z-10 bg-[var(--bg,#08090C)] transition-colors duration-500" />
   );
 };
