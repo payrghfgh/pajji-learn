@@ -326,7 +326,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button onClick={() => setTheme("dark")} className={`btn ${theme === "dark" ? "btn-primary" : "btn-secondary"}`} style={{ flex: 1 }}>
                     <Moon size={16} /> Dark
                   </button>
-                  <button disabled title="Light mode coming soon" className="btn btn-secondary" style={{ flex: 1, opacity: 0.35, cursor: "not-allowed" }}>
+                  <button onClick={() => setTheme("light")} className={`btn ${theme === "light" ? "btn-primary" : "btn-secondary"}`} style={{ flex: 1 }}>
                     <Sun size={16} /> Light
                   </button>
                 </div>

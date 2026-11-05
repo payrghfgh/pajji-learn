@@ -4564,7 +4564,37 @@ function AppContent() {
           }
           .desktop-only { display: none !important; }
         }
-      `}</style>
+              /* Light mode. The .theme-X.dark/.light variants only ever set --bg,
+           --side, --card, --text and --muted -- none of them touched --ink-*,
+           which is what the shell actually reads for the page, rail and cards.
+           That is why the Light toggle was parked as 'coming soon': switching it
+           changed the type colour and nothing else.
+
+           Defined last so it overrides the base .theme-X surfaces at equal
+           specificity, while per-theme .theme-X.light rules still win on the
+           tokens they set. The accent is untouched, so every theme keeps its
+           identity in either mode. */
+        .light {
+          --ink-0: #f7f8fa;
+          --ink-1: #eef1f5;
+          --ink-2: #ffffff;
+          --ink-3: #e4e8ee;
+          --ink-4: #d6dce5;
+          --card: #ffffff;
+          --bg: #f7f8fa;
+          --side: #eef1f5;
+          --text: #0B1220;
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --muted: #4A5568;
+          --line: rgba(0, 0, 0, 0.08);
+          --line-2: rgba(0, 0, 0, 0.14);
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #eef1f5;
+          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+`}
+</style>
 
       {/* ── Desktop Nav Rail (Mockup: .side) ── */}
       <AppNavigation
