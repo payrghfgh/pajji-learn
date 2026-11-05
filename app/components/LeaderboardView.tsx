@@ -1,6 +1,5 @@
 "use client";
 import { motion } from "framer-motion";
-import { Crown, Zap, Sparkles, Flame, Star, Heart, Brain, Send, Plus } from "lucide-react";
 import React from "react";
 
 interface LeaderboardViewProps {
@@ -12,171 +11,226 @@ interface LeaderboardViewProps {
   getMemberTier: (mem: string, expiry: string) => string;
 }
 
+const POD_GRADIENT: Record<number, string> = {
+  1: "linear-gradient(150deg, var(--amber), #9C6A00)",
+  2: "linear-gradient(150deg, var(--azure), #1B5FA8)",
+  3: "linear-gradient(150deg, var(--coral), #A83535)",
+};
+
+const POD_TEXT: Record<number, string> = {
+  1: "#22160A",
+  2: "#04121F",
+  3: "#2A0C0C",
+};
+
+const displayName = (p: any) =>
+  p?.uiSettings?.displayName || p?.email?.split("@")[0] || "Learner";
+
+const initial = (p: any) => (displayName(p)[0] || "?").toUpperCase();
+
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   leaderboardMode,
   setLeaderboardMode,
   leaderboard,
   weeklyLeaderboard,
   user,
-  getMemberTier
 }) => {
   const data = leaderboardMode === "weekly" ? weeklyLeaderboard : leaderboard;
   const p1 = data[0];
   const p2 = data[1];
   const p3 = data[2];
+  const rest = data.slice(3);
 
-  // Responsive handling for mobile layout (<900px)
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 900);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const meIndex = data.findIndex((d) => d.id === user?.uid);
+  const me = meIndex >= 0 ? data[meIndex] : null;
+  const above = meIndex > 0 ? data[meIndex - 1] : null;
+  const gap = above && me ? (above.xp || 0) - (me.xp || 0) : 0;
 
-  // Avatar size variables based on layout
-  const avatarSizeP1 = isMobile ? '64px' : '88px';
-  const avatarSizeP2P3 = isMobile ? '48px' : '64px';
+  const Pod = ({ p, place }: { p: any; place: 1 | 2 | 3 }) =>
+    !p ? null : (
+      <div
+        style={{
+          borderRadius: "var(--r-l)",
+          border: `1px solid ${place === 1 ? "color-mix(in oklab, var(--amber) 50%, transparent)" : "var(--line-2)"}`,
+          background:
+            place === 1
+              ? "linear-gradient(180deg, color-mix(in oklab, var(--amber) 13%, transparent), var(--ink-1))"
+              : "linear-gradient(180deg, var(--ink-3), var(--ink-1))",
+          padding: "20px",
+          paddingTop: place === 1 ? "30px" : "20px",
+          textAlign: "center",
+        }}
+      >
+        {place === 1 && (
+          <span
+            style={{
+              display: "inline-block",
+              marginBottom: "10px",
+              fontSize: "12px",
+              fontWeight: "500",
+              color: "var(--amber)",
+              background: "color-mix(in oklab, var(--amber) 14%, transparent)",
+              border: "1px solid color-mix(in oklab, var(--amber) 14%, transparent)",
+              borderRadius: "999px",
+              padding: "5px 10px",
+            }}
+          >
+            ★ Champion
+          </span>
+        )}
+        <div style={{ fontSize: place === 1 ? "36px" : "30px", margin: place === 1 ? "6px 0 8px" : "0 0 8px" }}>
+          {place === 1 ? "🥇" : place === 2 ? "🥈" : "🥉"}
+        </div>
+        <div
+          style={{
+            width: place === 1 ? "64px" : "52px",
+            height: place === 1 ? "64px" : "52px",
+            borderRadius: place === 1 ? "18px" : "16px",
+            margin: "0 auto 10px",
+            background: POD_GRADIENT[place],
+            display: "grid",
+            placeItems: "center",
+            fontFamily: "var(--disp)",
+            fontWeight: 800,
+            fontSize: place === 1 ? "24px" : "20px",
+            color: POD_TEXT[place],
+          }}
+        >
+          {initial(p)}
+        </div>
+        <div style={{ fontWeight: 700, fontSize: place === 1 ? "16px" : "14px", color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {displayName(p)}
+        </div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: "12px", color: place === 1 ? "var(--amber)" : "var(--dim)", marginTop: "2px" }}>
+          {(p.xp || 0).toLocaleString()} XP
+        </div>
+      </div>
+    );
 
-  // Adjust podium container flex direction for mobile
-  const podiumFlexDirection = isMobile ? 'column' : 'row';
-
-  const getBadgeIcon = (p: any) => {
-    const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-    if (pt === "free" || !pt) return null;
-    
-    const color = "#FFD700"; // All unified to Premium Gold/Yellow
-    
-    if (pt === "ultra") {
-      return (
-        <span style={{ 
-          display: "inline-flex", 
-          alignItems: "center",
-          justifyContent: "center",
-          filter: "drop-shadow(0px 0px 4px rgba(255, 215, 0, 0.5))",
-          marginLeft: "6px",
-          fontWeight: "900",
-          fontFamily: "var(--disp)",
-          color: color,
-          fontSize: "16px",
-          lineHeight: "1"
-        }}>
-          U
-        </span>
-      );
-    }
-    
-    if (pt === "pro") {
-      return <Crown size={16} fill={color} stroke={color} style={{ marginLeft: "6px", filter: "drop-shadow(0px 0px 3px rgba(255, 215, 0, 0.3))" }} />;
-    }
-    
+  const Row = ({ p, rank }: { p: any; rank: number }) => {
+    const isMe = p.id === user?.uid;
     return (
-      <span style={{ marginLeft: "6px", display: "inline-flex", alignItems: "center", filter: "drop-shadow(0px 0px 3px rgba(255, 215, 0, 0.3))" }}>
-        <Plus size={16} color={color} strokeWidth={4} />
-      </span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+          padding: "13px 16px",
+          borderRadius: "var(--r-m)",
+          border: `1px solid ${isMe ? "color-mix(in oklab, var(--jade) 40%, transparent)" : "var(--line)"}`,
+          background: isMe ? "var(--jade-soft)" : "var(--ink-2)",
+        }}
+      >
+        <span style={{ fontFamily: "var(--mono)", width: "26px", color: isMe ? "var(--jade)" : "var(--dim)" }}>{rank}</span>
+        <div
+          style={{
+            width: "34px",
+            height: "34px",
+            borderRadius: "11px",
+            background: isMe ? "var(--jade)" : "var(--ink-4)",
+            color: isMe ? "var(--ink-on-accent)" : "var(--text)",
+            display: "grid",
+            placeItems: "center",
+            fontFamily: "var(--disp)",
+            fontWeight: 800,
+            flexShrink: 0,
+          }}
+        >
+          {initial(p)}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, fontWeight: isMe ? 700 : 600, fontSize: "14px", color: "var(--text)", display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName(p)}</span>
+          {isMe && (
+            <span style={{ flexShrink: 0, fontSize: "11px", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid color-mix(in oklab, var(--jade) 40%, transparent)", borderRadius: "999px", padding: "3px 8px" }}>
+              You
+            </span>
+          )}
+        </div>
+        <span style={{ fontFamily: "var(--mono)", fontSize: "13px", color: isMe ? "var(--jade)" : "var(--text)", flexShrink: 0 }}>
+          {(p.xp || 0).toLocaleString()} XP
+        </span>
+      </div>
     );
   };
 
   return (
     <motion.div
-      key="leaderboard"
-      initial={{ opacity: 0, y: 30, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.96 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      style={{ maxWidth: "700px", margin: "0 auto", padding: "40px 20px" }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="page-shell"
+      style={{ maxWidth: "none", padding: "26px 30px" }}
     >
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffd700" />
-            <stop offset="50%" stopColor="#ffb300" />
-            <stop offset="100%" stopColor="#fff8b0" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <h1 className="sa-h1" style={{ marginBottom: "20px" }}>Hall of Pajji</h1>
-      <div style={{ display: "flex", gap: "12px", marginBottom: "28px", flexWrap: "wrap" }}>
-        <button className="btn btn-secondary" onClick={() => setLeaderboardMode("all")} style={{ borderRadius: "20px", background: leaderboardMode === "all" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "all" ? "var(--ink-on-accent)" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>All Time</button>
-        <button className="btn btn-secondary" onClick={() => setLeaderboardMode("weekly")} style={{ borderRadius: "20px", background: leaderboardMode === "weekly" ? "var(--accent)" : "var(--input-bg)", color: leaderboardMode === "weekly" ? "var(--ink-on-accent)" : "var(--text)", border: "none", fontSize: "14px", fontWeight: "700", padding: "8px 24px" }}>Weekly</button>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: "16px", marginBottom: "56px", width: "100%", padding: "0 10px" }}>
-        {/* Rank 2 */}
-        {p2 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ flex: 1, textAlign: "center", minWidth: "100px", maxWidth: "160px" }}>
-            <div style={{ position: "relative", marginBottom: "12px" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--input-bg)", border: "3px solid #C0C0C0", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "900", color: "#C0C0C0" }}>
-                {p2.email?.[0].toUpperCase()}
-              </div>
-              <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#C0C0C0", color: "var(--ink-on-accent)", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>2nd</div>
-            </div>
-            <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-              {p2.uiSettings?.displayName || p2.email?.split('@')[0]}
-              {getBadgeIcon(p2)}
-            </p>
-            <p style={{ fontFamily: "var(--disp)", fontWeight: "800", fontSize: "13px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p2.weeklyXP || 0) : (p2.xp || 0)} XP</p>
-          </motion.div>
-        )}
-
-        {/* Rank 1 */}
-        {p1 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 }} style={{ flex: 1, textAlign: "center", minWidth: "130px", maxWidth: "200px", transform: "scale(1.15)", zIndex: 2 }}>
-            <div style={{ position: "relative", marginBottom: "16px" }}>
-              <div style={{ width: "88px", height: "88px", borderRadius: "50%", background: "linear-gradient(135deg, #FFD700, #F59E0B)", border: "4px solid white", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "32px", fontWeight: "900", color: "var(--ink-on-accent)", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                {p1.email?.[0].toUpperCase()}
-              </div>
-              <div style={{ position: "absolute", bottom: "-10px", left: "50%", transform: "translateX(-50%)", background: "#FFD700", color: "var(--ink-on-accent)", padding: "4px 14px", borderRadius: "12px", fontSize: "14px", fontWeight: "900", boxShadow: "0 4px 10px rgba(0,0,0,0.2)" }}>1st</div>
-              <Crown size={28} fill="#FFD700" color="#FFD700" style={{ position: "absolute", top: "-24px", left: "50%", transform: "translateX(-50%) rotate(-15deg)" }} />
-            </div>
-            <p style={{ fontWeight: "800", fontSize: "16px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-              {p1.uiSettings?.displayName || p1.email?.split('@')[0]}
-              {getBadgeIcon(p1)}
-            </p>
-            <p style={{ fontFamily: "var(--disp)", fontWeight: "900", fontSize: "16px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p1.weeklyXP || 0) : (p1.xp || 0)} XP</p>
-          </motion.div>
-        )}
-
-        {/* Rank 3 */}
-        {p3 && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} style={{ flex: 1, textAlign: "center", minWidth: "100px", maxWidth: "160px" }}>
-            <div style={{ position: "relative", marginBottom: "12px" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--input-bg)", border: "3px solid #CD7F32", margin: "0 auto", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "900", color: "#CD7F32" }}>
-                {p3.email?.[0].toUpperCase()}
-              </div>
-              <div style={{ position: "absolute", bottom: "-8px", left: "50%", transform: "translateX(-50%)", background: "#CD7F32", color: "var(--ink-on-accent)", padding: "2px 10px", borderRadius: "10px", fontSize: "11px", fontWeight: "900" }}>3rd</div>
-            </div>
-            <p style={{ fontWeight: "700", fontSize: "13px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", gap: "4px" }}>
-              {p3.uiSettings?.displayName || p3.email?.split('@')[0]}
-              {getBadgeIcon(p3)}
-            </p>
-            <p style={{ fontFamily: "var(--disp)", fontWeight: "800", fontSize: "13px", color: "var(--accent)" }}>{leaderboardMode === "weekly" ? (p3.weeklyXP || 0) : (p3.xp || 0)} XP</p>
-          </motion.div>
-        )}
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        {data.slice(3).map((p, i) => {
-          const pt = getMemberTier(p.membership || "", p.membershipExpiry || "");
-          return (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.03 }}
-              className="card" style={{ display: "flex", flexDirection: "row", alignItems: "center", padding: "12px 24px", background: p.id === user?.uid ? "rgba(var(--accent-rgb), 0.1)" : "var(--card)", border: p.id === user?.uid ? "1px solid var(--accent)" : "1px solid var(--border)", borderRadius: "16px", transform: "none" }}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "22px", gap: "16px", flexWrap: "wrap" }}>
+        <div>
+          <h1 className="sa-h1" style={{ margin: 0 }}>Hall of Pajji</h1>
+          <p style={{ margin: "6px 0 0", color: "var(--dim)", fontSize: "13.5px" }}>
+            {leaderboardMode === "weekly" ? "This week's rankings" : "All-time rankings"}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {[
+            { key: "weekly", label: "Weekly" },
+            { key: "all", label: "All time" },
+          ].map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setLeaderboardMode(m.key as "all" | "weekly")}
+              style={{
+                fontSize: "12px",
+                fontWeight: "500",
+                padding: "5px 10px",
+                borderRadius: "999px",
+                cursor: "pointer",
+                color: leaderboardMode === m.key ? "var(--jade)" : "var(--dim)",
+                background: leaderboardMode === m.key ? "var(--jade-soft)" : "transparent",
+                border: `1px solid ${leaderboardMode === m.key ? "var(--jade-soft)" : "var(--line)"}`,
+              }}
             >
-              <span style={{ width: "40px", fontWeight: "900", color: "var(--muted)", fontSize: "14px", fontFamily: "var(--disp)" }}>#{i + 4}</span>
-              <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "var(--input-bg)", border: "1px solid var(--border)", display: "grid", placeItems: "center", fontSize: "14px", fontWeight: "900", marginRight: "16px" }}>{p.email?.[0].toUpperCase()}</div>
-              <span style={{ flex: 1, fontWeight: "700", fontSize: "16px", display: "flex", alignItems: "center", gap: "8px" }}>
-                {p.uiSettings?.displayName || p.email?.split('@')[0]}
-                {getBadgeIcon(p)}
-              </span>
-              <span style={{ fontFamily: "var(--disp)", fontWeight: "800", fontSize: "15px", background: "var(--accent-soft)", color: "var(--accent)", padding: "6px 16px", borderRadius: "12px" }}>{leaderboardMode === "weekly" ? (p.weeklyXP || 0) : (p.xp || 0)} XP</span>
-            </motion.div>
-          );
-        })}
+              {m.label}
+            </button>
+          ))}
+          <button
+            aria-disabled="true"
+            title="No friends feature yet"
+            style={{ fontSize: "12px", fontWeight: "500", padding: "5px 10px", borderRadius: "999px", color: "var(--faint)", background: "transparent", border: "1px solid var(--line)", cursor: "not-allowed", opacity: 0.6 }}
+          >
+            Friends
+          </button>
+        </div>
       </div>
+
+      {data.length === 0 ? (
+        <div style={{ padding: "60px 20px", textAlign: "center", border: "1px dashed var(--line-2)", borderRadius: "var(--r-m)", color: "var(--faint)", fontSize: "13px" }}>
+          No rankings yet.
+        </div>
+      ) : (
+        <>
+          <div className="lb-podium" style={{ marginBottom: "22px" }}>
+            <Pod p={p2} place={2} />
+            <Pod p={p1} place={1} />
+            <Pod p={p3} place={3} />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+            {rest.map((p, i) => (
+              <Row key={p.id || i} p={p} rank={i + 4} />
+            ))}
+          </div>
+
+          {above && me && gap > 0 && (
+            <div className="card" style={{ marginTop: "20px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "14px", borderColor: "color-mix(in oklab, var(--jade) 35%, transparent)", flexWrap: "wrap" }}>
+              <div style={{ width: "46px", height: "46px", borderRadius: "14px", background: "var(--jade-soft)", color: "var(--jade)", display: "grid", placeItems: "center", fontSize: "20px", flexShrink: 0 }}>
+                ↗
+              </div>
+              <div style={{ flex: 1, minWidth: "200px" }}>
+                <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>
+                  You're {gap.toLocaleString()} XP from {meIndex}th place
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </motion.div>
   );
 };

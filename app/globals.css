@@ -1117,3 +1117,17 @@ a:active {
 @media (max-width: 640px) {
   .membership-tiers { grid-template-columns: 1fr; }
 }
+
+/* Leaderboard podium — plan's 1fr 1.2fr 1fr with the winner elevated. */
+.lb-podium {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+@media (max-width: 700px) {
+  .lb-podium {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
