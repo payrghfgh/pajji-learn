@@ -561,6 +561,8 @@ const internalRenderCases: Record<string, React.ReactElement> = {
       addPinnedKeyPoint={noop}
       lessonPinnedPoints={[{ id: "point-1", text: "Newton's first law" }]}
       removePinnedKeyPoint={noop}
+      chapterMenu={[]}
+      openChapterById={() => undefined}
       lessonFlashcards={fixtureChapter.flashcards}
       flashcardIndex={0}
       setFlashcardIndex={noop}

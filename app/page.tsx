@@ -2550,6 +2550,32 @@ function AppContent() {
       return (item.tags || []).includes(notesTagFilter);
     });
   const lessonFlashcards = curChapter ? (flashcardsByLesson[curChapter.id] || curChapter.flashcards || []) : [];
+
+  // Every chapter across every book, with how many cards it actually has, so the
+  // Flashcards screen can offer a picker instead of a blank card.
+  const chapterMenu = useMemo(
+    () =>
+      (books || []).flatMap((b: any) =>
+        (b.chapters || []).map((c: any) => ({
+          id: c.id,
+          title: c.title || "Untitled lesson",
+          bookTitle: b.title || "",
+          count: ((flashcardsByLesson[c.id] || c.flashcards || []) as any[]).length,
+        }))
+      ),
+    [books, flashcardsByLesson]
+  );
+
+  const openChapterById = (chapterId: string) => {
+    for (const b of books || []) {
+      const c = (b.chapters || []).find((x: any) => x.id === chapterId);
+      if (c) {
+        openLesson(b, c);
+        switchStudyTab("Flashcards");
+        return;
+      }
+    }
+  };
   const bestQuizScore = quizAttempts.length > 0
     ? Math.max(...quizAttempts.map((a: any) => Math.round(((a.score || 0) / Math.max(1, a.total || 1)) * 100)))
     : 0;
@@ -4916,6 +4942,8 @@ function AppContent() {
             lessonPinnedPoints={lessonPinnedPoints}
             removePinnedKeyPoint={removePinnedKeyPoint}
             lessonFlashcards={lessonFlashcards}
+            chapterMenu={chapterMenu}
+            openChapterById={openChapterById}
             flashcardIndex={flashcardIndex}
             setFlashcardIndex={setFlashcardIndex}
             flashcardReveal={flashcardReveal}

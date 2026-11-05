@@ -83,6 +83,8 @@ interface StudyViewProps {
   lessonPinnedPoints: any[];
   removePinnedKeyPoint: (id: string) => void;
   lessonFlashcards: any[];
+  chapterMenu: Array<{ id: string; title: string; bookTitle: string; count: number }>;
+  openChapterById: (chapterId: string) => void;
   flashcardIndex: number;
   setFlashcardIndex: (v: any) => void;
   flashcardReveal: boolean;
@@ -107,7 +109,8 @@ export const StudyView: React.FC<StudyViewProps> = ({
   saveCurrentNote, generateFlashcardsFromNote, exportCurrentNote,
   newTagInput, setNewTagInput, addTagToCurrentLesson, quickTagOptions, currentLessonTags, removeTagFromCurrentLesson,
   newPinnedPointText, setNewPinnedPointText, addPinnedKeyPoint, lessonPinnedPoints, removePinnedKeyPoint,
-  lessonFlashcards, flashcardIndex, setFlashcardIndex, flashcardReveal, setFlashcardReveal, soundEnabled
+  lessonFlashcards, flashcardIndex, setFlashcardIndex, flashcardReveal, setFlashcardReveal, soundEnabled,
+  chapterMenu, openChapterById
 }) => {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
 
@@ -750,10 +753,29 @@ export const StudyView: React.FC<StudyViewProps> = ({
                 </div>
               </>
             ) : (
-              <div style={{ textAlign: "center", padding: "80px", border: "1px dashed var(--border)", borderRadius: "24px" }}>
-                <BookOpen size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
-                <p style={{ fontWeight: "700", opacity: 0.5 }}>No flashcards for this lesson.</p>
-                <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>Import from Notes</button>
+              <div style={{ border: "1px solid var(--line)", borderRadius: "var(--r-m)", padding: "18px" }}>
+                <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "var(--text)" }}>No flashcards for this lesson yet.</p>
+                <p style={{ margin: "4px 0 14px", fontSize: "12.5px", color: "var(--dim)" }}>
+                  Pick a chapter that has cards, or generate some from your notes.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "320px", overflowY: "auto" }}>
+                  {chapterMenu.filter((c) => c.count > 0).map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => openChapterById(c.id)}
+                      style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: "var(--r-s)", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--text)", cursor: "pointer" }}
+                    >
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13px", fontWeight: 600 }}>{c.title}</span>
+                      <span style={{ flexShrink: 0, fontSize: "11px", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "3px 8px" }}>{c.count} cards</span>
+                    </button>
+                  ))}
+                  {chapterMenu.filter((c) => c.count > 0).length === 0 && (
+                    <p style={{ margin: 0, fontSize: "12.5px", color: "var(--faint)" }}>
+                      No chapter has saved cards yet. Generate them from a lesson's notes to fill this list.
+                    </p>
+                  )}
+                </div>
+                <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "14px" }}>Import from Notes</button>
               </div>
             )}
 
