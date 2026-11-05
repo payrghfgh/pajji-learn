@@ -4522,6 +4522,7 @@ function AppContent() {
               memTier={memTier}
               streakCount={streakCount}
               dailyGoal={dailyGoal}
+              dailyCompleted={dailyCompleted}
               updateDailyGoal={updateDailyGoal}
               plusOnlyThemeIds={PLUS_ONLY_THEME_IDS}
               theme={theme}

@@ -31,6 +31,7 @@ interface SettingsViewProps {
   memTier: string;
   streakCount: number;
   dailyGoal: number;
+  dailyCompleted: number;
   updateDailyGoal: (n: number) => void;
   plusOnlyThemeIds: string[];
 
@@ -86,7 +87,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   auth,
   memTier,
   streakCount,
-  dailyGoal, updateDailyGoal, plusOnlyThemeIds,
+  dailyGoal, dailyCompleted, updateDailyGoal, plusOnlyThemeIds,
 
   theme, setTheme,
   uiTheme, setUiTheme,
@@ -222,17 +223,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         {(
           <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
             <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "24px" }}>
-                <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "80px", height: "80px", borderRadius: "24px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "16px" }}>
+                <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "52px", height: "52px", borderRadius: "16px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
                   {profilePic ? (
                     <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <User size={40} />
+                    <User size={24} />
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ fontSize: "20px", fontWeight: "900" }}>{displayName || getUserName(user)}</h2>
-                  <p style={{ fontSize: "14px", color: "var(--muted)" }}>{user?.email}</p>
+                  <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)", margin: 0 }}>{displayName || getUserName(user)}</h2>
+                  <p style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--faint)", margin: "2px 0 0" }}>{user?.email}</p>
                   <div style={{ marginTop: "8px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <span className="xp-badge">{tierLabel(membership)}</span>
                     {membershipExpiry && (
@@ -268,11 +269,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             actually stores and persists, so it is the only control here. */}
         <motion.div key="study-prefs" className="settings-section">
           <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
-            <h3 className="section-title">Study preferences</h3>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>Study preferences</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 600, color: "var(--text)", margin: "14px 0 8px" }}>
+              <span>Daily goal</span>
+              <span style={{ fontFamily: "var(--mono)", fontWeight: 400, color: "var(--dim)" }}>{dailyGoal} {dailyGoal === 1 ? "lesson" : "lessons"}</span>
+            </div>
+            <div style={{ height: "8px", borderRadius: "999px", background: "color-mix(in oklab, var(--text) 8%, transparent)", overflow: "hidden", marginBottom: "14px" }}>
+              <i style={{ display: "block", height: "100%", borderRadius: "999px", background: "var(--jade)", width: `${Math.min(100, Math.round((Math.min(dailyCompleted, dailyGoal) / Math.max(dailyGoal, 1)) * 100))}%` }} />
+            </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
               <div style={{ minWidth: 0 }}>
-                <h4 style={{ fontWeight: "700", margin: 0 }}>Daily goal</h4>
-                <p style={{ fontSize: "12px", color: "var(--muted)", margin: "4px 0 0" }}>Lessons you aim to finish each day.</p>
+                <p style={{ fontSize: "12px", color: "var(--muted)", margin: 0 }}>Lessons you aim to finish each day.</p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
                 <button
@@ -314,7 +321,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <h3 className="section-title">Themes</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>Themes</span>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--dim)" }}>{builtInThemeCards.length} total · applies instantly</span>
+                  <span style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 500, color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "5px 10px" }}>
+                    Active: {builtInThemeCards.find((t) => t.key === uiTheme)?.label || "Default"}
+                  </span>
+                </div>
                 {/* 5 x 3. Each card carries the real gate as its status line, read
                     from the same maps hasThemeAccess uses -- so a card can never
                     claim a gate the check does not apply. */}
