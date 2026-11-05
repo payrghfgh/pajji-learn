@@ -243,6 +243,9 @@ export default function FocusFlightPage() {
                     <div style={{ fontWeight: 700, fontSize: "15px", color: "var(--dim)", marginTop: "2px" }}>
                       No flight in progress
                     </div>
+                    <div style={{ fontSize: "12.5px", color: "var(--faint)", marginTop: "2px" }}>
+                      Pick a route to begin
+                    </div>
                   </div>
                 </div>
               </div>

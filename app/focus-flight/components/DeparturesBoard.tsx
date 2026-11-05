@@ -61,8 +61,8 @@ function BoardRow({ item, index }: { item: any; index: number }) {
     >
       <div className="text-[var(--amber)] font-mono font-bold tracking-tighter">PA{100 + index}</div>
       <div className="flex items-center gap-2 min-w-0">
-        <span className="text-[var(--text)] font-bold tracking-tight uppercase">{item.destination}</span>
-        <span className="text-[var(--faint)] font-mono text-[11px]">{item.code}</span>
+        <span className="text-[var(--text)] font-bold tracking-tight uppercase truncate min-w-0">{item.destination}</span>
+        <span className="text-[var(--faint)] font-mono text-[11px] shrink-0">{item.code}</span>
       </div>
       <div className="text-[var(--dim)] font-mono font-bold">{item.duration}</div>
       <div className="text-[var(--dim)] font-mono font-bold">{item.gate}</div>
