@@ -1131,3 +1131,48 @@ a:active {
     align-items: stretch;
   }
 }
+
+/* Sign in — plan's two-panel split. Left art panel 42%, right form centred. */
+.auth-split {
+  display: flex;
+  min-height: 100dvh;
+  background: var(--ink-0);
+}
+
+.auth-art {
+  position: relative;
+  width: 42%;
+  max-width: 600px;
+  padding: 52px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background:
+    radial-gradient(500px 400px at 20% 10%, color-mix(in oklab, var(--jade) 22%, transparent), transparent 60%),
+    radial-gradient(400px 500px at 90% 90%, color-mix(in oklab, var(--amber) 16%, transparent), transparent 60%),
+    var(--ink-1);
+}
+
+.auth-form {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+
+@media (max-width: 900px) {
+  .auth-split {
+    flex-direction: column;
+  }
+  .auth-art {
+    display: none;
+  }
+  .auth-form {
+    padding: 24px 18px 32px;
+    align-content: start;
+  }
+  .auth-mobile-head,
+  .auth-mobile-banner {
+    display: flex !important;
+  }
+}

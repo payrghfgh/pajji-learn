@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail,
   signInAnonymously, onAuthStateChanged, signOut
 } from "firebase/auth";
 import { parseFlashcardsFromCsv } from "./lib/study-import";
@@ -154,6 +155,8 @@ function AppContent() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
 
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
@@ -1095,10 +1098,12 @@ function AppContent() {
   const handleAuth = async (e: any) => {
     e.preventDefault();
     setLoading(true);
+    setAuthError("");
+    setAuthNotice("");
     try {
       if (isRegistering) await createUserWithEmailAndPassword(auth, authEmail, authPass);
       else await signInWithEmailAndPassword(auth, authEmail, authPass);
-    } catch (err: any) { alert(err.message); setLoading(false); }
+    } catch (err: any) { setAuthError(authMessage(err)); setLoading(false); }
   };
 
   const handleGuestLogin = async () => {
@@ -1106,6 +1111,53 @@ function AppContent() {
     try {
       await signInAnonymously(auth);
     } catch (err: any) { alert(err.message); setLoading(false); }
+  };
+
+  // Human text for every auth failure we can produce. A raw Firebase code is
+  // never shown -- 'auth/invalid-credential' means nothing to a student.
+  const authMessage = (err: any): string => {
+    const map: Record<string, string> = {
+      "auth/invalid-credential": "That email and password don't match. Try again.",
+      "auth/user-not-found": "That email and password don't match. Try again.",
+      "auth/wrong-password": "That email and password don't match. Try again.",
+      "auth/invalid-email": "That doesn't look like an email address.",
+      "auth/too-many-requests": "Too many attempts. Wait a minute, then try again.",
+      "auth/email-already-in-use": "An account with that email already exists. Sign in instead.",
+      "auth/weak-password": "Passwords need at least 6 characters.",
+      "auth/popup-closed-by-user": "Google sign-in was closed before it finished.",
+      "auth/cancelled-popup-request": "Google sign-in was cancelled.",
+      "auth/popup-blocked": "Your browser blocked the sign-in popup. Allow popups for this site and try again.",
+      "auth/network-request-failed": "Network problem. Check your connection and try again.",
+    };
+    return map[err?.code] || "Something went wrong signing you in. Try again.";
+  };
+
+  const handleGoogle = async () => {
+    setAuthError("");
+    setAuthNotice("");
+    setLoading(true);
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (err: any) {
+      setAuthError(authMessage(err));
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async () => {
+    setAuthError("");
+    setAuthNotice("");
+    const email = authEmail.trim();
+    if (!email) {
+      setAuthNotice("Enter your email above, then tap Forgot password.");
+      return;
+    }
+    // Same message whether or not the address exists: confirming existence
+    // would turn this form into an account-enumeration oracle.
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch { }
+    setAuthNotice("If that address has an account, a reset link is on its way.");
   };
 
   const saveAllChanges = async (silent = false) => {
@@ -2929,17 +2981,105 @@ function AppContent() {
 
   if (!user) {
     return (
-      <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", fontFamily: "sans-serif" }}>
-        <div style={{ background: "var(--card)", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)" }}>
-          <h1 style={{ color: "var(--accent)", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px" }}>PAJJI LEARN</h1>
-          <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <input type="email" placeholder="Email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required style={{ padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
-            <input type="password" placeholder="Password" value={authPass} onChange={(e) => setAuthPass(e.target.value)} required style={{ padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
-            <button type="submit" className="btn btn-primary" style={{ padding: "14px", fontWeight: "700", cursor: "pointer" }}>{isRegistering ? "Register" : "Sign In"}</button>
-          </form>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
-            <button onClick={handleGuestLogin} style={{ background: "none", border: "1px solid var(--accent)", color: "var(--accent)", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer" }}>Continue as Guest 👤</button>
-            <button onClick={() => setIsRegistering(!isRegistering)} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "14px" }}>{isRegistering ? "Back to Login" : "Create Account"}</button>
+      <div className="auth-split">
+        <div className="auth-art">
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "38px", height: "38px", borderRadius: "12px", background: "var(--jade)", display: "grid", placeItems: "center", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "20px", color: "var(--ink-on-accent)" }}>P</div>
+            <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "15px", letterSpacing: "0.02em", color: "var(--text)" }}>
+              PAJJI <span style={{ color: "var(--jade)" }}>LEARN</span>
+            </div>
+          </div>
+
+          <div style={{ margin: "auto 0" }}>
+            <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "46px", lineHeight: 1, letterSpacing: "-.03em", color: "var(--text)" }}>
+              Your progress<br />is waiting.
+            </div>
+            <p style={{ marginTop: "16px", maxWidth: "340px", fontSize: "15px", color: "var(--dim)" }}>
+              Sign in and your streak, notes and levels are exactly where you left them.
+            </p>
+            <div style={{ display: "flex", gap: "10px", marginTop: "26px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "12px", fontWeight: "500", borderRadius: "999px", padding: "5px 10px", whiteSpace: "nowrap" }}>🔥 Streaks</span>
+              <span style={{ fontSize: "12px", fontWeight: "500", borderRadius: "999px", padding: "5px 10px", whiteSpace: "nowrap" }}>★ Levels</span>
+              <span style={{ fontSize: "12px", fontWeight: "500", borderRadius: "999px", padding: "5px 10px", whiteSpace: "nowrap" }}>◈ Leaderboards</span>
+            </div>
+          </div>
+
+          <span style={{ position: "absolute", top: "104px", right: "44px", background: "var(--jade)", color: "var(--ink-on-accent)", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "12px", padding: "7px 12px", borderRadius: "10px", transform: "rotate(5deg)", boxShadow: "0 6px 18px rgba(0,0,0,.4)" }}>
+            Welcome back
+          </span>
+        </div>
+
+        <div className="auth-form">
+          <div style={{ width: "100%", maxWidth: "380px" }}>
+            <div className="auth-mobile-head" style={{ display: "none", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+              <div style={{ width: "30px", height: "30px", borderRadius: "9px", background: "var(--jade)", display: "grid", placeItems: "center", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "16px", color: "var(--ink-on-accent)" }}>P</div>
+              <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "5px 10px" }}>● Welcome back</span>
+            </div>
+
+            <h1 style={{ margin: 0, fontFamily: "var(--disp)", fontWeight: 800, fontSize: "28px", letterSpacing: "-.02em", color: "var(--text)" }}>
+              {isRegistering ? "Create your account" : "Sign in"}
+            </h1>
+            <p style={{ margin: "6px 0 26px", color: "var(--dim)", fontSize: "13.5px" }}>
+              {isRegistering ? "Free, and every study feature is included." : "Pick up right where you left off."}
+            </p>
+
+            <button
+              onClick={handleGoogle}
+              disabled={loading}
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "13px", borderRadius: "12px", background: "var(--ink-2)", border: "1px solid var(--line-2)", color: "var(--text)", fontWeight: 700, fontSize: "14px", cursor: loading ? "not-allowed" : "pointer", marginBottom: "20px" }}
+            >
+              <span style={{ fontWeight: 900 }}>G</span> Continue with Google
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--line)" }} />
+              <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--faint)" }}>or</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--line)" }} />
+            </div>
+
+            <form onSubmit={handleAuth}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)", marginBottom: "7px" }}>Email</div>
+              <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required placeholder="you@example.com" style={{ width: "100%", background: "var(--ink-2)", border: "1px solid var(--line-2)", borderRadius: "13px", padding: "14px 15px", color: "var(--text)", fontSize: "14px" }} />
+
+              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)", margin: "14px 0 7px" }}>Password</div>
+              <input type="password" value={authPass} onChange={(e) => setAuthPass(e.target.value)} required placeholder="••••••••" style={{ width: "100%", background: "var(--ink-2)", border: "1px solid var(--line-2)", borderRadius: "13px", padding: "14px 15px", color: "var(--text)", fontSize: "14px" }} />
+
+              <div style={{ display: "flex", justifyContent: "flex-end", margin: "8px 0 22px" }}>
+                <button type="button" onClick={handleForgot} style={{ background: "none", border: "none", padding: 0, color: "var(--dim)", fontSize: "12.5px", cursor: "pointer" }}>
+                  Forgot password?
+                </button>
+              </div>
+
+              {authError && (
+                <p role="alert" style={{ margin: "0 0 14px", fontSize: "12.5px", color: "var(--coral)", background: "var(--coral-soft)", border: "1px solid var(--coral-soft)", borderRadius: "10px", padding: "10px 12px" }}>
+                  {authError}
+                </p>
+              )}
+              {authNotice && (
+                <p role="status" style={{ margin: "0 0 14px", fontSize: "12.5px", color: "var(--dim)", background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "10px", padding: "10px 12px" }}>
+                  {authNotice}
+                </p>
+              )}
+
+              <button type="submit" disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "var(--jade)", color: "var(--ink-on-accent)", fontWeight: 800, fontSize: "14px", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+                {loading ? "Working…" : isRegistering ? "Create account →" : "Continue →"}
+              </button>
+            </form>
+
+            <p style={{ margin: "20px 0 0", textAlign: "center", fontSize: "13px", color: "var(--dim)" }}>
+              {isRegistering ? "Already have an account? " : "New here? "}
+              <button type="button" onClick={() => { setIsRegistering(!isRegistering); setAuthError(""); setAuthNotice(""); }} style={{ background: "none", border: "none", padding: 0, color: "var(--jade)", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
+                {isRegistering ? "Sign in" : "Create a free account"}
+              </button>
+            </p>
+
+            <div className="auth-mobile-banner" style={{ display: "none", alignItems: "center", gap: "12px", marginTop: "24px", padding: "14px", borderRadius: "var(--r-m)", border: "1px solid var(--line)", background: "var(--ink-2)" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "color-mix(in oklab, var(--amber) 14%, transparent)", color: "var(--amber)", display: "grid", placeItems: "center", fontSize: "18px", flexShrink: 0 }}>🔥</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--text)" }}>Your streak is waiting.</div>
+                <div style={{ fontSize: "12px", color: "var(--dim)" }}>Don't break it tonight.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
