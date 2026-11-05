@@ -753,29 +753,16 @@ export const StudyView: React.FC<StudyViewProps> = ({
                 </div>
               </>
             ) : (
-              <div style={{ border: "1px solid var(--line)", borderRadius: "var(--r-m)", padding: "18px" }}>
-                <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "var(--text)" }}>No flashcards for this lesson yet.</p>
-                <p style={{ margin: "4px 0 14px", fontSize: "12.5px", color: "var(--dim)" }}>
-                  Pick a chapter that has cards, or generate some from your notes.
+              <div style={{ border: "1px dashed var(--line-2)", borderRadius: "var(--r-m)", padding: "44px 24px", textAlign: "center" }}>
+                <BookOpen size={40} style={{ margin: "0 auto 14px", opacity: 0.35 }} />
+                <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text)" }}>Flashcards are coming soon</p>
+                <p style={{ margin: "6px auto 0", maxWidth: "360px", fontSize: "13px", color: "var(--dim)" }}>
+                  Cards you generate from a lesson's notes are not saved yet, so this screen has nothing to show on return.
+                  Until they persist, notes, quizzes and the AI explanation are the way to revise a chapter.
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "320px", overflowY: "auto" }}>
-                  {chapterMenu.filter((c) => c.count > 0).map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => openChapterById(c.id)}
-                      style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", textAlign: "left", padding: "10px 12px", borderRadius: "var(--r-s)", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--text)", cursor: "pointer" }}
-                    >
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "13px", fontWeight: 600 }}>{c.title}</span>
-                      <span style={{ flexShrink: 0, fontSize: "11px", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "3px 8px" }}>{c.count} cards</span>
-                    </button>
-                  ))}
-                  {chapterMenu.filter((c) => c.count > 0).length === 0 && (
-                    <p style={{ margin: 0, fontSize: "12.5px", color: "var(--faint)" }}>
-                      No chapter has saved cards yet. Generate them from a lesson's notes to fill this list.
-                    </p>
-                  )}
-                </div>
-                <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "14px" }}>Import from Notes</button>
+                <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>
+                  Go to My Notes
+                </button>
               </div>
             )}
 
