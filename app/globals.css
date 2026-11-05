@@ -3,9 +3,15 @@
 @layer base {
   :root {
     /* ── Dark mode defaults ── */
-    --bg: var(--ink-0);
-    --side: var(--ink-1);
-    --card: var(--ink-2);
+    /* Surfaces are the source of truth; the shell's ink tokens alias them.
+       This is the opposite direction from before, and it is what makes the
+       .theme-X.dark / .theme-X.light variants do anything: they set --bg,
+       --side and --card, and the shell reads --ink-0/1/2. Aliasing ink to the
+       surfaces means a mode variant repaints the page, rail and cards instead
+       of being silently ignored. */
+    --bg: #08090C;
+    --side: #0D0F13;
+    --card: #13161C;
     --text: #EEF2F6;
     --muted: var(--dim);
     --accent: var(--jade);
@@ -22,9 +28,9 @@
     --info: var(--jade);
 
     /* ── Study Arcade Redesign Tokens ── */
-    --ink-0: #08090C;
-    --ink-1: #0D0F13;
-    --ink-2: #13161C;
+    --ink-0: var(--bg);
+    --ink-1: var(--side);
+    --ink-2: var(--card);
     --ink-3: #1A1F27;
     --ink-4: #232A34;
     --line: rgba(255, 255, 255, 0.07);
