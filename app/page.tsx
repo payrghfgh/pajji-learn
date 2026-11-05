@@ -3721,6 +3721,12 @@ function AppContent() {
           --input-bg: #fff2e0;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-nebula {
           --accent: #a78bfa;
@@ -3742,6 +3748,12 @@ function AppContent() {
           --card: #1b1038;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-emerald {
           --accent: #22c55e;
@@ -3763,6 +3775,12 @@ function AppContent() {
           --card: #0a2a1f;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-arctic {
           --accent: #38bdf8;
@@ -3795,6 +3813,12 @@ function AppContent() {
           --input-bg: #dbeafe;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .dark { 
           --bg: #020617; 
@@ -3846,6 +3870,12 @@ function AppContent() {
           --card: #1c1c20;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-liquid {
           --accent: #3b82f6;
@@ -3871,6 +3901,12 @@ function AppContent() {
           --input-bg: #e6f2ff;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-amoled {
           --accent: #10b981;
@@ -3886,6 +3922,12 @@ function AppContent() {
           --card: #0b0b0b;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-paper {
           --accent: #8f704a;
@@ -3911,6 +3953,12 @@ function AppContent() {
           --input-bg: #f4ecdd;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-ocean {
           --accent: #0ea5e9;
@@ -3936,6 +3984,12 @@ function AppContent() {
           --input-bg: #e0f2fe;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-sunset {
           --accent: #f97316;
@@ -3961,6 +4015,12 @@ function AppContent() {
           --input-bg: #ffe9e4;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-cyber {
           --accent: #22d3ee;
@@ -3976,6 +4036,12 @@ function AppContent() {
           --card: #1e293b;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-f1.dark {
           --bg: #090909;
@@ -4263,6 +4329,12 @@ function AppContent() {
           --input-bg: #e8ecff;
           --muted: #4A5568;
           --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-williams.dark {
           --bg: #050b18;
@@ -4323,6 +4395,12 @@ function AppContent() {
           --card: #2a2100;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-zenith.dark {
           --bg: #0a0a05;
@@ -4362,6 +4440,12 @@ function AppContent() {
           --card: #1a0b2e;
           --line: rgba(255, 255, 255, 0.07);
           --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-midnight.dark {
           --bg: #020105;
