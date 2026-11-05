@@ -5099,6 +5099,20 @@ function AppContent() {
             ))}
           </div>
         )}
+        {view === "study" && !curChapter && (
+          <div className="page-shell" style={{ maxWidth: "none", padding: "26px 30px" }}>
+            <h1 className="sa-h1" style={{ marginBottom: "20px" }}>Flashcards</h1>
+            <div style={{ border: "1px dashed var(--line-2)", borderRadius: "var(--r-m)", padding: "44px 24px", textAlign: "center", maxWidth: "560px" }}>
+              <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text)" }}>Flashcards are coming soon</p>
+              <p style={{ margin: "6px auto 0", maxWidth: "380px", fontSize: "13px", color: "var(--dim)" }}>
+                Cards you generate from a lesson's notes are not saved yet. Until they persist, open a lesson and revise from its notes, quiz or AI explanation.
+              </p>
+              <button onClick={() => setView("library")} className="btn btn-secondary" style={{ marginTop: "16px" }}>
+                Browse lessons
+              </button>
+            </div>
+          </div>
+        )}
         {achievementToast && (
           <>
             <div className="achievement-confetti">
