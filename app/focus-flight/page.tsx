@@ -206,8 +206,9 @@ export default function FocusFlightPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              style={{ display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: "36px", padding: "38px 54px" }}
+              style={{ padding: "38px 54px" }}
             >
+              <div style={{ display: "grid", gridTemplateColumns: "1.05fr .95fr", gap: "36px" }}>
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
                 <span style={{ alignSelf: "flex-start", marginBottom: "16px", fontSize: "12px", fontWeight: "500", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px", letterSpacing: "0.02em" }}>
                   ◈ Departing now
@@ -227,9 +228,30 @@ export default function FocusFlightPage() {
                   <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "5px 10px" }}>✓ No phone</span>
                   <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--azure)", background: "var(--azure-soft)", border: "1px solid var(--azure-soft)", borderRadius: "999px", padding: "5px 10px" }}>♪ Cabin sounds</span>
                 </div>
+
+                {/* The plan draws a live in-flight card here. There is no flight
+                    running while you are on the terminal, so this is an honest
+                    empty state rather than a panel that can never fill. */}
+                <div className="card" style={{ padding: "18px", display: "flex", gap: "16px", alignItems: "center", maxWidth: "470px", marginTop: "26px" }}>
+                  <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "var(--ink-3)", border: "1px solid var(--line-2)", display: "grid", placeItems: "center", flexShrink: 0, color: "var(--faint)" }}>
+                    <Plane size={20} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>
+                      In flight
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: "15px", color: "var(--dim)", marginTop: "2px" }}>
+                      No flight in progress
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0, gap: "16px" }}>
+              <div style={{ minWidth: 0 }}>
                 <AirportHub history={history} onSelectRoute={initiateBoarding} />
+              </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
 
                 {/* This week's log. Bars and the summary both come from
                     history.sessions, so the label and the data agree. */}
