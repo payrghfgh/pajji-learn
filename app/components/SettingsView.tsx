@@ -108,6 +108,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Sections render in one column now; the old tab switcher is gone. Feedback is
   // still loaded for owners, once, guarded so a changing prop identity cannot
   // loop it.
+  const [editingProfile, setEditingProfile] = React.useState(false);
   const adminFetched = React.useRef(false);
   React.useEffect(() => {
     if (isOwner && !adminFetched.current) {
@@ -224,7 +225,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
             <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "16px" }}>
-                <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "52px", height: "52px", borderRadius: "16px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
+                <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "52px", height: "52px", borderRadius: "50%", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
                   {profilePic ? (
                     <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
@@ -248,19 +249,30 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <label className="input-label">Display Name</label>
-                  <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" style={{ width: "100%" }} />
-                </div>
-                <div>
-                  <label className="input-label">Profile Picture URL</label>
-                  <input type="text" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} placeholder="https://..." style={{ width: "100%" }} />
-                </div>
-                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "var(--coral)", borderColor: "var(--coral-soft)", marginTop: "12px" }}>
-                  <LogOut size={16} /> Sign Out
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
+                <button onClick={() => setEditingProfile(!editingProfile)} className="btn btn-secondary" style={{ fontSize: "12px", padding: "8px 14px" }}>
+                  Edit profile
+                </button>
+                <button onClick={() => setEditingProfile(true)} className="btn btn-secondary" style={{ fontSize: "12px", padding: "8px 14px" }}>
+                  Change photo
+                </button>
+                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "var(--coral)", borderColor: "var(--coral-soft)", fontSize: "12px", padding: "8px 14px" }}>
+                  <LogOut size={14} /> Log out
                 </button>
               </div>
+
+              {editingProfile && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
+                  <div>
+                    <label className="input-label">Display Name</label>
+                    <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" style={{ width: "100%" }} />
+                  </div>
+                  <div>
+                    <label className="input-label">Profile Picture URL</label>
+                    <input type="text" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} placeholder="https://..." style={{ width: "100%" }} />
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
