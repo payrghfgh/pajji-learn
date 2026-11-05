@@ -3685,12 +3685,10 @@ function AppContent() {
           --accent-soft-strong: rgba(16, 185, 129, 0.3);
           --accent-grad: linear-gradient(135deg, #10b981, #34d399);
           --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
-          --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.25);
           --info: #10b981;
           --warning: #f59e0b;
           --danger: #ef4444;
-          --danger-rgb: 239, 68, 68;
-        }
+          --danger-rgb: 239, 68, 68;        }
         .theme-emoji {
           --accent: #f59e0b;
           --accent-rgb: 245, 158, 11;
@@ -3698,36 +3696,16 @@ function AppContent() {
           --accent-soft-strong: rgba(245, 158, 11, 0.32);
           --accent-grad: linear-gradient(135deg, #f59e0b, #fb923c);
           --brand-gradient: linear-gradient(135deg, #f97316, #f59e0b);
-          --card-shadow: 0 12px 34px rgba(124, 45, 18, 0.2);
           --info: #f59e0b;
           --warning: #f97316;
           --danger: #ef4444;
           --danger-rgb: 239, 68, 68;
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #fffbf5;
-          --ink-1: #fff2e0;
-          --ink-2: #ffffff;
-          --ink-3: #fde8cc;
-          --ink-4: #f8d9b0;
-          --card: #ffffff;
-          --bg: #fffbf5;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #fff2e0;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-nebula {
           --accent: #a78bfa;
           --accent-rgb: 167, 139, 250;
@@ -3735,26 +3713,19 @@ function AppContent() {
           --accent-soft-strong: rgba(167, 139, 250, 0.3);
           --accent-grad: linear-gradient(135deg, #8b5cf6, #c084fc);
           --brand-gradient: linear-gradient(135deg, #2f1f69, #8b5cf6);
-          --card-shadow: 0 12px 34px rgba(20, 12, 44, 0.36);
           --info: var(--accent);
           --warning: var(--accent);
           --danger: #fb7185;
           --danger-rgb: 251, 113, 133;
           /* Surface tokens. Without these the shell keeps its base --ink-* and
              only the accent changes -- the theme appears to half-apply. */
-          --ink-0: #0d0820;
-          --ink-1: #150c30;
-          --ink-2: #1b1038;
           --card: #1b1038;
-          --line: rgba(255, 255, 255, 0.07);
-          --line-2: rgba(255, 255, 255, 0.13);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-emerald {
           --accent: #22c55e;
           --accent-rgb: 34, 197, 94;
@@ -3762,26 +3733,19 @@ function AppContent() {
           --accent-soft-strong: rgba(34, 197, 94, 0.3);
           --accent-grad: linear-gradient(135deg, #16a34a, #4ade80);
           --brand-gradient: linear-gradient(135deg, #14532d, #16a34a);
-          --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.3);
           --info: var(--accent);
           --warning: var(--accent);
           --danger: #f87171;
           --danger-rgb: 248, 113, 113;
           /* Surface tokens. Without these the shell keeps its base --ink-* and
              only the accent changes -- the theme appears to half-apply. */
-          --ink-0: #01140f;
-          --ink-1: #03201a;
-          --ink-2: #0a2a1f;
           --card: #0a2a1f;
-          --line: rgba(255, 255, 255, 0.07);
-          --line-2: rgba(255, 255, 255, 0.13);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-arctic {
           --accent: #38bdf8;
           --accent-rgb: 56, 189, 248;
@@ -3790,36 +3754,16 @@ function AppContent() {
           --accent-grad: linear-gradient(135deg, #0ea5e9, #7dd3fc);
           --brand-gradient: linear-gradient(135deg, #075985, #0ea5e9);
           --brand-gradient: linear-gradient(130deg, #cffafe, #dbeafe 62%, #7dd3fc 128%);
-          --card-shadow: 0 10px 28px rgba(30, 64, 175, 0.14);
           --info: var(--accent);
           --warning: var(--accent);
           --danger: #ef4444;
           --danger-rgb: 239, 68, 68;
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #f2f9ff;
-          --ink-1: #dbeafe;
-          --ink-2: #ffffff;
-          --ink-3: #d6e6fb;
-          --ink-4: #bcd4f3;
-          --card: #ffffff;
-          --bg: #f2f9ff;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #dbeafe;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .dark { 
           --bg: #020617; 
           --side: #0f172a; 
@@ -3883,31 +3827,12 @@ function AppContent() {
           --accent-soft: rgba(59, 130, 246, 0.15);
           --accent-grad: linear-gradient(135deg, #3b82f6, #60a5fa);
           --brand-gradient: linear-gradient(135deg, #1d4ed8, #3b82f6);
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #f3f8ff;
-          --ink-1: #e6f2ff;
-          --ink-2: #ffffff;
-          --ink-3: #dbeafe;
-          --ink-4: #c7ddf5;
-          --card: #ffffff;
-          --bg: #f3f8ff;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #e6f2ff;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-amoled {
           --accent: #10b981;
           --accent-rgb: 16, 185, 129;
@@ -3916,112 +3841,49 @@ function AppContent() {
           --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
           /* Surface tokens. Without these the shell keeps its base --ink-* and
              only the accent changes -- the theme appears to half-apply. */
-          --ink-0: #000000;
-          --ink-1: #050505;
-          --ink-2: #0b0b0b;
           --card: #0b0b0b;
-          --line: rgba(255, 255, 255, 0.07);
-          --line-2: rgba(255, 255, 255, 0.13);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-paper {
           --accent: #8f704a;
           --accent-rgb: 143, 112, 74;
           --accent-soft: rgba(143, 112, 74, 0.15);
           --accent-grad: linear-gradient(135deg, #8f704a, #b5956c);
           --brand-gradient: linear-gradient(135deg, #5c482f, #8f704a);
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #fffaf1;
-          --ink-1: #f4ecdd;
-          --ink-2: #fffdf8;
-          --ink-3: #eadfcd;
-          --ink-4: #ded1ba;
-          --card: #fffdf8;
-          --bg: #fffaf1;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #f4ecdd;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-ocean {
           --accent: #0ea5e9;
           --accent-rgb: 14, 165, 233;
           --accent-soft: rgba(14, 165, 233, 0.15);
           --accent-grad: linear-gradient(135deg, #0ea5e9, #38bdf8);
           --brand-gradient: linear-gradient(135deg, #0369a1, #0ea5e9);
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #f0f9ff;
-          --ink-1: #e0f2fe;
-          --ink-2: #ffffff;
-          --ink-3: #d3ecfb;
-          --ink-4: #b9dff5;
-          --card: #ffffff;
-          --bg: #f0f9ff;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #e0f2fe;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-sunset {
           --accent: #f97316;
           --accent-rgb: 249, 115, 22;
           --accent-soft: rgba(249, 115, 22, 0.15);
           --accent-grad: linear-gradient(135deg, #f97316, #fb923c);
           --brand-gradient: linear-gradient(135deg, #c2410c, #f97316);
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #fff5f0;
-          --ink-1: #ffe9e4;
-          --ink-2: #fffaf7;
-          --ink-3: #fbdcd2;
-          --ink-4: #f5c6b8;
-          --card: #fffaf7;
-          --bg: #fff5f0;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #ffe9e4;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-cyber {
           --accent: #22d3ee;
           --accent-rgb: 34, 211, 238;
@@ -4030,19 +3892,13 @@ function AppContent() {
           --brand-gradient: linear-gradient(135deg, #0891b2, #22d3ee);
           /* Surface tokens. Without these the shell keeps its base --ink-* and
              only the accent changes -- the theme appears to half-apply. */
-          --ink-0: #0f172a;
-          --ink-1: #131d33;
-          --ink-2: #1e293b;
           --card: #1e293b;
-          --line: rgba(255, 255, 255, 0.07);
-          --line-2: rgba(255, 255, 255, 0.13);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-f1.dark {
           --bg: #090909;
           --side: #101012;
@@ -4311,31 +4167,12 @@ function AppContent() {
           --accent-soft: rgba(50, 103, 212, 0.15);
           --accent-grad: linear-gradient(135deg, #3267D4, #4a7be0);
           --brand-gradient: linear-gradient(135deg, #1e3a8a, #3267D4);
-          /* Full light token set. A light surface without inverted text is
-             white-on-white, so the type tokens travel with the surfaces. */
-          --ink-0: #f5f7ff;
-          --ink-1: #e8ecff;
-          --ink-2: #ffffff;
-          --ink-3: #dde3f7;
-          --ink-4: #c8d1ee;
-          --card: #ffffff;
-          --bg: #f5f7ff;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #e8ecff;
-          --muted: #4A5568;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-williams.dark {
           --bg: #050b18;
           --side: #0a1428;
@@ -4389,19 +4226,13 @@ function AppContent() {
           --brand-gradient: linear-gradient(135deg, #2a2100, #FFD700);
           /* Surface tokens. Without these the shell keeps its base --ink-* and
              only the accent changes -- the theme appears to half-apply. */
-          --ink-0: #0f0f10;
-          --ink-1: #171410;
-          --ink-2: #2a2100;
           --card: #2a2100;
-          --line: rgba(255, 255, 255, 0.07);
-          --line-2: rgba(255, 255, 255, 0.13);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-zenith.dark {
           --bg: #0a0a05;
           --side: #1a1a0f;
@@ -4434,19 +4265,13 @@ function AppContent() {
           --brand-gradient: linear-gradient(135deg, #1a0b2e, #A855F7);
           /* Surface tokens. Without these the shell keeps its base --ink-* and
              only the accent changes -- the theme appears to half-apply. */
-          --ink-0: #000000;
-          --ink-1: #0d0617;
-          --ink-2: #1a0b2e;
           --card: #1a0b2e;
-          --line: rgba(255, 255, 255, 0.07);
-          --line-2: rgba(255, 255, 255, 0.13);
           /* The identity colour follows the theme. 141 places across the app
              paint with --jade (the logo tile, progress fills, badges) and none of
              them moved when a theme was picked, because a theme only ever set
              --accent. Binding jade to the accent makes the whole surface change. */
           --jade: var(--accent);
-          --jade-soft: var(--accent-soft);
-        }
+          --jade-soft: var(--accent-soft);        }
         .theme-midnight.dark {
           --bg: #020105;
           --side: #0a0515;
@@ -4673,35 +4498,6 @@ function AppContent() {
             height: 54px;
           }
           .desktop-only { display: none !important; }
-        }
-              /* Light mode. The .theme-X.dark/.light variants only ever set --bg,
-           --side, --card, --text and --muted -- none of them touched --ink-*,
-           which is what the shell actually reads for the page, rail and cards.
-           That is why the Light toggle was parked as 'coming soon': switching it
-           changed the type colour and nothing else.
-
-           Defined last so it overrides the base .theme-X surfaces at equal
-           specificity, while per-theme .theme-X.light rules still win on the
-           tokens they set. The accent is untouched, so every theme keeps its
-           identity in either mode. */
-        .light {
-          --ink-0: #f7f8fa;
-          --ink-1: #eef1f5;
-          --ink-2: #ffffff;
-          --ink-3: #e4e8ee;
-          --ink-4: #d6dce5;
-          --card: #ffffff;
-          --bg: #f7f8fa;
-          --side: #eef1f5;
-          --text: #0B1220;
-          --dim: #4A5568;
-          --faint: #6B7280;
-          --muted: #4A5568;
-          --line: rgba(0, 0, 0, 0.08);
-          --line-2: rgba(0, 0, 0, 0.14);
-          --border: rgba(0, 0, 0, 0.10);
-          --input-bg: #eef1f5;
-          --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
         }
 `}
 </style>
