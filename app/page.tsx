@@ -3049,12 +3049,20 @@ function AppContent() {
               {isRegistering ? "Free, and every study feature is included." : "Pick up right where you left off."}
             </p>
 
+            {/* Google sign-in is not live yet. Held unavailable rather than drawn
+                as a working control: a button that looks ready and does nothing is
+                worse than one that says why it cannot be pressed. */}
             <button
-              onClick={handleGoogle}
-              disabled={loading}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "13px", borderRadius: "12px", background: "var(--ink-2)", border: "1px solid var(--line-2)", color: "var(--text)", fontWeight: 700, fontSize: "14px", cursor: loading ? "not-allowed" : "pointer", marginBottom: "20px" }}
+              type="button"
+              disabled
+              aria-disabled="true"
+              title="Google sign-in is coming soon"
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "13px", borderRadius: "12px", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--faint)", fontWeight: 700, fontSize: "14px", cursor: "not-allowed", opacity: 0.5, marginBottom: "20px" }}
             >
               <span style={{ fontWeight: 900 }}>G</span> Continue with Google
+              <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--faint)", background: "var(--ink-3)", border: "1px solid var(--line)", borderRadius: "999px", padding: "2px 8px" }}>
+                coming soon
+              </span>
             </button>
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
