@@ -4290,6 +4290,21 @@ function AppContent() {
           --border: rgba(168, 85, 247, 0.12);
           --input-bg: #f5f0ff;
         }
+
+        /* Light mode contrast floor.
+           The .theme-X.light variants set --muted, but :root defines
+           --muted: var(--dim), so changing --muted never reached --dim or
+           --faint -- the two tokens the app actually paints secondary text
+           with. On white they sat at roughly 2.6:1 and 3.0:1, well under the
+           4.5:1 body-text floor. These set them for any theme in light mode.
+           --ink-3 and --ink-4 are the progress tracks and empty-day bars, which
+           were also still dark on a light card. */
+        .light {
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --ink-3: #E4E8EE;
+          --ink-4: #D6DCE5;
+        }
         .theme-midnight .app-container, .theme-midnight.app-container {
           background-image:
             radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.15), transparent 40%),
