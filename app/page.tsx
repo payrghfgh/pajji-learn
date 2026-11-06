@@ -4508,6 +4508,7 @@ function AppContent() {
         setView={setView}
         fetchLeaderboard={fetchLeaderboard}
         onFocusFlight={() => { window.location.href = "/focus-flight"; }}
+        onOpenFlashcards={() => { setCurChapter(null); setView("study"); }}
         onSignOut={() => signOut(auth)}
         userXP={userXP}
         userLevel={userLevel}

@@ -8,6 +8,7 @@ type AppNavigationProps = {
   setView: (view: string) => void;
   fetchLeaderboard: () => void;
   onFocusFlight: () => void;
+  onOpenFlashcards: () => void;
   onSignOut: () => void;
   userXP?: number;
   userLevel?: number;
@@ -18,6 +19,7 @@ export const AppNavigation = ({
   setView,
   fetchLeaderboard,
   onFocusFlight,
+  onOpenFlashcards,
   onSignOut,
   userXP = 0,
   userLevel = 1,
@@ -60,7 +62,7 @@ export const AppNavigation = ({
       <button
         type="button"
         className={`sa-nav ${view === "study" ? "on" : ""}`}
-        onClick={() => setView("study")}
+        onClick={onOpenFlashcards}
       >
         <span className="sa-gi">✦</span>
         Flashcards
