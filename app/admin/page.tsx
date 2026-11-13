@@ -28,7 +28,7 @@ export default function AdminPage() {
   // AI Management State
   const [aiConfig, setAiConfig] = useState({
     systemPrompt: "You are Pajji Learn AI, an ai for a learning platform made by Pajji Services. Answer clearly and concisely using the provided context. Be helpful but brief to save time.Sometimes, act fun",
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-120b",
     maxTokens: 300
   });
   const [isSavingAI, setIsSavingAI] = useState(false);
@@ -386,8 +386,8 @@ export default function AdminPage() {
                       only hits are the three lines in this file. So systemPrompt,
                       model and maxTokens below are stored and ignored: the real
                       calls live in lib/ai-backend.ts, which hardcodes
-                      llama-3.1-8b-instant, llama-3.3-70b-versatile and
-                      meta-llama/llama-4-scout-17b-16e-instruct with max_tokens: 300,
+                      openai/gpt-oss-20b (light), openai/gpt-oss-120b (heavy) and
+                      qwen/qwen3.8-27b (images) with max_tokens: 300,
                       plus a genkit flow on gemini15Flash. Not correcting the
                       labels to match the code, or the reverse, until the wiring
                       is decided. */}
@@ -407,13 +407,14 @@ export default function AdminPage() {
                       onChange={(e) => setAiConfig({...aiConfig, model: e.target.value})}
                       className="w-full rounded-xl border border-[var(--line-2)] bg-[var(--input-bg)] p-4 font-black outline-none focus:border-[var(--jade)]"
                     >
-                      <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Versatile)</option>
-                      <option value="llama-3.1-8b-instant">Llama 3.1 8B (Instant/Cheap)</option>
-                      {/* TODO(data): no code path uses mixtral-8x7b-32768, and the
-                          backend's third model, meta-llama/llama-4-scout-17b-16e-instruct,
-                          is not offered here. The list and the code disagree in
-                          both directions. */}
-                      <option value="mixtral-8x7b-32768">Mixtral 8x7b</option>
+                      <option value="openai/gpt-oss-120b">GPT-OSS 120B (heavy)</option>
+                      <option value="openai/gpt-oss-20b">GPT-OSS 20B (light)</option>
+                      {/* The three options now match the three models the backend
+                          actually calls: gpt-oss-20b (light), gpt-oss-120b (heavy)
+                          and qwen3.8-27b (images). The dropdown and the code no
+                          longer disagree. The value is still stored and ignored --
+                          see the TODO above the system prompt. */}
+                      <option value="qwen/qwen3.8-27b">Qwen3.8 27B (images)</option>
                     </select>
                   </div>
                   <div>
