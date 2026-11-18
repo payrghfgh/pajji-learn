@@ -2713,6 +2713,8 @@ function AppContent() {
     { key: "williams", label: "Williams Blue", accent: "#3267D4", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)", source: "builtIn" },
     { key: "zenith", label: "Zenith Gold 💎", accent: "#FFD700", bg: "linear-gradient(135deg,#0f0f10,#2a2100)", source: "builtIn" },
     { key: "midnight", label: "Midnight 🌌", accent: "#A855F7", bg: "linear-gradient(135deg,#000,#1a0b2e)", source: "builtIn" },
+    { key: "minimalism", label: "Minimalism", accent: "#9CA3AF", bg: "linear-gradient(135deg,#f5f5f5,#e8e8ea)", source: "builtIn" },
+    { key: "modern", label: "Modern", accent: "#6366F1", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)", source: "builtIn" },
   ];
   const customThemeCards: ThemePreview[] = customThemes.map((t) => ({
     key: t.id,
@@ -2802,7 +2804,7 @@ function AppContent() {
   useEffect(() => {
     const root = document.documentElement;
     // Remove old theme classes
-    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "zenith", "midnight", "default"];
+    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "zenith", "midnight", "minimalism", "modern", "default"];
     themes.forEach(t => root.classList.remove(`theme-${t}`));
     root.classList.remove("dark", "light");
 
@@ -4297,6 +4299,67 @@ function AppContent() {
           --muted: #6b7280;
           --border: rgba(168, 85, 247, 0.12);
           --input-bg: #f5f0ff;
+        }
+
+        /* ── Minimalism and Modern ──────────────────────────────────────────
+           Two themes added on request. Same contract as the other fourteen:
+           the base block sets the accent and binds --jade to it; the .dark and
+           .light variants set the surfaces, so each works in either mode. */
+
+        .theme-minimalism {
+          --accent: #6B7280;
+          --accent-rgb: 107, 114, 128;
+          --accent-soft: rgba(107, 114, 128, 0.15);
+          --accent-grad: linear-gradient(135deg, #4B5563, #6B7280);
+          --brand-gradient: linear-gradient(135deg, #374151, #6B7280);
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
+        }
+        .theme-minimalism.dark {
+          --bg: #0A0A0B;
+          --side: #121214;
+          --card: #17171A;
+          --text: #F4F4F5;
+          --muted: #A1A1AA;
+          --border: rgba(255, 255, 255, 0.10);
+          --input-bg: #1C1C20;
+        }
+        .theme-minimalism.light {
+          --bg: #FAFAFA;
+          --side: #FFFFFF;
+          --card: #FFFFFF;
+          --text: #18181B;
+          --muted: #52525B;
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #F4F4F5;
+        }
+
+        .theme-modern {
+          --accent: #6366F1;
+          --accent-rgb: 99, 102, 241;
+          --accent-soft: rgba(99, 102, 241, 0.15);
+          --accent-grad: linear-gradient(135deg, #4F46E5, #6366F1);
+          --brand-gradient: linear-gradient(135deg, #4338CA, #6366F1);
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
+        }
+        .theme-modern.dark {
+          --bg: #0B0B14;
+          --side: #12121F;
+          --card: #171728;
+          --text: #EEF0FF;
+          --muted: #A5A8C4;
+          --border: rgba(99, 102, 241, 0.22);
+          --input-bg: #1C1C33;
+        }
+        .theme-modern.light {
+          --bg: #F7F8FF;
+          --side: #FFFFFF;
+          --card: #FFFFFF;
+          --text: #14162B;
+          --muted: #5B5F7B;
+          --border: rgba(99, 102, 241, 0.20);
+          --input-bg: #EEF0FF;
         }
 
         /* Light mode contrast floor.

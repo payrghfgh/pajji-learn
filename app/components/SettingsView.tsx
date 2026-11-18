@@ -153,6 +153,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     { key: "williams", label: "Williams Blue", accent: "#3267D4", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)" },
     { key: "zenith", label: "Zenith Gold 💎", accent: "#FFD700", bg: "linear-gradient(135deg,#0f0f10,#2a2100)" },
     { key: "midnight", label: "Midnight 🌌", accent: "#A855F7", bg: "linear-gradient(135deg,#000,#1a0b2e)" },
+    { key: "minimalism", label: "Minimalism", accent: "#9CA3AF", bg: "linear-gradient(135deg,#f5f5f5,#e8e8ea)" },
+    { key: "modern", label: "Modern", accent: "#6366F1", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)" },
   ];
 
   // Display labels for the achievement gates. The gate ids live in
