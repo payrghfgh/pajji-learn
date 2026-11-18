@@ -30,6 +30,10 @@ interface SettingsViewProps {
   auth: any;
   memTier: string;
   streakCount: number;
+  dailyGoal: number;
+  dailyCompleted: number;
+  updateDailyGoal: (n: number) => void;
+  plusOnlyThemeIds: string[];
 
   // New props for full settings
   theme: 'dark' | 'light';
@@ -83,6 +87,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   auth,
   memTier,
   streakCount,
+  dailyGoal, dailyCompleted, updateDailyGoal, plusOnlyThemeIds,
 
   theme, setTheme,
   uiTheme, setUiTheme,
@@ -100,7 +105,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   giftedThemes,
   customThemes
 }) => {
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"account" | "appearance" | "app" | "admin">("account");
+  // Sections render in one column now; the old tab switcher is gone. Feedback is
+  // still loaded for owners, once, guarded so a changing prop identity cannot
+  // loop it.
+  const [editingProfile, setEditingProfile] = React.useState(false);
+  const adminFetched = React.useRef(false);
+  React.useEffect(() => {
+    if (isOwner && !adminFetched.current) {
+      adminFetched.current = true;
+      fetchFeedback();
+    }
+  }, [isOwner, fetchFeedback]);
 
   const tierLabel = (t: string) => {
     const n = (t || "").toUpperCase().replace(/[\s_]+/g, "");
@@ -119,7 +134,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     cyber: "xp_1000",
     nebula: "streak_21",
     emerald: "xp_10000",
-    arctic: "hundred_masteries",
+    arctic: "fifty_masteries", // was hundred_masteries: no such achievement exists
   };
 
   const builtInThemeCards = [
@@ -138,7 +153,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     { key: "williams", label: "Williams Blue", accent: "#3267D4", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)" },
     { key: "zenith", label: "Zenith Gold 💎", accent: "#FFD700", bg: "linear-gradient(135deg,#0f0f10,#2a2100)" },
     { key: "midnight", label: "Midnight 🌌", accent: "#A855F7", bg: "linear-gradient(135deg,#000,#1a0b2e)" },
+    { key: "minimalism", label: "Minimalism", accent: "#9CA3AF", bg: "linear-gradient(135deg,#f5f5f5,#e8e8ea)" },
+    { key: "modern", label: "Modern", accent: "#6366F1", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)" },
   ];
+
+  // Display labels for the achievement gates. The gate ids live in
+  // themeAchievementRequirements above; this is presentation only.
+  const requirementLabel: Record<string, string> = {
+    five_masteries: "5 masteries",
+    streak_7: "7-day streak",
+    xp_1000: "1,000 XP",
+    streak_21: "21-day streak",
+    xp_10000: "10,000 XP",
+    fifty_masteries: "50 masteries",
+  };
 
   const hasThemeAccess = (themeId: string) => {
     const isAdminOnly = adminOnlyThemeIds.includes(themeId);
@@ -147,8 +175,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const achievementAccess = !requiredAchievementId || isOwner || unlockedAchievements.includes(requiredAchievementId);
     const isPremium = ["zenith", "midnight"].includes(themeId);
     const membershipAccess = !isPremium || memTier === "ultra" || isOwner;
-    return adminAccess && achievementAccess && membershipAccess;
+    const plusAccess = !plusOnlyThemeIds.includes(themeId) || memTier === "plus" || memTier === "pro" || memTier === "ultra" || isOwner;
+    return adminAccess && achievementAccess && membershipAccess && plusAccess;
   };
+
+  // Derived from the same gate map the grid reads, so the header can never
+  // disagree with the cards. Plus is checked before achievement because a
+  // Plus-gated theme could also carry an achievement requirement.
+  const gateCounts = builtInThemeCards.reduce(
+    (acc, t) => {
+      if (["zenith", "midnight"].includes(t.key)) acc.ultra++;
+      else if (plusOnlyThemeIds.includes(t.key)) acc.plus++;
+      else if (themeAchievementRequirements[t.key]) acc.achievement++;
+      else acc.ready++;
+      return acc;
+    },
+    { ready: 0, plus: 0, achievement: 0, ultra: 0 }
+  );
 
   return (
     <motion.div
@@ -157,52 +200,47 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96, y: -20 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="page-shell" style={{ maxWidth: "800px" }}
+      className="page-shell" style={{ maxWidth: "none", padding: "26px 30px" }}
     >
-      <header style={{ marginBottom: "32px", textAlign: "center" }}>
-        <h1 className="page-title syne-heading" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", fontSize: "48px" }}>
-          <span style={{ color: "var(--accent)" }}>Settings</span>
-          <Settings size={48} color="var(--accent)" />
-        </h1>
-        <p style={{ color: "var(--muted)", fontSize: "18px", marginTop: "8px" }}>Configure your Pajji Learn experience.</p>
-      </header>
-
-      <div className="tab-container" style={{ display: "flex", gap: "8px", marginBottom: "24px", justifyContent: "center" }}>
-        <button onClick={() => setActiveSettingsTab("account")} className={`tab-btn ${activeSettingsTab === "account" ? "active" : ""}`}>
-          <User size={16} /> Account
-        </button>
-        <button onClick={() => setActiveSettingsTab("appearance")} className={`tab-btn ${activeSettingsTab === "appearance" ? "active" : ""}`}>
-          <Sparkles size={16} /> Look & Feel
-        </button>
-        <button onClick={() => setActiveSettingsTab("app")} className={`tab-btn ${activeSettingsTab === "app" ? "active" : ""}`}>
-          <Settings size={16} /> App Prefs
-        </button>
-        {isOwner && (
-          <button onClick={() => { setActiveSettingsTab("admin"); fetchFeedback(); }} className={`tab-btn ${activeSettingsTab === "admin" ? "active" : ""}`}>
-            <Crown size={16} /> Admin
-          </button>
-        )}
+      {/* Heading row: title left, the four pills right, baseline-aligned on one line. */}
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "18px", gap: "16px", flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0, fontSize: "32px", fontWeight: "800", letterSpacing: "-0.025em", lineHeight: 1.05, color: "var(--text)" }}>Settings</h1>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {[
+            { label: "ready", n: gateCounts.ready, color: "var(--jade)", bg: "var(--jade-soft)" },
+            { label: "Plus", n: gateCounts.plus, color: "var(--azure)", bg: "var(--azure-soft)" },
+            { label: "by achievement", n: gateCounts.achievement, color: "var(--dim)", bg: "transparent" },
+            { label: "Ultra", n: gateCounts.ultra, color: "var(--amber)", bg: "color-mix(in oklab, var(--amber) 14%, transparent)" },
+          ].map(p => (
+            <span key={p.label} style={{ fontSize: "12px", fontWeight: "500", color: p.color, background: p.bg, border: p.bg === "transparent" ? "1px solid var(--line)" : `1px solid ${p.bg}`, borderRadius: "999px", padding: "5px 10px", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
+              {p.n} {p.label}
+            </span>
+          ))}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {activeSettingsTab === "account" && (
+        {/* Profile and study preferences sit side by side at 1.15fr / 1fr, per the
+            plan's Settings frame. One column below 900px via .settings-split. */}
+        <div className="settings-split">
+        {(
           <motion.div key="account-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
-            <div className="card" style={{ padding: "24px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "24px" }}>
-                <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "80px", height: "80px", borderRadius: "24px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
+            <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "16px" }}>
+                <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "52px", height: "52px", borderRadius: "50%", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)", flexShrink: 0 }}>
                   {profilePic ? (
                     <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <User size={40} color="white" />
+                    <User size={24} />
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ fontSize: "20px", fontWeight: "900" }}>{displayName || getUserName(user)}</h2>
-                  <p style={{ fontSize: "14px", color: "var(--muted)" }}>{user?.email}</p>
+                  <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--text)", margin: 0 }}>{displayName || getUserName(user)}</h2>
+                  <p style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--faint)", margin: "2px 0 0" }}>{user?.email}</p>
                   <div style={{ marginTop: "8px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                     <span className="xp-badge">{tierLabel(membership)}</span>
                     {membershipExpiry && (
-                      <span style={{ fontSize: "11px", color: isExpired(membershipExpiry) ? "#ef4444" : "var(--muted)", fontWeight: "700" }}>
+                      <span style={{ fontSize: "11px", color: isExpired(membershipExpiry) ? "var(--coral)" : "var(--muted)", fontWeight: "700" }}>
                         {isExpired(membershipExpiry) ? "Expired" : `Expires: ${membershipExpiry}`}
                       </span>
                     )}
@@ -213,25 +251,76 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <label className="input-label">Display Name</label>
-                  <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" style={{ width: "100%" }} />
-                </div>
-                <div>
-                  <label className="input-label">Profile Picture URL</label>
-                  <input type="text" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} placeholder="https://..." style={{ width: "100%" }} />
-                </div>
-                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "#ef4444", borderColor: "#ef444433", marginTop: "12px" }}>
-                  <LogOut size={16} /> Sign Out
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
+                <button onClick={() => setEditingProfile(!editingProfile)} className="btn btn-secondary" style={{ fontSize: "12px", padding: "8px 14px" }}>
+                  Edit profile
+                </button>
+                <button onClick={() => setEditingProfile(true)} className="btn btn-secondary" style={{ fontSize: "12px", padding: "8px 14px" }}>
+                  Change photo
+                </button>
+                <button onClick={() => signOut(auth)} className="btn btn-secondary" style={{ color: "var(--coral)", borderColor: "var(--coral-soft)", fontSize: "12px", padding: "8px 14px" }}>
+                  <LogOut size={14} /> Log out
                 </button>
               </div>
+
+              {editingProfile && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "14px" }}>
+                  <div>
+                    <label className="input-label">Display Name</label>
+                    <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" style={{ width: "100%" }} />
+                  </div>
+                  <div>
+                    <label className="input-label">Profile Picture URL</label>
+                    <input type="text" value={profilePic} onChange={(e) => setProfilePic(e.target.value)} placeholder="https://..." style={{ width: "100%" }} />
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
 
-        {activeSettingsTab === "appearance" && (
-          <motion.div key="appearance-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {/* Study preferences. The daily goal is the only study preference the app
+            actually stores and persists, so it is the only control here. */}
+        <motion.div key="study-prefs" className="settings-section">
+          <div className="card" style={{ padding: "18px 20px", height: "100%" }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>Study preferences</span>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 600, color: "var(--text)", margin: "14px 0 8px" }}>
+              <span>Daily goal</span>
+              <span style={{ fontFamily: "var(--mono)", fontWeight: 400, color: "var(--dim)" }}>{dailyGoal} {dailyGoal === 1 ? "lesson" : "lessons"}</span>
+            </div>
+            <div style={{ height: "8px", borderRadius: "999px", background: "color-mix(in oklab, var(--text) 8%, transparent)", overflow: "hidden", marginBottom: "14px" }}>
+              <i style={{ display: "block", height: "100%", borderRadius: "999px", background: "var(--jade)", width: `${Math.min(100, Math.round((Math.min(dailyCompleted, dailyGoal) / Math.max(dailyGoal, 1)) * 100))}%` }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: "12px", color: "var(--muted)", margin: 0 }}>Lessons you aim to finish each day.</p>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                <button
+                  onClick={() => updateDailyGoal(dailyGoal - 1)}
+                  disabled={dailyGoal <= 1}
+                  aria-label="Decrease daily goal"
+                  style={{ width: "32px", height: "32px", borderRadius: "var(--r-s)", background: "var(--ink-3)", border: "1px solid var(--line)", color: "var(--text)", cursor: dailyGoal <= 1 ? "not-allowed" : "pointer", opacity: dailyGoal <= 1 ? 0.4 : 1 }}
+                >
+                  −
+                </button>
+                <span style={{ minWidth: "28px", textAlign: "center", fontSize: "16px", fontWeight: "800", color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{dailyGoal}</span>
+                <button
+                  onClick={() => updateDailyGoal(dailyGoal + 1)}
+                  disabled={dailyGoal >= 10}
+                  aria-label="Increase daily goal"
+                  style={{ width: "32px", height: "32px", borderRadius: "var(--r-s)", background: "var(--ink-3)", border: "1px solid var(--line)", color: "var(--text)", cursor: dailyGoal >= 10 ? "not-allowed" : "pointer", opacity: dailyGoal >= 10 ? 0.4 : 1 }}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+        </div>
+
+        {(
+          <motion.div key="appearance-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px" }}>
               <div style={{ marginBottom: "24px" }}>
                 <h3 className="section-title">Global Theme</h3>
@@ -246,28 +335,56 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
 
               <div>
-                <h3 className="section-title">UI Theme Selection</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)" }}>Themes</span>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--dim)" }}>{builtInThemeCards.length} total · applies instantly</span>
+                  <span style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 500, color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "5px 10px" }}>
+                    Active: {builtInThemeCards.find((t) => t.key === uiTheme)?.label || "Default"}
+                  </span>
+                </div>
+                {/* 5 x 3. Each card carries the real gate as its status line, read
+                    from the same maps hasThemeAccess uses -- so a card can never
+                    claim a gate the check does not apply. */}
+                <div className="settings-themes-grid">
                   {builtInThemeCards.map((t) => {
                     const locked = !hasThemeAccess(t.key);
+                    const requiredId = themeAchievementRequirements[t.key];
+                    const status = ["zenith", "midnight"].includes(t.key)
+                      ? "Ultra only"
+                      : plusOnlyThemeIds.includes(t.key)
+                        ? "Plus only"
+                        : requiredId
+                          ? (requirementLabel[requiredId] || requiredId)
+                          : adminOnlyThemeIds.includes(t.key)
+                            ? "Admin only"
+                            : "Ready";
                     return (
                       <button
                         key={t.key}
                         onClick={() => !locked && setUiTheme(t.key)}
+                        aria-disabled={locked}
+                        title={locked ? `Locked — ${status}` : t.label}
                         style={{
-                          padding: "12px",
-                          borderRadius: "14px",
-                          border: uiTheme === t.key ? "2px solid var(--accent)" : "1px solid var(--border)",
-                          background: t.bg,
+                          padding: 0,
+                          borderRadius: "var(--r-m)",
+                          border: uiTheme === t.key ? "1px solid var(--jade)" : "1px solid var(--line-2)",
+                          background: "var(--ink-2)",
                           cursor: locked ? "not-allowed" : "pointer",
-                          position: "relative",
+                          textAlign: "left",
+                          opacity: locked ? 0.55 : 1,
                           overflow: "hidden",
-                          textAlign: "center",
-                          opacity: locked ? 0.5 : 1
+                          display: "flex",
+                          flexDirection: "column"
                         }}
                       >
-                        <div style={{ color: t.accent, fontWeight: "800", fontSize: "13px" }}>{t.label}</div>
-                        {locked && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", display: "grid", placeItems: "center" }}><Star size={14} color="white" fill="white" /></div>}
+                        <span style={{ height: "66px", width: "100%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: t.bg }}>
+                          <span style={{ position: "absolute", top: "8px", right: "8px", width: "16px", height: "16px", borderRadius: "5px", background: t.accent, boxShadow: "0 0 0 2px var(--line-2)" }} />
+                          <span style={{ color: t.accent, fontWeight: "800", fontSize: "22px", letterSpacing: "-0.02em", opacity: 0.85 }}>Aa</span>
+                        </span>
+                        <span style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-start", width: "100%" }}>
+                          <b style={{ fontSize: "12px", fontWeight: "700", color: "var(--text)" }}>{t.label}</b>
+                          <span style={{ fontSize: "11px", fontWeight: "500", color: "var(--dim)", border: "1px solid var(--line)", borderRadius: "999px", padding: "3px 7px", whiteSpace: "nowrap" }}>{status}</span>
+                        </span>
                       </button>
                     );
                   })}
@@ -277,8 +394,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </motion.div>
         )}
 
-        {activeSettingsTab === "app" && (
-          <motion.div key="app-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {(
+          <motion.div key="app-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
               <div className="setting-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
@@ -346,8 +463,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </motion.div>
         )}
 
-        {activeSettingsTab === "admin" && isOwner && (
-          <motion.div key="admin-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section">
+        {isOwner && (
+          <motion.div key="admin-settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="settings-section" style={{ marginBottom: "24px" }}>
             <div className="card" style={{ padding: "24px", marginBottom: "24px" }}>
               <h3 style={{ fontSize: "18px", fontWeight: "900", marginBottom: "16px" }}>🏆 Membership Manager</h3>
               <input
@@ -385,7 +502,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             setGiftUserResults(giftUserResults.map(r => r.id === u.id ? { ...r, membership: tier } : r));
                           }}
                           className={`btn ${u.membership === tier ? "btn-primary" : "btn-secondary"}`}
-                          style={{ padding: "4px 8px", fontSize: "10px" }}
+                          style={{ padding: "4px 8px", fontSize: "11px" }}
                         >
                           {tier || "None"}
                         </button>
@@ -404,10 +521,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <div key={fb.id} className="card" style={{ padding: "16px", background: "var(--input-bg)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
                       <span style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>{fb.userEmail || "Anonymous"}</span>
-                      <button onClick={async () => { await deleteDoc(doc(db, "feedback", fb.id)); fetchFeedback(); }} style={{ color: "#ef4444", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={14} /></button>
+                      <button onClick={async () => { await deleteDoc(doc(db, "feedback", fb.id)); fetchFeedback(); }} style={{ color: "var(--coral)", background: "none", border: "none", cursor: "pointer" }}><Trash2 size={14} /></button>
                     </div>
                     <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{fb.text}</p>
-                    <p style={{ fontSize: "10px", color: "var(--muted)", marginTop: "8px" }}>{fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleString() : "Recently"}</p>
+                    <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "8px" }}>{fb.timestamp?.toDate ? fb.timestamp.toDate().toLocaleString() : "Recently"}</p>
                   </div>
                 ))}
               </div>

@@ -6,6 +6,8 @@ import { Zap, ChevronLeft, ChevronRight, BookOpen, Clock, CheckCircle2, Sparkles
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+const STUDY_TOOLS = ["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"];
+
 interface StudyViewProps {
   curChapter: any;
   setView: (v: string) => void;
@@ -81,6 +83,8 @@ interface StudyViewProps {
   lessonPinnedPoints: any[];
   removePinnedKeyPoint: (id: string) => void;
   lessonFlashcards: any[];
+  chapterMenu: Array<{ id: string; title: string; bookTitle: string; count: number }>;
+  openChapterById: (chapterId: string) => void;
   flashcardIndex: number;
   setFlashcardIndex: (v: any) => void;
   flashcardReveal: boolean;
@@ -105,9 +109,60 @@ export const StudyView: React.FC<StudyViewProps> = ({
   saveCurrentNote, generateFlashcardsFromNote, exportCurrentNote,
   newTagInput, setNewTagInput, addTagToCurrentLesson, quickTagOptions, currentLessonTags, removeTagFromCurrentLesson,
   newPinnedPointText, setNewPinnedPointText, addPinnedKeyPoint, lessonPinnedPoints, removePinnedKeyPoint,
-  lessonFlashcards, flashcardIndex, setFlashcardIndex, flashcardReveal, setFlashcardReveal, soundEnabled
+  lessonFlashcards, flashcardIndex, setFlashcardIndex, flashcardReveal, setFlashcardReveal, soundEnabled,
+  chapterMenu, openChapterById
 }) => {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+
+  // Card-level known/review split, persisted per chapter in localStorage.
+  // Deliberately not Firestore: the user document is shared with AdminHub, and
+  // weakLessonIds is the quiz's signal -- repurposing it would corrupt what the
+  // dashboard calls a Turbulence Zone.
+  const [cardSplit, setCardSplit] = React.useState<{ known: string[]; review: string[] }>({ known: [], review: [] });
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !curChapter?.id) return;
+    try {
+      const raw = window.localStorage.getItem(`flashcardSplit:${curChapter.id}`);
+      const parsed = raw ? JSON.parse(raw) : null;
+      setCardSplit({
+        known: Array.isArray(parsed?.known) ? parsed.known : [],
+        review: Array.isArray(parsed?.review) ? parsed.review : [],
+      });
+    } catch {
+      setCardSplit({ known: [], review: [] });
+    }
+  }, [curChapter?.id]);
+
+  const recordCard = (kind: "known" | "review") => {
+    const q = lessonFlashcards[flashcardIndex]?.q;
+    if (!q || !curChapter?.id) return;
+    const next = {
+      known: cardSplit.known.filter((x: string) => x !== q),
+      review: cardSplit.review.filter((x: string) => x !== q),
+    };
+    next[kind].push(q);
+    setCardSplit(next);
+    try {
+      window.localStorage.setItem(`flashcardSplit:${curChapter.id}`, JSON.stringify(next));
+    } catch { }
+    setFlashcardReveal(false);
+    setFlashcardIndex((prev: number) => Math.min(lessonFlashcards.length - 1, prev + 1));
+  };
+
+  // Space flips the card, but never while typing in the AI bar.
+  React.useEffect(() => {
+    if (activeTab !== "Flashcards") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      setFlashcardReveal(!flashcardReveal);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeTab, flashcardReveal, setFlashcardReveal]);
 
   return (
     <div className="page-shell" style={{ maxWidth: "1000px" }}>
@@ -118,13 +173,16 @@ export const StudyView: React.FC<StudyViewProps> = ({
             <button onClick={() => setQuickReviewMode(false)} className="btn btn-secondary" style={{ padding: "8px 12px" }}>End Quick Review</button>
           )}
           {!completedLessons.includes(curChapter.id) ? (
-            <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{ padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 10px 20px -5px rgba(251, 191, 36, 0.4)" }}>CLAIM 100 XP</button>
+            <button onClick={() => markCompleted(curChapter.id)} className="btn btn-warning" style={{ padding: "12px 24px", borderRadius: "14px", fontSize: "14px", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>CLAIM 100 XP</button>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div className="xp-badge">MASTERED</div>
               <button onClick={() => unmasterLesson(curChapter.id)} style={{ background: "none", border: "none", opacity: 0.5, cursor: "pointer" }}>↺</button>
             </div>
           )}
+          <button onClick={() => setView("chapters")} style={{ flexShrink: 0, padding: "8px 14px", borderRadius: "999px", fontSize: "12px", fontWeight: "700", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--dim)", cursor: "pointer" }}>
+            Exit
+          </button>
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
@@ -137,7 +195,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
       <AnimatePresence>
         {isSpeedReadOpen && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.95)", zIndex: 1000000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ fontSize: "64px", fontWeight: "900", color: "white", marginBottom: "40px", fontFamily: "var(--font-syne)", textAlign: "center", maxWidth: "80%" }}>
+            <div style={{ fontSize: "64px", fontWeight: "900", color: "white", marginBottom: "40px", fontFamily: "var(--disp)", textAlign: "center", maxWidth: "80%" }}>
               {curChapter.summary?.split(/\s+/)[speedReadIndex] || "READY?"}
             </div>
             <div style={{ display: "flex", gap: "24px" }}>
@@ -161,12 +219,16 @@ export const StudyView: React.FC<StudyViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+      {/* One tool row, one position, every tab. Buttons refuse to shrink so the
+          row scrolls when it overflows instead of ellipsising the last pill. */}
       <div className="tab-container" style={{ display: "flex", gap: "6px", flexWrap: "nowrap", overflowX: "auto", marginBottom: "20px" }}>
-        {["Summary", "Spellings", "Flashcards", "Quiz", "AI Explanation", "My Notes", "Video", "Book PDF", "Slides", "Infographic", "Mind Map"].map(t => (
-          <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`}>{t}</button>
+        {STUDY_TOOLS.map(t => (
+          <button key={t} onClick={() => switchStudyTab(t)} className={`tab-btn ${activeTab === t ? "active" : ""}`} style={{ flexShrink: 0, whiteSpace: "nowrap" }}>{t}</button>
         ))}
       </div>
-      <div className="card" style={{ minHeight: "500px", padding: "32px" }}>
+      {/* No panel: content sits directly on --ink-0. The .card wrapper was adding
+          a surface, border, radius and shadow the plan does not draw. */}
+      <div style={{ minHeight: "500px" }}>
         {["Summary", "Spellings"].includes(activeTab) && <div style={{ whiteSpace: "pre-wrap", fontSize: "17px", lineHeight: "1.8", color: "var(--text)" }}>{curChapter[activeTab.toLowerCase()] || "No content uploaded yet."}</div>}
         {activeTab === "AI Explanation" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -179,12 +241,12 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     style={{ 
                       padding: "4px 12px", 
                       borderRadius: "100px", 
-                      fontSize: "10px", 
+                      fontSize: "11px", 
                       fontWeight: "900", 
                       border: "none",
                       cursor: "pointer",
                       background: aiMode === "chapter" ? "var(--accent)" : "transparent",
-                      color: aiMode === "chapter" ? "white" : "var(--muted)"
+                      color: aiMode === "chapter" ? "var(--ink-on-accent)" : "var(--muted)"
                     }}
                   >CHAPTER</button>
                   <button 
@@ -192,12 +254,12 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     style={{ 
                       padding: "4px 12px", 
                       borderRadius: "100px", 
-                      fontSize: "10px", 
+                      fontSize: "11px", 
                       fontWeight: "900", 
                       border: "none",
                       cursor: "pointer",
                       background: aiMode === "global" ? "var(--accent)" : "transparent",
-                      color: aiMode === "global" ? "white" : "var(--muted)"
+                      color: aiMode === "global" ? "var(--ink-on-accent)" : "var(--muted)"
                     }}
                   >GLOBAL</button>
                 </div>
@@ -249,7 +311,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     <img src={selectedImage} style={{ height: "40px", width: "40px", borderRadius: "8px", border: "2px solid var(--accent)" }} />
                     <button 
                       onClick={() => setSelectedImage(null)}
-                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "#ef4444", color: "white", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "10px", cursor: "pointer" }}
+                      style={{ position: "absolute", top: "-5px", right: "-5px", background: "var(--coral)", color: "var(--ink-on-accent)", border: "none", borderRadius: "50%", width: "16px", height: "16px", fontSize: "11px", cursor: "pointer" }}
                     >×</button>
                   </div>
                 )}
@@ -285,13 +347,13 @@ export const StudyView: React.FC<StudyViewProps> = ({
                         window.speechSynthesis.cancel();
                         window.speechSynthesis.speak(utterance);
                       }}
-                      style={{ background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                      style={{ background: "var(--accent)", color: "var(--ink-on-accent)", border: "none", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                     >
                       <Volume2 size={12} /> SPEAK
                     </button>
                     <button
                       onClick={() => window.speechSynthesis.cancel()}
-                      style={{ background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", border: "1px solid #ef4444", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
+                      style={{ background: "var(--coral-soft)", color: "var(--coral)", border: "1px solid var(--coral)", borderRadius: "8px", padding: "4px 12px", fontSize: "11px", fontWeight: "900", cursor: "pointer" }}
                     >
                       STOP
                     </button>
@@ -326,7 +388,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                 <button onClick={() => startQuizAttempt(curChapter)} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
                   Start / Restart
                 </button>
-                <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(239,68,68,0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
+                <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "var(--ink-4)" : "var(--coral-soft)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
                   Retry Wrong Only
                 </button>
                 <button onClick={() => { setQuizShuffleEnabled((prev: boolean) => !prev); startQuizAttempt(curChapter, questionIndicesSource); }} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: quizShuffleEnabled ? "var(--accent-soft)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: "pointer" }}>
@@ -380,7 +442,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                     <>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", marginBottom: "10px" }}>
                         <p style={{ fontWeight: "800" }}>{safePos + 1}. {q.question}</p>
-                        <span style={{ fontSize: "10px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "800", padding: "3px 8px", borderRadius: "10px", background: "var(--accent-soft)", border: "1px solid rgba(var(--accent-rgb),0.35)" }}>
                           {q.type === "oneWord" ? "ONE WORD" : q.type === "caseStudy" ? "CASE" : q.type === "pictureStudy" ? "PICTURE" : "MCQ"}
                         </span>
                       </div>
@@ -416,7 +478,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                                 />
                               )}
                               {quizImageErrors[activeQuestionIndex] && (
-                                <div style={{ marginTop: "6px", fontSize: "12px", color: "#f59e0b", fontWeight: "700" }}>
+                                <div style={{ marginTop: "6px", fontSize: "12px", color: "var(--amber)", fontWeight: "700" }}>
                                   Image preview failed. Use the link below.
                                 </div>
                               )}
@@ -498,7 +560,7 @@ export const StudyView: React.FC<StudyViewProps> = ({
                       )}
                       {quizSubmitted && q.explanation && (
                         <div style={{ marginTop: "8px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: "var(--input-bg)", fontSize: "13px" }}>
-                          <span style={{ fontWeight: "800", color: "#3b82f6" }}>Explanation:</span> {q.explanation}
+                          <span style={{ fontWeight: "800", color: "var(--azure)" }}>Explanation:</span> {q.explanation}
                         </div>
                       )}
                     </>
@@ -507,12 +569,12 @@ export const StudyView: React.FC<StudyViewProps> = ({
               </div>
               <div style={{ position: "sticky", bottom: "10px", zIndex: 20, border: "1px solid var(--border)", background: "var(--card)", borderRadius: "14px", padding: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.max(0, prev - 1))} disabled={safePos === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer" }}>Prev</button>
-                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "rgba(148,163,184,0.2)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer" }}>Next</button>
+                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.max(0, prev - 1))} disabled={safePos === 0} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === 0 ? "var(--ink-4)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === 0 ? "not-allowed" : "pointer" }}>Prev</button>
+                  <button onClick={() => setCurrentQuizPos((prev: number) => Math.min(orderedQuestionIndices.length - 1, prev + 1))} disabled={safePos === orderedQuestionIndices.length - 1} style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: safePos === orderedQuestionIndices.length - 1 ? "var(--ink-4)" : "var(--input-bg)", color: "var(--text)", fontWeight: "700", cursor: safePos === orderedQuestionIndices.length - 1 ? "not-allowed" : "pointer" }}>Next</button>
                 </div>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                  <button onClick={submitQuiz} style={{ padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "white", fontWeight: "800", cursor: "pointer" }}>Submit Quiz</button>
-                  <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "rgba(148,163,184,0.2)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
+                  <button onClick={submitQuiz} style={{ padding: "9px 14px", borderRadius: "10px", border: "none", background: "var(--accent)", color: "var(--ink-on-accent)", fontWeight: "800", cursor: "pointer" }}>Submit Quiz</button>
+                  <button onClick={() => startQuizAttempt(curChapter, wrongIndices)} disabled={!quizSubmitted || wrongIndices.length === 0} style={{ padding: "9px 12px", borderRadius: "10px", border: "1px solid var(--border)", background: (!quizSubmitted || wrongIndices.length === 0) ? "var(--ink-4)" : "rgba(var(--danger-rgb),0.14)", color: "var(--text)", fontWeight: "700", cursor: (!quizSubmitted || wrongIndices.length === 0) ? "not-allowed" : "pointer", opacity: (!quizSubmitted || wrongIndices.length === 0) ? 0.55 : 1 }}>
                     Retry Wrong
                   </button>
                   {quizResult && <span style={{ fontWeight: "800", color: quizResult.startsWith("Score") ? "var(--accent)" : "var(--warning)" }}>{quizResult}</span>}
@@ -621,19 +683,20 @@ export const StudyView: React.FC<StudyViewProps> = ({
 
         {activeTab === "Flashcards" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div style={{ textAlign: "center", marginBottom: "12px" }}>
-              <p style={{ fontSize: "13px", color: "var(--muted)", fontWeight: "700" }}>
-                Master your knowledge with 3D Flashcards. Click to flip!
-              </p>
-              <p style={{ fontSize: "11px", color: "var(--accent)", marginTop: "4px" }}>
-                Progress: {Math.min(flashcardIndex + 1, lessonFlashcards.length)}/{lessonFlashcards.length}
-              </p>
+            {/* Deck bar: thin, full width, jade fill, count right-aligned */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ flex: 1, height: "4px", borderRadius: "999px", background: "var(--ink-4)", overflow: "hidden" }}>
+                <div style={{ height: "100%", borderRadius: "999px", background: "var(--jade)", width: `${lessonFlashcards.length ? Math.round(((Math.min(flashcardIndex + 1, lessonFlashcards.length)) / lessonFlashcards.length) * 100) : 0}%` }} />
+              </div>
+              <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: "700", color: "var(--faint)", fontVariantNumeric: "tabular-nums" }}>
+                {Math.min(flashcardIndex + 1, lessonFlashcards.length)} / {lessonFlashcards.length} cards
+              </span>
             </div>
+
 
             {lessonFlashcards.length > 0 ? (
               <>
                 <div
-                  className={`flashcard-scene ${flashcardReveal ? "is-flipped" : ""}`}
                   onClick={() => {
                     setFlashcardReveal(!flashcardReveal);
                     if (soundEnabled) {
@@ -642,47 +705,90 @@ export const StudyView: React.FC<StudyViewProps> = ({
                       } catch (e) { }
                     }
                   }}
+                  style={{ maxWidth: "460px", width: "100%", margin: "0 auto", minHeight: "220px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "14px", padding: "32px 28px", textAlign: "center", background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "var(--r-l)", cursor: "pointer" }}
                 >
-                  <div className="flashcard-inner">
-                    <div className="flashcard-front">
-                      <span style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Question</span>
-                      <h2 style={{ fontSize: "24px", fontWeight: "800", lineHeight: "1.4" }}>{lessonFlashcards[flashcardIndex]?.q}</h2>
-                      <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.5 }}>Click to Reveal Answer</p>
-                    </div>
-                    <div className="flashcard-back">
-                      <span style={{ fontSize: "12px", color: "white", opacity: 0.8, fontWeight: "900", marginBottom: "12px", textTransform: "uppercase" }}>Answer</span>
-                      <p style={{ fontSize: "20px", fontWeight: "700", lineHeight: "1.6" }}>{lessonFlashcards[flashcardIndex]?.a}</p>
-                      <p style={{ position: "absolute", bottom: "24px", fontSize: "12px", opacity: 0.8 }}>Click to hide</p>
-                    </div>
-                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--faint)" }}>
+                    Question {Math.min(flashcardIndex + 1, lessonFlashcards.length)} of {lessonFlashcards.length}
+                  </span>
+                  <p style={{ margin: 0, fontSize: "27px", fontWeight: "700", lineHeight: 1.3, color: "var(--text)" }}>
+                    {flashcardReveal ? lessonFlashcards[flashcardIndex]?.a : lessonFlashcards[flashcardIndex]?.q}
+                  </p>
+                  <span style={{ fontSize: "12px", color: "var(--faint)" }}>
+                    {flashcardReveal ? "Tap to flip back" : (
+                      <>
+                        Tap the card or press{" "}
+                        <kbd style={{ fontFamily: "inherit", fontSize: "10px", fontWeight: "700", padding: "2px 6px", borderRadius: "6px", background: "var(--ink-4)", border: "1px solid var(--line-2)", color: "var(--dim)" }}>
+                          Space
+                        </kbd>{" "}
+                        to flip
+                      </>
+                    )}
+                  </span>
                 </div>
 
-                <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "20px" }}>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev: number) => Math.max(0, prev - 1)); setFlashcardReveal(false); }}
-                    disabled={flashcardIndex === 0}
-                    style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={(e) => { e.stopPropagation(); setFlashcardIndex((prev: number) => Math.min(lessonFlashcards.length - 1, prev + 1)); setFlashcardReveal(false); }}
-                    disabled={flashcardIndex >= lessonFlashcards.length - 1}
-                    style={{ width: "60px", height: "60px", borderRadius: "50%", padding: 0, display: "grid", placeItems: "center" }}
-                  >
-                    <ChevronRight size={24} />
-                  </button>
+                {flashcardReveal && (
+                  <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", maxWidth: "460px", width: "100%", margin: "0 auto" }}>
+                    <button
+                      onClick={() => recordCard("review")}
+                      style={{ flex: "1 1 180px", padding: "16px", borderRadius: "var(--r-m)", fontSize: "14px", fontWeight: "700", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--text)", cursor: "pointer" }}
+                    >
+                      🤔 Not yet
+                    </button>
+                    <button
+                      onClick={() => recordCard("known")}
+                      style={{ flex: "1 1 180px", padding: "16px", borderRadius: "var(--r-m)", fontSize: "14px", fontWeight: "700", background: "var(--jade)", border: "1px solid var(--jade)", color: "var(--ink-on-accent)", cursor: "pointer" }}
+                    >
+                      ✓ I know this
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "center" }}>
+                  <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "4px 10px" }}>
+                    ✓ {cardSplit.known.length} known
+                  </span>
+                  <span style={{ fontSize: "11px", fontWeight: "800", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--coral)", background: "var(--coral-soft)", border: "1px solid var(--coral-soft)", borderRadius: "999px", padding: "4px 10px" }}>
+                    ✗ {cardSplit.review.length} to review
+                  </span>
                 </div>
               </>
             ) : (
-              <div style={{ textAlign: "center", padding: "80px", border: "1px dashed var(--border)", borderRadius: "24px" }}>
-                <BookOpen size={48} style={{ margin: "0 auto 16px", opacity: 0.3 }} />
-                <p style={{ fontWeight: "700", opacity: 0.5 }}>No flashcards for this lesson.</p>
-                <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>Import from Notes</button>
+              <div style={{ border: "1px dashed var(--line-2)", borderRadius: "var(--r-m)", padding: "44px 24px", textAlign: "center" }}>
+                <BookOpen size={40} style={{ margin: "0 auto 14px", opacity: 0.35 }} />
+                <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text)" }}>Flashcards are coming soon</p>
+                <p style={{ margin: "6px auto 0", maxWidth: "360px", fontSize: "13px", color: "var(--dim)" }}>
+                  Cards you generate from a lesson's notes are not saved yet, so this screen has nothing to show on return.
+                  Until they persist, notes, quizzes and the AI explanation are the way to revise a chapter.
+                </p>
+                <button onClick={() => switchStudyTab("My Notes")} className="btn btn-secondary" style={{ marginTop: "16px" }}>
+                  Go to My Notes
+                </button>
               </div>
             )}
+
+            {/* Reuses the existing AI panel's handler -- no second call path. */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 16px", background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "var(--r-m)" }}>
+              <div style={{ flexShrink: 0, width: "36px", height: "36px", borderRadius: "var(--r-s)", background: "var(--jade-soft)", display: "grid", placeItems: "center" }}>
+                <Sparkles size={18} color="var(--jade)" />
+              </div>
+              <div style={{ flex: "1 1 180px", minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "13px", fontWeight: "700", color: "var(--text)" }}>Ask Pajji AI</p>
+                <p style={{ margin: 0, fontSize: "11px", color: "var(--faint)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {curChapter.title} · what should I focus on?
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setAiExplainQuestion(`Explain ${curChapter.title} in simple terms`);
+                  switchStudyTab("AI Explanation");
+                  setTimeout(() => askAiExplanation(), 100);
+                }}
+                disabled={aiExplainLoading}
+                style={{ flexShrink: 0, padding: "8px 16px", borderRadius: "999px", fontSize: "12px", fontWeight: "800", border: "none", background: "var(--jade)", color: "var(--ink-on-accent)", cursor: aiExplainLoading ? "not-allowed" : "pointer", opacity: aiExplainLoading ? 0.6 : 1 }}
+              >
+                Ask →
+              </button>
+            </div>
           </div>
         )}
         {["Book PDF", "Slides", "Infographic", "Mind Map"].includes(activeTab) && (() => {

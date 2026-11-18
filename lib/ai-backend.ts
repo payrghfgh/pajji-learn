@@ -50,11 +50,12 @@ export const classifyQuery = (text: string): "8B" | "70B" => {
 };
 
 /**
- * Calls the 8B model for simple queries
+ * Light model: openai/gpt-oss-20b. Cheapest and fastest on Groq's free plan,
+ * used for short answers where depth is not needed.
  */
 export const call8B = async (prompt: string): Promise<string> => {
   const response = await getGroqClient().chat.completions.create({
-    model: "llama-3.1-8b-instant",
+    model: "openai/gpt-oss-20b",
     messages: [
       { role: "system", content: "Short, direct answers only. No detailed explanations." },
       { role: "user", content: prompt }
@@ -65,11 +66,11 @@ export const call8B = async (prompt: string): Promise<string> => {
 };
 
 /**
- * Calls the 70B model for complex queries
+ * Heavy model: openai/gpt-oss-120b. Used when the query needs reasoning.
  */
 export const call70B = async (prompt: string, systemPrompt?: string): Promise<string> => {
   const response = await getGroqClient().chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-120b",
     messages: [
       {
         role: "system",
@@ -97,12 +98,15 @@ export const processOCR = async (image: string): Promise<{ text: string; confide
 };
 
 /**
- * Processes image understanding using Scout model
+ * Image model: qwen/qwen3.8-27b -- the only model on Groq's free plan that
+ * accepts images. Each image bills as 2,048 input tokens, so three images in one
+ * request take 6,144 of the 8,000 tokens-per-minute allowance. It is a preview
+ * model and Groq may discontinue it at short notice.
  */
 export const processScout = async (image: string): Promise<string> => {
   try {
     const response = await getGroqClient().chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "qwen/qwen3.8-27b",
       messages: [
         {
           role: "user",

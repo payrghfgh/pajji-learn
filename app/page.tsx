@@ -1,7 +1,6 @@
 "use client";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
-import Head from "next/head";
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence, LayoutGroup, useMotionValue, useSpring, useTransform, useMotionTemplate } from "framer-motion";
 import {
@@ -18,8 +17,15 @@ import {
 } from "firebase/firestore";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail,
   signInAnonymously, onAuthStateChanged, signOut
 } from "firebase/auth";
+import { parseFlashcardsFromCsv } from "./lib/study-import";
+import { ChapterListView } from "./components/ChapterListView";
+import { CreditsView } from "./components/CreditsView";
+import { AnimatedCounter, CursorTrail, FloatingParticles, FocusGarden as FocusGardenVisual } from "./components/AppOverlays";
+import { AppNavigation } from "./components/AppNavigation";
+import { AppShell } from "./components/AppShell";
 
 // --- FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -51,6 +57,11 @@ const DynamicDashboard = dynamic(() => import("./components/DashboardView").then
   loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Dashboard...</div>,
   ssr: false
 });
+
+// Themes that require a paid tier at Plus or above. Defined once here and passed
+// to SettingsView, so the panel's cards and this file's access check cannot
+// drift apart.
+const PLUS_ONLY_THEME_IDS = ["williams"];
 
 const DynamicStudy = dynamic(() => import("./components/StudyView").then(mod => mod.StudyView), {
   loading: () => <div className="page-shell" style={{ textAlign: 'center', padding: '100px' }}>Loading Lesson...</div>,
@@ -105,147 +116,10 @@ const ADMIN_EMAILS = new Set([
   "rushianbindra@gmail.com",
 ].map(toCanonicalEmail));
 
-const normalizeCsvCell = (value: string) =>
-  `${value ?? ""}`
-    .replace(/^\uFEFF/, "")
-    .trim()
-    .replace(/\s+/g, " ");
-
-const detectCsvDelimiter = (text: string) => {
-  const sample = text
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .find((line) => line.trim().length > 0) || "";
-  const delimiters = [",", "\t", ";", "|"];
-  let bestDelimiter = ",";
-  let bestScore = -1;
-
-  delimiters.forEach((delimiter) => {
-    let score = 0;
-    let inQuotes = false;
-    for (let i = 0; i < sample.length; i += 1) {
-      const ch = sample[i];
-      if (ch === '"') {
-        if (inQuotes && sample[i + 1] === '"') {
-          i += 1;
-        } else {
-          inQuotes = !inQuotes;
-        }
-        continue;
-      }
-      if (!inQuotes && ch === delimiter) score += 1;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestDelimiter = delimiter;
-    }
-  });
-
-  return bestDelimiter;
-};
-
-const parseDelimitedText = (text: string, delimiter: string) => {
-  const normalized = text
-    .replace(/^\uFEFF/, "")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n");
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < normalized.length; i += 1) {
-    const ch = normalized[i];
-    if (ch === '"') {
-      if (inQuotes && normalized[i + 1] === '"') {
-        cell += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (!inQuotes && ch === delimiter) {
-      row.push(cell);
-      cell = "";
-      continue;
-    }
-    if (!inQuotes && ch === "\n") {
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-      continue;
-    }
-    cell += ch;
-  }
-
-  row.push(cell);
-  if (row.some((value) => value.trim().length > 0)) {
-    rows.push(row);
-  }
-
-  return rows.map((currentRow) => currentRow.map((value) => normalizeCsvCell(value)));
-};
-
-const headerMatches = (headerCell: string, aliases: string[]) => {
-  const value = normalizeCsvCell(headerCell).toLowerCase();
-  return aliases.some((alias) => {
-    const key = alias.toLowerCase();
-    if (key.length <= 2) return value === key;
-    return (
-      value === key ||
-      value.startsWith(`${key} `) ||
-      value.startsWith(`${key}_`) ||
-      value.startsWith(`${key}-`) ||
-      value.includes(` ${key} `)
-    );
-  });
-};
-
-const parseFlashcardsFromCsv = (text: string) => {
-  const delimiter = detectCsvDelimiter(text);
-  const rows = parseDelimitedText(text, delimiter).filter((row) => row.some((cell) => cell.trim().length > 0));
-  if (rows.length === 0) return [];
-
-  const header = rows[0];
-  const questionAliases = ["question", "front", "prompt", "term", "cue", "flashcard front", "card front", "front side", "q"];
-  const answerAliases = ["answer", "back", "response", "definition", "flashcard back", "card back", "back side", "a"];
-  const questionIndex = header.findIndex((cell) => headerMatches(cell, questionAliases));
-  const answerIndex = header.findIndex((cell) => headerMatches(cell, answerAliases));
-  const hasHeader = questionIndex >= 0 || answerIndex >= 0;
-  const dataRows = hasHeader ? rows.slice(1) : rows;
-  const seen = new Set<string>();
-  const cards: Array<{ q: string; a: string }> = [];
-
-  dataRows.forEach((row) => {
-    const question = hasHeader
-      ? normalizeCsvCell(row[questionIndex >= 0 ? questionIndex : 0] || "")
-      : normalizeCsvCell(row[0] || "");
-    const answer = hasHeader
-      ? normalizeCsvCell(row[answerIndex >= 0 ? answerIndex : 1] || "")
-      : normalizeCsvCell(row[1] || "");
-
-    if (!question || !answer) return;
-    const fingerprint = `${question.toLowerCase()}::${answer.toLowerCase()}`;
-    if (seen.has(fingerprint)) return;
-    seen.add(fingerprint);
-    cards.push({ q: question, a: answer });
-  });
-
-  return cards;
-};
 
 export default function Home() {
   return (
     <>
-      <Head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
-      </Head>
       <AppContent />
     </>
   );
@@ -281,6 +155,8 @@ function AppContent() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authNotice, setAuthNotice] = useState("");
 
   const [books, setBooks] = useState<any[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
@@ -442,27 +318,6 @@ function AppContent() {
     return () => window.removeEventListener("keydown", handler);
   }, [fireworksMode, godMode, isZenMode]);
 
-  // Cursor Trail
-  const CursorTrail = () => {
-    const mouse = { x: useMotionValue(0), y: useMotionValue(0) };
-    useEffect(() => {
-      const move = (e: MouseEvent) => { mouse.x.set(e.clientX); mouse.y.set(e.clientY); };
-      window.addEventListener("mousemove", move);
-      return () => window.removeEventListener("mousemove", move);
-    }, []);
-    return (
-      <motion.div
-        style={{
-          position: "fixed", top: -20, left: -20, width: 40, height: 40,
-          borderRadius: "50%", background: "var(--accent)", opacity: 0.15,
-          filter: "blur(20px)", pointerEvents: "none", zIndex: 9999,
-          x: useSpring(mouse.x, { damping: 20, stiffness: 200 }),
-          y: useSpring(mouse.y, { damping: 20, stiffness: 200 })
-        }}
-      />
-    );
-  };
-
   // Update session time
   useEffect(() => {
     const timer = setInterval(() => {
@@ -502,95 +357,8 @@ function AppContent() {
     setPrevLevel(currentLvl);
   }, [userXP, prevLevel]);
 
-  // Components for animations
-  const FocusGarden = () => (
-    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", padding: "20px" }}>
-      {[...Array(gardenPlants)].map((_, i) => {
-        const isUltra = memTier === "ultra";
-        return (
-          <motion.div
-            key={i}
-            className={`leaf-grow ${isUltra ? "ultra-glow" : ""}`}
-            initial={{ scale: 0, rotate: -20 }}
-            animate={{ scale: 1, rotate: 0 }}
-            whileHover={{ opacity: 0.8 }}
-            style={{ width: "24px", height: "40px", color: isUltra ? "#FFD700" : "var(--accent)", filter: isUltra ? "drop-shadow(0 0 8px rgba(255,215,0,0.5))" : "none" }}
-          >
-            <svg viewBox="0 0 100 100">
-              <path d="M 50 100 C 20 70 20 30 50 0 C 80 30 80 70 50 100" fill="currentColor" />
-            </svg>
-          </motion.div>
-        );
-      })}
-      {gardenPlants === 0 && (
-        <div style={{ color: "var(--muted)", fontSize: "12px", fontWeight: "700" }}>
-          Start focusing to grow your garden...
-        </div>
-      )}
-    </div>
-  );
+  const FocusGarden = () => <FocusGardenVisual gardenPlants={gardenPlants} memTier={memTier} />;
 
-  const AnimatedCounter = ({ value }: { value: number }) => {
-    const [displayValue, setDisplayValue] = useState(value);
-    useEffect(() => {
-      let start = displayValue;
-      const end = value;
-      if (start === end) return;
-      const duration = 1000;
-      let timer: any;
-      const step = () => {
-        const diff = end - start;
-        if (Math.abs(diff) < 1) {
-          setDisplayValue(end);
-          return;
-        }
-        start += diff * 0.1;
-        setDisplayValue(Math.round(start));
-        timer = requestAnimationFrame(step);
-      };
-      timer = requestAnimationFrame(step);
-      return () => cancelAnimationFrame(timer);
-    }, [value]);
-    return <span>{displayValue}</span>;
-  };
-
-  const FloatingParticles = useMemo(() => {
-    return () => (
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
-        {[...Array(8)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{
-              x: Math.random() * 100 + "%",
-              y: Math.random() * 100 + "%",
-              opacity: 0.1
-            }}
-            animate={{
-              y: [null, "-20%", "120%"],
-              x: [null, `${Math.random() * 100}%`],
-              opacity: [0.1, 0.2, 0.1]
-            }}
-            transition={{
-              duration: 25 + Math.random() * 25,
-              repeat: Infinity,
-              ease: "linear",
-              delay: i * -8
-            }}
-            style={{
-              position: "absolute",
-              width: Math.random() * 200 + 100 + "px",
-              height: Math.random() * 200 + 100 + "px",
-              background: "radial-gradient(circle, var(--accent-soft) 0%, transparent 70%)",
-              borderRadius: "50%",
-              filter: "blur(60px)",
-              willChange: "transform, opacity",
-              transform: "translateZ(0)"
-            }}
-          />
-        ))}
-      </div>
-    );
-  }, []);
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -647,14 +415,14 @@ function AppContent() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: -20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="w-full max-w-2xl bg-[#121214] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+          className="w-full max-w-2xl bg-[var(--ink-2)] border border-[var(--line-2)] rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.3)] overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
-          <div className="flex items-center p-6 border-b border-white/5">
-            <Search className="text-emerald-500 mr-4" size={24} />
+          <div className="flex items-center p-6 border-b border-[var(--line)]">
+            <Search className="text-[var(--jade)] mr-4" size={24} />
             <input
               autoFocus
-              className="bg-transparent border-none outline-none text-xl w-full text-white placeholder:text-white/20"
+              className="bg-transparent border-none outline-none text-xl w-full text-[var(--text)] placeholder:text-[var(--dim)]"
               placeholder="Search anything... (lessons, books, notes)"
               value={spotlightQuery}
               onChange={e => setSpotlightQuery(e.target.value)}
@@ -665,7 +433,7 @@ function AppContent() {
               searchResults.map((res, i) => (
                 <button
                   key={i}
-                  className="w-full text-left p-4 rounded-2xl hover:bg-emerald-500/10 flex items-center justify-between group transition-all"
+                  className="w-full text-left p-4 rounded-2xl hover:bg-[var(--jade-soft)] flex items-center justify-between group"
                   onClick={() => {
                     if (res.type === "lesson") openLesson(res.book, res.item);
                     else if (res.type === "note") { openLesson(res.book, res.item); setActiveTab("My Notes"); }
@@ -673,15 +441,15 @@ function AppContent() {
                     setIsSpotlightOpen(false);
                   }}
                 >
-                  <span className="font-bold text-white group-hover:text-emerald-400">{res.label}</span>
-                  <ChevronRight size={18} className="text-white/20 group-hover:text-emerald-400" />
+                  <span className="font-bold text-[var(--text)] group-hover:text-[var(--jade)]">{res.label}</span>
+                  <ChevronRight size={18} className="text-[var(--faint)] group-hover:text-[var(--jade)]" />
                 </button>
               ))
             ) : (
-              <div className="p-8 text-center text-white/40">No results found for &quot;{spotlightQuery}&quot;</div>
+              <div className="p-8 text-center text-[var(--dim)]">No results found for &quot;{spotlightQuery}&quot;</div>
             )}
           </div>
-          <div className="p-4 bg-white/5 text-[10px] uppercase tracking-widest font-black text-white/30 flex justify-between">
+          <div className="p-4 bg-[var(--ink-3)] text-[11px] uppercase tracking-widest font-black text-[var(--faint)] flex justify-between">
             <span>ESC to close</span>
             <span>ENTER to select</span>
           </div>
@@ -813,13 +581,8 @@ function AppContent() {
   }, [curBook]);
 
   useEffect(() => {
-    const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const storedTheme = window.localStorage.getItem("theme") as 'dark' | 'light';
-    if (storedTheme) {
-      setTheme(storedTheme);
-    } else {
-      setTheme(darkQuery.matches ? 'dark' : 'light');
-    }
+    // Redesign mandates dark mode unconditionally for the app shell and screens
+    setTheme('dark');
     const storedUiTheme = window.localStorage.getItem("uiTheme");
     if (storedUiTheme) setUiTheme(storedUiTheme);
     const storedTextSize = window.localStorage.getItem("textSize");
@@ -832,14 +595,6 @@ function AppContent() {
     if (storedQuickSettings === "1" || storedQuickSettings === "0") setMobileQuickSettings(storedQuickSettings === "1");
     const storedSound = window.localStorage.getItem("soundEnabled");
     if (storedSound === "1" || storedSound === "0") setSoundEnabled(storedSound === "1");
-
-    // Only follow system theme if no manual preference is set
-    const themeListener = (e: MediaQueryListEvent) => {
-      if (!window.localStorage.getItem("theme")) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    darkQuery.addEventListener('change', themeListener);
 
     const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -906,7 +661,6 @@ function AppContent() {
     });
 
     return () => {
-      darkQuery.removeEventListener('change', themeListener);
       unsubAuth();
     };
   }, []);
@@ -1025,7 +779,7 @@ function AppContent() {
         setMembershipExpiry(data.membershipExpiry || "");
         const prefs = (data.uiSettings && typeof data.uiSettings === "object") ? data.uiSettings : {};
         if (typeof prefs.uiTheme === "string" && prefs.uiTheme.trim()) setUiTheme(prefs.uiTheme);
-        if (prefs.theme && (prefs.theme === "dark" || prefs.theme === "light")) setTheme(prefs.theme);
+        // theme is locked to dark unconditionally (option c) — never read from stored prefs
         if (prefs.textSize && (prefs.textSize === "compact" || prefs.textSize === "default" || prefs.textSize === "large")) setTextSize(prefs.textSize);
         setReduceMotion(!!prefs.reduceMotion);
         setHighContrast(!!prefs.highContrast);
@@ -1344,10 +1098,12 @@ function AppContent() {
   const handleAuth = async (e: any) => {
     e.preventDefault();
     setLoading(true);
+    setAuthError("");
+    setAuthNotice("");
     try {
       if (isRegistering) await createUserWithEmailAndPassword(auth, authEmail, authPass);
       else await signInWithEmailAndPassword(auth, authEmail, authPass);
-    } catch (err: any) { alert(err.message); setLoading(false); }
+    } catch (err: any) { setAuthError(authMessage(err)); setLoading(false); }
   };
 
   const handleGuestLogin = async () => {
@@ -1355,6 +1111,53 @@ function AppContent() {
     try {
       await signInAnonymously(auth);
     } catch (err: any) { alert(err.message); setLoading(false); }
+  };
+
+  // Human text for every auth failure we can produce. A raw Firebase code is
+  // never shown -- 'auth/invalid-credential' means nothing to a student.
+  const authMessage = (err: any): string => {
+    const map: Record<string, string> = {
+      "auth/invalid-credential": "That email and password don't match. Try again.",
+      "auth/user-not-found": "That email and password don't match. Try again.",
+      "auth/wrong-password": "That email and password don't match. Try again.",
+      "auth/invalid-email": "That doesn't look like an email address.",
+      "auth/too-many-requests": "Too many attempts. Wait a minute, then try again.",
+      "auth/email-already-in-use": "An account with that email already exists. Sign in instead.",
+      "auth/weak-password": "Passwords need at least 6 characters.",
+      "auth/popup-closed-by-user": "Google sign-in was closed before it finished.",
+      "auth/cancelled-popup-request": "Google sign-in was cancelled.",
+      "auth/popup-blocked": "Your browser blocked the sign-in popup. Allow popups for this site and try again.",
+      "auth/network-request-failed": "Network problem. Check your connection and try again.",
+    };
+    return map[err?.code] || "Something went wrong signing you in. Try again.";
+  };
+
+  const handleGoogle = async () => {
+    setAuthError("");
+    setAuthNotice("");
+    setLoading(true);
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (err: any) {
+      setAuthError(authMessage(err));
+      setLoading(false);
+    }
+  };
+
+  const handleForgot = async () => {
+    setAuthError("");
+    setAuthNotice("");
+    const email = authEmail.trim();
+    if (!email) {
+      setAuthNotice("Enter your email above, then tap Forgot password.");
+      return;
+    }
+    // Same message whether or not the address exists: confirming existence
+    // would turn this form into an account-enumeration oracle.
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch { }
+    setAuthNotice("If that address has an account, a reset link is on its way.");
   };
 
   const saveAllChanges = async (silent = false) => {
@@ -2747,6 +2550,32 @@ function AppContent() {
       return (item.tags || []).includes(notesTagFilter);
     });
   const lessonFlashcards = curChapter ? (flashcardsByLesson[curChapter.id] || curChapter.flashcards || []) : [];
+
+  // Every chapter across every book, with how many cards it actually has, so the
+  // Flashcards screen can offer a picker instead of a blank card.
+  const chapterMenu = useMemo(
+    () =>
+      (books || []).flatMap((b: any) =>
+        (b.chapters || []).map((c: any) => ({
+          id: c.id,
+          title: c.title || "Untitled lesson",
+          bookTitle: b.title || "",
+          count: ((flashcardsByLesson[c.id] || c.flashcards || []) as any[]).length,
+        }))
+      ),
+    [books, flashcardsByLesson]
+  );
+
+  const openChapterById = (chapterId: string) => {
+    for (const b of books || []) {
+      const c = (b.chapters || []).find((x: any) => x.id === chapterId);
+      if (c) {
+        openLesson(b, c);
+        switchStudyTab("Flashcards");
+        return;
+      }
+    }
+  };
   const bestQuizScore = quizAttempts.length > 0
     ? Math.max(...quizAttempts.map((a: any) => Math.round(((a.score || 0) / Math.max(1, a.total || 1)) * 100)))
     : 0;
@@ -2853,7 +2682,7 @@ function AppContent() {
     cyber: "xp_1000",
     nebula: "streak_21",
     emerald: "xp_10000",
-    arctic: "hundred_masteries",
+    arctic: "fifty_masteries", // was hundred_masteries: no such achievement exists
   };
   const getThemeAchievementRequirement = (themeId: string) => themeAchievementRequirements[themeId] || "";
   const getAchievementTitleById = (achievementId: string) =>
@@ -2865,7 +2694,8 @@ function AppContent() {
     const requiredAchievementId = getThemeAchievementRequirement(themeId);
     const achievementAccess = !requiredAchievementId || isOwner || allUnlockedAchievementIds.includes(requiredAchievementId);
     const membershipAccess = !isPremiumTheme(themeId) || memTier === "ultra" || isOwner;
-    return adminAccess && achievementAccess && membershipAccess;
+    const plusAccess = !PLUS_ONLY_THEME_IDS.includes(themeId) || memTier === "plus" || memTier === "pro" || memTier === "ultra" || isOwner;
+    return adminAccess && achievementAccess && membershipAccess && plusAccess;
   };
   const builtInThemeCards: ThemePreview[] = [
     { key: "default", label: "Default", accent: "#10b981", bg: "linear-gradient(135deg,#f8fafc,#ecfeff)", source: "builtIn" },
@@ -2883,6 +2713,8 @@ function AppContent() {
     { key: "williams", label: "Williams Blue", accent: "#3267D4", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)", source: "builtIn" },
     { key: "zenith", label: "Zenith Gold 💎", accent: "#FFD700", bg: "linear-gradient(135deg,#0f0f10,#2a2100)", source: "builtIn" },
     { key: "midnight", label: "Midnight 🌌", accent: "#A855F7", bg: "linear-gradient(135deg,#000,#1a0b2e)", source: "builtIn" },
+    { key: "minimalism", label: "Minimalism", accent: "#9CA3AF", bg: "linear-gradient(135deg,#f5f5f5,#e8e8ea)", source: "builtIn" },
+    { key: "modern", label: "Modern", accent: "#6366F1", bg: "linear-gradient(135deg,#eef2ff,#e0e7ff)", source: "builtIn" },
   ];
   const customThemeCards: ThemePreview[] = customThemes.map((t) => ({
     key: t.id,
@@ -2972,7 +2804,7 @@ function AppContent() {
   useEffect(() => {
     const root = document.documentElement;
     // Remove old theme classes
-    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "zenith", "midnight", "default"];
+    const themes = ["f1", "liquid", "amoled", "paper", "ocean", "sunset", "cyber", "emoji", "nebula", "emerald", "arctic", "williams", "zenith", "midnight", "minimalism", "modern", "default"];
     themes.forEach(t => root.classList.remove(`theme-${t}`));
     root.classList.remove("dark", "light");
 
@@ -3017,7 +2849,7 @@ function AppContent() {
   };
   const applyThemePreset = (preset: "study" | "night" | "focus") => {
     if (preset === "study") {
-      setTheme("light");
+      // theme stays dark — locked unconditionally (option c)
       setUiTheme("paper");
       setTextSize("default");
       setReduceMotion(false);
@@ -3158,7 +2990,7 @@ function AppContent() {
       <motion.div
         animate={{ opacity: [0.4, 1, 0.4] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-        style={{ fontSize: "28px", fontWeight: "900", letterSpacing: "-1px", fontFamily: "var(--font-syne)" }}
+        style={{ fontSize: "28px", fontWeight: "900", letterSpacing: "-1px", fontFamily: "var(--disp)" }}
       >
         <span style={{ color: "var(--text)" }}>PAJJI </span><span style={{ color: "var(--accent)" }}>LEARN</span>
       </motion.div>
@@ -3177,17 +3009,113 @@ function AppContent() {
 
   if (!user) {
     return (
-      <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg)", fontFamily: "sans-serif" }}>
-        <div style={{ background: "var(--card)", padding: "40px", borderRadius: "24px", width: "90%", maxWidth: "420px", border: "1px solid var(--border)", boxShadow: "var(--card-shadow)" }}>
-          <h1 style={{ color: "var(--accent)", fontSize: "28px", fontWeight: "900", textAlign: "center", marginBottom: "32px" }}>PAJJI LEARN</h1>
-          <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <input type="email" placeholder="Email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required style={{ padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
-            <input type="password" placeholder="Password" value={authPass} onChange={(e) => setAuthPass(e.target.value)} required style={{ padding: "14px", borderRadius: "12px", background: "var(--input-bg)", border: "1px solid var(--border)", color: "var(--text)" }} />
-            <button type="submit" className="btn btn-primary" style={{ padding: "14px", fontWeight: "700", cursor: "pointer" }}>{isRegistering ? "Register" : "Sign In"}</button>
-          </form>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "24px" }}>
-            <button onClick={handleGuestLogin} style={{ background: "none", border: "1px solid var(--accent)", color: "var(--accent)", padding: "12px", borderRadius: "12px", fontWeight: "700", cursor: "pointer" }}>Continue as Guest 👤</button>
-            <button onClick={() => setIsRegistering(!isRegistering)} style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "14px" }}>{isRegistering ? "Back to Login" : "Create Account"}</button>
+      <div className="auth-split">
+        <div className="auth-art">
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ width: "38px", height: "38px", borderRadius: "12px", background: "var(--jade)", display: "grid", placeItems: "center", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "20px", color: "var(--ink-on-accent)" }}>P</div>
+            <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "15px", letterSpacing: "0.02em", color: "var(--text)" }}>
+              PAJJI <span style={{ color: "var(--jade)" }}>LEARN</span>
+            </div>
+          </div>
+
+          <div style={{ margin: "auto 0" }}>
+            <div style={{ fontFamily: "var(--disp)", fontWeight: 800, fontSize: "46px", lineHeight: 1, letterSpacing: "-.03em", color: "var(--text)" }}>
+              Your progress<br />is waiting.
+            </div>
+            <p style={{ marginTop: "16px", maxWidth: "340px", fontSize: "15px", color: "var(--dim)" }}>
+              Sign in and your streak, notes and levels are exactly where you left them.
+            </p>
+            <div style={{ display: "flex", gap: "10px", marginTop: "26px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "12px", fontWeight: "500", borderRadius: "999px", padding: "5px 10px", whiteSpace: "nowrap" }}>🔥 Streaks</span>
+              <span style={{ fontSize: "12px", fontWeight: "500", borderRadius: "999px", padding: "5px 10px", whiteSpace: "nowrap" }}>★ Levels</span>
+              <span style={{ fontSize: "12px", fontWeight: "500", borderRadius: "999px", padding: "5px 10px", whiteSpace: "nowrap" }}>◈ Leaderboards</span>
+            </div>
+          </div>
+
+          <span style={{ position: "absolute", top: "104px", right: "44px", background: "var(--jade)", color: "var(--ink-on-accent)", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "12px", padding: "7px 12px", borderRadius: "10px", transform: "rotate(5deg)", boxShadow: "0 6px 18px rgba(0,0,0,.4)" }}>
+            Welcome back
+          </span>
+        </div>
+
+        <div className="auth-form">
+          <div style={{ width: "100%", maxWidth: "380px" }}>
+            <div className="auth-mobile-head" style={{ display: "none", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+              <div style={{ width: "30px", height: "30px", borderRadius: "9px", background: "var(--jade)", display: "grid", placeItems: "center", fontFamily: "var(--disp)", fontWeight: 800, fontSize: "16px", color: "var(--ink-on-accent)" }}>P</div>
+              <span style={{ fontSize: "12px", fontWeight: "500", color: "var(--jade)", background: "var(--jade-soft)", border: "1px solid var(--jade-soft)", borderRadius: "999px", padding: "5px 10px" }}>● Welcome back</span>
+            </div>
+
+            <h1 style={{ margin: 0, fontFamily: "var(--disp)", fontWeight: 800, fontSize: "28px", letterSpacing: "-.02em", color: "var(--text)" }}>
+              {isRegistering ? "Create your account" : "Sign in"}
+            </h1>
+            <p style={{ margin: "6px 0 26px", color: "var(--dim)", fontSize: "13.5px" }}>
+              {isRegistering ? "Free, and every study feature is included." : "Pick up right where you left off."}
+            </p>
+
+            {/* Google sign-in is not live yet. Held unavailable rather than drawn
+                as a working control: a button that looks ready and does nothing is
+                worse than one that says why it cannot be pressed. */}
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title="Google sign-in is coming soon"
+              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "13px", borderRadius: "12px", background: "var(--ink-2)", border: "1px solid var(--line)", color: "var(--faint)", fontWeight: 700, fontSize: "14px", cursor: "not-allowed", opacity: 0.5, marginBottom: "20px" }}
+            >
+              <span style={{ fontWeight: 900 }}>G</span> Continue with Google
+              <span style={{ fontSize: "11px", fontWeight: 500, color: "var(--faint)", background: "var(--ink-3)", border: "1px solid var(--line)", borderRadius: "999px", padding: "2px 8px" }}>
+                coming soon
+              </span>
+            </button>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+              <div style={{ flex: 1, height: "1px", background: "var(--line)" }} />
+              <span style={{ fontFamily: "var(--mono)", fontSize: "11px", color: "var(--faint)" }}>or</span>
+              <div style={{ flex: 1, height: "1px", background: "var(--line)" }} />
+            </div>
+
+            <form onSubmit={handleAuth}>
+              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)", marginBottom: "7px" }}>Email</div>
+              <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required placeholder="you@example.com" style={{ width: "100%", background: "var(--ink-2)", border: "1px solid var(--line-2)", borderRadius: "13px", padding: "14px 15px", color: "var(--text)", fontSize: "14px" }} />
+
+              <div style={{ fontFamily: "var(--mono)", fontSize: "11px", letterSpacing: ".12em", textTransform: "uppercase", color: "var(--faint)", margin: "14px 0 7px" }}>Password</div>
+              <input type="password" value={authPass} onChange={(e) => setAuthPass(e.target.value)} required placeholder="••••••••" style={{ width: "100%", background: "var(--ink-2)", border: "1px solid var(--line-2)", borderRadius: "13px", padding: "14px 15px", color: "var(--text)", fontSize: "14px" }} />
+
+              <div style={{ display: "flex", justifyContent: "flex-end", margin: "8px 0 22px" }}>
+                <button type="button" onClick={handleForgot} style={{ background: "none", border: "none", padding: 0, color: "var(--dim)", fontSize: "12.5px", cursor: "pointer" }}>
+                  Forgot password?
+                </button>
+              </div>
+
+              {authError && (
+                <p role="alert" style={{ margin: "0 0 14px", fontSize: "12.5px", color: "var(--coral)", background: "var(--coral-soft)", border: "1px solid var(--coral-soft)", borderRadius: "10px", padding: "10px 12px" }}>
+                  {authError}
+                </p>
+              )}
+              {authNotice && (
+                <p role="status" style={{ margin: "0 0 14px", fontSize: "12.5px", color: "var(--dim)", background: "var(--ink-2)", border: "1px solid var(--line)", borderRadius: "10px", padding: "10px 12px" }}>
+                  {authNotice}
+                </p>
+              )}
+
+              <button type="submit" disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "var(--jade)", color: "var(--ink-on-accent)", fontWeight: 800, fontSize: "14px", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
+                {loading ? "Working…" : isRegistering ? "Create account →" : "Continue →"}
+              </button>
+            </form>
+
+            <p style={{ margin: "20px 0 0", textAlign: "center", fontSize: "13px", color: "var(--dim)" }}>
+              {isRegistering ? "Already have an account? " : "New here? "}
+              <button type="button" onClick={() => { setIsRegistering(!isRegistering); setAuthError(""); setAuthNotice(""); }} style={{ background: "none", border: "none", padding: 0, color: "var(--jade)", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}>
+                {isRegistering ? "Sign in" : "Create a free account"}
+              </button>
+            </p>
+
+            <div className="auth-mobile-banner" style={{ display: "none", alignItems: "center", gap: "12px", marginTop: "24px", padding: "14px", borderRadius: "var(--r-m)", border: "1px solid var(--line)", background: "var(--ink-2)" }}>
+              <div style={{ width: "40px", height: "40px", borderRadius: "12px", background: "color-mix(in oklab, var(--amber) 14%, transparent)", color: "var(--amber)", display: "grid", placeItems: "center", fontSize: "18px", flexShrink: 0 }}>🔥</div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: "13px", color: "var(--text)" }}>Your streak is waiting.</div>
+                <div style={{ fontSize: "12px", color: "var(--dim)" }}>Don't break it tonight.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3195,7 +3123,7 @@ function AppContent() {
   }
 
   return (
-    <div className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass} min-h-screen font-sans`} style={customThemeVars as any}>
+    <AppShell className={`app-container ${theme} ${uiThemeClass} ${textSizeClass} ${motionClass} ${contrastClass} ${densityClass} min-h-screen font-sans`} style={customThemeVars as any}>
       <FloatingParticles />
       <CursorTrail />
 
@@ -3257,7 +3185,7 @@ function AppContent() {
             style={{ position: "fixed", inset: 0, background: "var(--bg)", zIndex: 99999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
           >
             <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className="text-center">
-              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "var(--text)", letterSpacing: "-5px", fontFamily: "var(--font-syne)" }}>{formatTime(zenTime)}</h1>
+              <h1 style={{ fontSize: "120px", fontWeight: "900", color: "var(--text)", letterSpacing: "-5px", fontFamily: "var(--disp)" }}>{formatTime(zenTime)}</h1>
               <p style={{ color: "var(--accent)", fontWeight: "800", textTransform: "uppercase", letterSpacing: "4px" }}>Focus Mode Active</p>
               <button onClick={() => setIsZenMode(false)} className="btn btn-secondary" style={{ marginTop: "40px", padding: "12px 32px" }}>Exit Zen Mode (Z)</button>
             </motion.div>
@@ -3275,19 +3203,14 @@ function AppContent() {
       </motion.button>
 
       <style>{`
-        :root {
-          --font-main: 'Outfit', sans-serif;
-          --font-heading: 'Syne', sans-serif;
-        }
-
         body {
-          font-family: var(--font-main);
+          font-family: var(--body);
           letter-spacing: -0.01em;
           background: var(--bg);
         }
 
         .syne-heading {
-          font-family: var(--font-heading);
+          font-family: var(--disp);
           letter-spacing: -0.04em;
           text-transform: uppercase;
         }
@@ -3443,10 +3366,10 @@ function AppContent() {
           background: var(--accent-grad);
           border: none;
           z-index: 1000;
-          color: white;
+          color: var(--ink-on-accent);
           display: grid;
           place-items: center;
-          box-shadow: 0 8px 32px rgba(var(--accent-rgb), 0.4);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           cursor: pointer;
           animation: wobble 3s ease-in-out infinite;
           will-change: transform;
@@ -3472,7 +3395,7 @@ function AppContent() {
           display: flex;
           gap: 24px;
           align-items: center;
-          box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15), 0 8px 32px rgba(0,0,0,0.4);
+          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
           pointer-events: auto;
           cursor: grab;
           white-space: nowrap;
@@ -3481,9 +3404,9 @@ function AppContent() {
         }
 
         @keyframes music-pulse {
-          0% { transform: scale(1.25) translateY(-2px); filter: drop-shadow(0 0 2px var(--accent)); }
-          50% { transform: scale(1.35) translateY(-4px); filter: drop-shadow(0 0 8px var(--accent)); }
-          100% { transform: scale(1.25) translateY(-2px); filter: drop-shadow(0 0 2px var(--accent)); }
+          0% { transform: scale(1.25) translateY(-2px); filter: none; }
+          50% { transform: scale(1.35) translateY(-4px); filter: none; }
+          100% { transform: scale(1.25) translateY(-2px); filter: none; }
         }
 
         @keyframes spin-slow {
@@ -3530,7 +3453,7 @@ function AppContent() {
           border-radius: 28px;
           padding: 24px;
           backdrop-filter: blur(24px);
-          transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+          transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
           overflow: hidden;
           box-shadow: 0 4px 24px -12px rgba(0,0,0,0.5);
           display: flex;
@@ -3539,7 +3462,7 @@ function AppContent() {
 
         .card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3), 0 0 0 1px rgba(var(--accent-rgb), 0.2);
+          box-shadow: 0 20px 40px -12px rgba(0,0,0,0.3);
           border-color: rgba(var(--accent-rgb), 0.4);
         }
 
@@ -3595,7 +3518,7 @@ function AppContent() {
           border: 1px solid var(--border);
           border-radius: 24px;
           padding: 24px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
         }
 
         .holographic-shine {
@@ -3620,14 +3543,10 @@ function AppContent() {
 
         .power-up-card {
           border: 1px solid var(--accent) !important;
-          box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
-          animation: power-up-glow 3s infinite alternate;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          /* coloured glow animation removed: depth is not a light effect */
         }
 
-        @keyframes power-up-glow {
-          from { box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1); }
-          to { box-shadow: 0 0 25px rgba(var(--accent-rgb), 0.35); }
-        }
 
         @keyframes pulse {
           0% { opacity: 1; transform: scale(1); }
@@ -3694,7 +3613,7 @@ function AppContent() {
           padding: 12px 16px;
           border-radius: 14px;
           color: var(--muted);
-          transition: all 0.2s;
+          transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out), border-color 160ms var(--ease-out), transform 160ms var(--ease-out);
           font-weight: 600;
           border: none;
           background: transparent;
@@ -3715,14 +3634,14 @@ function AppContent() {
         }
 
         .stat-value {
-          font-family: var(--font-syne);
+          font-family: var(--disp);
           font-size: 32px;
           font-weight: 800;
           letter-spacing: -1px;
         }
 
         .page-title {
-          font-family: var(--font-syne);
+          font-family: var(--disp);
           font-size: 40px;
           font-weight: 800;
           letter-spacing: -1.5px;
@@ -3751,7 +3670,7 @@ function AppContent() {
             border: 1px solid var(--border);
             padding: 8px 16px;
             z-index: 1100;
-            background: rgba(10,10,12,0.8);
+            background: rgba(0,0,0,0.8);
             backdrop-filter: blur(20px);
             gap: 8px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
@@ -3776,12 +3695,10 @@ function AppContent() {
           --accent-soft-strong: rgba(16, 185, 129, 0.3);
           --accent-grad: linear-gradient(135deg, #10b981, #34d399);
           --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
-          --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.25);
           --info: #10b981;
           --warning: #f59e0b;
           --danger: #ef4444;
-          --danger-rgb: 239, 68, 68;
-        }
+          --danger-rgb: 239, 68, 68;        }
         .theme-emoji {
           --accent: #f59e0b;
           --accent-rgb: 245, 158, 11;
@@ -3789,12 +3706,16 @@ function AppContent() {
           --accent-soft-strong: rgba(245, 158, 11, 0.32);
           --accent-grad: linear-gradient(135deg, #f59e0b, #fb923c);
           --brand-gradient: linear-gradient(135deg, #f97316, #f59e0b);
-          --card-shadow: 0 12px 34px rgba(124, 45, 18, 0.2);
           --info: #f59e0b;
           --warning: #f97316;
           --danger: #ef4444;
           --danger-rgb: 239, 68, 68;
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-nebula {
           --accent: #a78bfa;
           --accent-rgb: 167, 139, 250;
@@ -3802,12 +3723,19 @@ function AppContent() {
           --accent-soft-strong: rgba(167, 139, 250, 0.3);
           --accent-grad: linear-gradient(135deg, #8b5cf6, #c084fc);
           --brand-gradient: linear-gradient(135deg, #2f1f69, #8b5cf6);
-          --card-shadow: 0 12px 34px rgba(20, 12, 44, 0.36);
           --info: var(--accent);
           --warning: var(--accent);
           --danger: #fb7185;
           --danger-rgb: 251, 113, 133;
-        }
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --card: #1b1038;
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-emerald {
           --accent: #22c55e;
           --accent-rgb: 34, 197, 94;
@@ -3815,12 +3743,19 @@ function AppContent() {
           --accent-soft-strong: rgba(34, 197, 94, 0.3);
           --accent-grad: linear-gradient(135deg, #16a34a, #4ade80);
           --brand-gradient: linear-gradient(135deg, #14532d, #16a34a);
-          --card-shadow: 0 12px 30px rgba(4, 45, 33, 0.3);
           --info: var(--accent);
           --warning: var(--accent);
           --danger: #f87171;
           --danger-rgb: 248, 113, 113;
-        }
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --card: #0a2a1f;
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-arctic {
           --accent: #38bdf8;
           --accent-rgb: 56, 189, 248;
@@ -3829,12 +3764,16 @@ function AppContent() {
           --accent-grad: linear-gradient(135deg, #0ea5e9, #7dd3fc);
           --brand-gradient: linear-gradient(135deg, #075985, #0ea5e9);
           --brand-gradient: linear-gradient(130deg, #cffafe, #dbeafe 62%, #7dd3fc 128%);
-          --card-shadow: 0 10px 28px rgba(30, 64, 175, 0.14);
           --info: var(--accent);
           --warning: var(--accent);
           --danger: #ef4444;
           --danger-rgb: 239, 68, 68;
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .dark { 
           --bg: #020617; 
           --side: #0f172a; 
@@ -3877,6 +3816,20 @@ function AppContent() {
           --accent-soft: rgba(225, 6, 0, 0.15);
           --accent-grad: linear-gradient(135deg, #e10600, #ff1a1a);
           --brand-gradient: linear-gradient(135deg, #a80400, #e10600);
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --ink-0: #0b0b0c;
+          --ink-1: #141417;
+          --ink-2: #1c1c20;
+          --card: #1c1c20;
+          --line: rgba(255, 255, 255, 0.07);
+          --line-2: rgba(255, 255, 255, 0.13);
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
         }
         .theme-liquid {
           --accent: #3b82f6;
@@ -3884,42 +3837,78 @@ function AppContent() {
           --accent-soft: rgba(59, 130, 246, 0.15);
           --accent-grad: linear-gradient(135deg, #3b82f6, #60a5fa);
           --brand-gradient: linear-gradient(135deg, #1d4ed8, #3b82f6);
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-amoled {
           --accent: #10b981;
           --accent-rgb: 16, 185, 129;
           --accent-soft: rgba(16, 185, 129, 0.15);
           --accent-grad: linear-gradient(135deg, #10b981, #34d399);
           --brand-gradient: linear-gradient(135deg, #064e3b, #10b981);
-        }
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --card: #0b0b0b;
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-paper {
           --accent: #8f704a;
           --accent-rgb: 143, 112, 74;
           --accent-soft: rgba(143, 112, 74, 0.15);
           --accent-grad: linear-gradient(135deg, #8f704a, #b5956c);
           --brand-gradient: linear-gradient(135deg, #5c482f, #8f704a);
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-ocean {
           --accent: #0ea5e9;
           --accent-rgb: 14, 165, 233;
           --accent-soft: rgba(14, 165, 233, 0.15);
           --accent-grad: linear-gradient(135deg, #0ea5e9, #38bdf8);
           --brand-gradient: linear-gradient(135deg, #0369a1, #0ea5e9);
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-sunset {
           --accent: #f97316;
           --accent-rgb: 249, 115, 22;
           --accent-soft: rgba(249, 115, 22, 0.15);
           --accent-grad: linear-gradient(135deg, #f97316, #fb923c);
           --brand-gradient: linear-gradient(135deg, #c2410c, #f97316);
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-cyber {
           --accent: #22d3ee;
           --accent-rgb: 34, 211, 238;
           --accent-soft: rgba(34, 211, 238, 0.15);
           --accent-grad: linear-gradient(135deg, #22d3ee, #67e8f9);
           --brand-gradient: linear-gradient(135deg, #0891b2, #22d3ee);
-        }
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --card: #1e293b;
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-f1.dark {
           --bg: #090909;
           --side: #101012;
@@ -4188,7 +4177,12 @@ function AppContent() {
           --accent-soft: rgba(50, 103, 212, 0.15);
           --accent-grad: linear-gradient(135deg, #3267D4, #4a7be0);
           --brand-gradient: linear-gradient(135deg, #1e3a8a, #3267D4);
-        }
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-williams.dark {
           --bg: #050b18;
           --side: #0a1428;
@@ -4240,7 +4234,15 @@ function AppContent() {
           --accent-soft: rgba(255, 215, 0, 0.15);
           --accent-grad: linear-gradient(135deg, #FFD700, #F59E0B);
           --brand-gradient: linear-gradient(135deg, #2a2100, #FFD700);
-        }
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --card: #2a2100;
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-zenith.dark {
           --bg: #0a0a05;
           --side: #1a1a0f;
@@ -4271,7 +4273,15 @@ function AppContent() {
           --accent-soft: rgba(168, 85, 247, 0.15);
           --accent-grad: linear-gradient(135deg, #7C3AED, #A855F7);
           --brand-gradient: linear-gradient(135deg, #1a0b2e, #A855F7);
-        }
+          /* Surface tokens. Without these the shell keeps its base --ink-* and
+             only the accent changes -- the theme appears to half-apply. */
+          --card: #1a0b2e;
+          /* The identity colour follows the theme. 141 places across the app
+             paint with --jade (the logo tile, progress fills, badges) and none of
+             them moved when a theme was picked, because a theme only ever set
+             --accent. Binding jade to the accent makes the whole surface change. */
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);        }
         .theme-midnight.dark {
           --bg: #020105;
           --side: #0a0515;
@@ -4289,6 +4299,82 @@ function AppContent() {
           --muted: #6b7280;
           --border: rgba(168, 85, 247, 0.12);
           --input-bg: #f5f0ff;
+        }
+
+        /* ── Minimalism and Modern ──────────────────────────────────────────
+           Two themes added on request. Same contract as the other fourteen:
+           the base block sets the accent and binds --jade to it; the .dark and
+           .light variants set the surfaces, so each works in either mode. */
+
+        .theme-minimalism {
+          --accent: #6B7280;
+          --accent-rgb: 107, 114, 128;
+          --accent-soft: rgba(107, 114, 128, 0.15);
+          --accent-grad: linear-gradient(135deg, #4B5563, #6B7280);
+          --brand-gradient: linear-gradient(135deg, #374151, #6B7280);
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
+        }
+        .theme-minimalism.dark {
+          --bg: #0A0A0B;
+          --side: #121214;
+          --card: #17171A;
+          --text: #F4F4F5;
+          --muted: #A1A1AA;
+          --border: rgba(255, 255, 255, 0.10);
+          --input-bg: #1C1C20;
+        }
+        .theme-minimalism.light {
+          --bg: #FAFAFA;
+          --side: #FFFFFF;
+          --card: #FFFFFF;
+          --text: #18181B;
+          --muted: #52525B;
+          --border: rgba(0, 0, 0, 0.10);
+          --input-bg: #F4F4F5;
+        }
+
+        .theme-modern {
+          --accent: #6366F1;
+          --accent-rgb: 99, 102, 241;
+          --accent-soft: rgba(99, 102, 241, 0.15);
+          --accent-grad: linear-gradient(135deg, #4F46E5, #6366F1);
+          --brand-gradient: linear-gradient(135deg, #4338CA, #6366F1);
+          --jade: var(--accent);
+          --jade-soft: var(--accent-soft);
+        }
+        .theme-modern.dark {
+          --bg: #0B0B14;
+          --side: #12121F;
+          --card: #171728;
+          --text: #EEF0FF;
+          --muted: #A5A8C4;
+          --border: rgba(99, 102, 241, 0.22);
+          --input-bg: #1C1C33;
+        }
+        .theme-modern.light {
+          --bg: #F7F8FF;
+          --side: #FFFFFF;
+          --card: #FFFFFF;
+          --text: #14162B;
+          --muted: #5B5F7B;
+          --border: rgba(99, 102, 241, 0.20);
+          --input-bg: #EEF0FF;
+        }
+
+        /* Light mode contrast floor.
+           The .theme-X.light variants set --muted, but :root defines
+           --muted: var(--dim), so changing --muted never reached --dim or
+           --faint -- the two tokens the app actually paints secondary text
+           with. On white they sat at roughly 2.6:1 and 3.0:1, well under the
+           4.5:1 body-text floor. These set them for any theme in light mode.
+           --ink-3 and --ink-4 are the progress tracks and empty-day bars, which
+           were also still dark on a light card. */
+        .light {
+          --dim: #4A5568;
+          --faint: #6B7280;
+          --ink-3: #E4E8EE;
+          --ink-4: #D6DCE5;
         }
         .theme-midnight .app-container, .theme-midnight.app-container {
           background-image:
@@ -4309,10 +4395,10 @@ function AppContent() {
         .section-title { font-size: 20px; margin: 0 0 12px 0; font-weight: 800; }
         .stack-12 { display: flex; flex-direction: column; gap: 12px; }
         .btn { border: none; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; line-height: 1; }
-        .btn-primary { background: var(--accent); color: white; box-shadow: 0 8px 16px -8px color-mix(in oklab, var(--accent) 55%, transparent); }
+        .btn-primary { background: var(--accent); color: var(--ink-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
-        .btn-danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.25); }
-        .btn-warning { background: #fbbf24; color: #111827; }
+        .btn-danger { background: var(--coral-soft); color: var(--coral); border: 1px solid color-mix(in oklab, var(--coral) 25%, transparent); }
+        .btn-warning { background: var(--amber); color: var(--ink-on-accent); }
         .btn-link { background: none; border: none; color: var(--accent); font-weight: 800; cursor: pointer; padding: 0; }
         .stat-card { border-left-width: 4px; border-left-style: solid; }
         .stat-label { font-size: 11px; font-weight: 800; opacity: 0.65; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
@@ -4323,7 +4409,7 @@ function AppContent() {
         .density-compact .nav-btn { padding: 8px 10px; margin-bottom: 4px; font-size: 13px; }
         .nav-btn svg { width: 20px; height: 20px; opacity: 0.7; }
         .nav-btn:hover { background: var(--accent-soft); color: var(--accent); }
-        .nav-btn.active { background: var(--accent); color: white; box-shadow: 0 10px 15px -3px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .nav-btn.active { background: var(--accent); color: var(--ink-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .nav-btn.active svg { opacity: 1; }
         .theme-default .nav-btn.active svg, .theme-paper .nav-btn.active svg {
           border: 1px solid rgba(var(--accent-rgb), 0.65);
@@ -4337,7 +4423,7 @@ function AppContent() {
           padding: 2px;
           box-sizing: border-box;
         }
-        .profile-card { background: var(--brand-gradient); padding: 18px; border-radius: 20px; color: white; margin-bottom: 24px; box-shadow: 0 10px 20px -5px color-mix(in oklab, var(--accent) 35%, transparent); }
+        .profile-card { background: var(--jade); padding: 18px; border-radius: 20px; color: var(--ink-on-accent); margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
         .theme-liquid .profile-card {
           border: 1px solid rgba(255, 255, 255, 0.26);
           backdrop-filter: blur(14px) saturate(1.2);
@@ -4345,7 +4431,7 @@ function AppContent() {
         }
         
         .tab-btn { padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px; background: var(--card); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; flex: 0 0 auto; text-align: center; transition: 0.2s; }
-        .tab-btn.active { background: var(--accent); color: white; border-color: transparent; }
+        .tab-btn.active { background: var(--accent); color: var(--ink-on-accent); border-color: transparent; }
         
         textarea, input[type="text"], select { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 16px; padding: 18px; font-family: inherit; font-size: 16px; outline: none; }
         textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.14); }
@@ -4432,7 +4518,7 @@ function AppContent() {
             margin-bottom: 0;
             flex-direction: column; 
             gap: 4px; 
-            font-size: 10px; 
+            font-size: 11px; 
             font-weight: 700;
             justify-content: center; 
             align-items: center;
@@ -4457,7 +4543,7 @@ function AppContent() {
             height: 4px;
             border-radius: 50%;
             background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
           }
           
           .main-content { 
@@ -4499,290 +4585,49 @@ function AppContent() {
           }
           .desktop-only { display: none !important; }
         }
-      `}</style>
+`}
+</style>
 
-      <motion.div
-        className={`sidebar style-${sidebarStyle}`}
-        style={{
-          ...(sidebarStyle === "floating" ? {
-            height: "calc(100vh - 40px)",
-            margin: "20px",
-            borderRadius: "24px",
-            border: "1px solid var(--border)",
-            boxShadow: "0 20px 50px rgba(0,0,0,0.3)"
-          } : sidebarStyle === "minimal" ? {
-            width: "80px",
-            padding: "32px 10px",
-            alignItems: "center"
-          } : {})
-        }}
-      >
-        <div className="sidebar-extras" style={{ marginBottom: "40px" }}>
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ fontSize: sidebarStyle === "minimal" ? "14px" : "24px", textAlign: "center", fontWeight: "900", letterSpacing: "-1.5px", fontFamily: "var(--font-syne)" }}
+      {/* ── Desktop Nav Rail (Mockup: .side) ── */}
+      <AppNavigation
+        view={view}
+        setView={setView}
+        fetchLeaderboard={fetchLeaderboard}
+        onFocusFlight={() => { window.location.href = "/focus-flight"; }}
+        onOpenFlashcards={() => { setCurChapter(null); setView("study"); }}
+        onSignOut={() => signOut(auth)}
+        userXP={userXP}
+        userLevel={userLevel}
+      />
+
+      {/* ── Main Canvas (Mockup: .main) ── */}
+      <div className="sa-main" ref={mainContentRef}>
+        {/* Mockup In-flow Topbar */}
+        <header className="sa-topbar">
+          <div
+            className="sa-search"
+            onClick={() => setIsSpotlightOpen(true)}
+            role="button"
+            tabIndex={0}
           >
-            P{sidebarStyle !== "minimal" && <span>AJJI <span style={{ color: "var(--accent)", textShadow: "0 0 20px rgba(var(--accent-rgb), 0.3)" }}>LEARN</span></span>}
-          </motion.h1>
-
-          {sidebarStyle !== "minimal" && (
-            <motion.div
-              whileHover={{ opacity: 0.9 }}
-              className={`card ${memTier === "ultra" ? "ultra-glow" : ""}`}
-              style={{ marginTop: "32px", padding: "16px", background: "var(--input-bg)", overflow: "hidden" }}
-            >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-              <div className={`${streakCount >= 7 ? "streak-aura" : ""} ${memTier === "ultra" ? "ultra-glow" : ""}`} style={{ width: "48px", height: "48px", borderRadius: "14px", background: "var(--accent-grad)", display: "grid", placeItems: "center", overflow: "hidden", border: "2px solid var(--border)" }}>
-                {profilePic ? (
-                  <img src={profilePic} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
-                ) : (
-                  <User size={24} color="white" />
-                )}
-              </div>
-              <div>
-                <p style={{ fontSize: "10px", fontWeight: "900", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Rank: {userLevel >= 10 ? "ELITE" : "NOVICE"}</p>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <h3 style={{ fontSize: "15px", fontWeight: "800" }}>{getUserName(user).split(' ')[0]}</h3>
-                  {(() => {
-                    const mem = (membership || "").toUpperCase().replace(/[\s_]+/g, "");
-                    return (
-                      <>
-                        {(mem === "PAJJIPLUS" || mem === "PLUS") && (
-                          <span style={{
-                            background: "linear-gradient(135deg, #ffd700, #ffb300, #fff8b0, #ffb300)",
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))",
-                            fontWeight: "900",
-                            fontSize: "18px",
-                            position: "relative",
-                            top: "-2px",
-                            marginLeft: "6px"
-                          }}>+</span>
-                        )}
-                        {(mem === "PAJJIPRO" || mem === "PRO") && (
-                          <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="url(#goldGrad)" stroke="url(#goldGrad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <defs>
-                                <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
-                                  <stop offset="0%" stopColor="#ffd700" />
-                                  <stop offset="50%" stopColor="#ffb300" />
-                                  <stop offset="100%" stopColor="#fff8b0" />
-                                </linearGradient>
-                              </defs>
-                              <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
-                            </svg>
-                          </span>
-                        )}
-                        {(mem === "PAJJIULTRA" || mem === "ULTRA") && (
-                          <span style={{ marginLeft: "6px", display: "inline-flex", filter: "drop-shadow(0px 2px 4px rgba(255, 215, 0, 0.4))" }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <defs>
-                                <linearGradient id="goldGradU" x1="0" y1="0" x2="1" y2="1">
-                                  <stop offset="0%" stopColor="#ffd700" />
-                                  <stop offset="50%" stopColor="#ffb300" />
-                                  <stop offset="100%" stopColor="#fff8b0" />
-                                </linearGradient>
-                                <mask id="u-slit-mask">
-                                  <rect width="24" height="24" fill="white" />
-                                  <line x1="2" y1="4" x2="10" y2="12" stroke="black" strokeWidth="4" />
-                                </mask>
-                              </defs>
-                              <path d="M6 4v8a6 6 0 0 0 12 0V4" stroke="url(#goldGradU)" strokeWidth="4" strokeLinecap="round" mask="url(#u-slit-mask)" />
-                            </svg>
-                          </span>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-            <div style={{ height: "6px", background: "var(--border)", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${(userXP % 1000) / 10}%` }}
-                transition={{ duration: 1.5, type: "spring" }}
-                style={{ height: "100%", background: "var(--accent-grad)", borderRadius: "10px" }}
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
-              <p style={{ fontSize: "11px", fontWeight: "800", opacity: 0.6 }}>{userXP} XP</p>
-              <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)" }}>Lvl {userLevel + 1}</p>
-            </div>
-          </motion.div>
-        )}
-      </div>
-
-        <nav className="sidebar-nav">
-          <button className={`nav-btn ${view === "dashboard" ? "active" : ""}`} onClick={() => setView("dashboard")}>
-            <LayoutDashboard size={20} />
-            {sidebarStyle !== "minimal" && <span>Dashboard</span>}
-          </button>
-          <button className={`nav-btn ${view === "library" ? "active" : ""}`} onClick={() => setView("library")}>
-            <BookOpen size={20} />
-            {sidebarStyle !== "minimal" && <span>Library</span>}
-          </button>
-          <button className={`nav-btn ${view === "leaderboard" ? "active" : ""}`} onClick={() => { setView("leaderboard"); fetchLeaderboard(); }}>
-            <Trophy size={20} />
-            {sidebarStyle !== "minimal" && <span>Leaderboard</span>}
-          </button>
-          <button className="nav-btn" onClick={() => window.location.href = '/focus-flight'}>
-            <Plane size={20} />
-            {sidebarStyle !== "minimal" && <span>Focus Flight</span>}
-          </button>
-          <button className={`nav-btn ${view === "settings" ? "active" : ""}`} onClick={() => setView("settings")}>
-            <Settings size={20} />
-            {sidebarStyle !== "minimal" && <span>Settings</span>}
-          </button>
-        </nav>
-
-        <div className="sidebar-extras" style={{ marginTop: "auto" }}>
-          <button
-            onClick={() => signOut(auth)}
-            className="nav-btn"
-            style={{ color: "#ef4444" }}
-          >
-            <LogOut size={20} />
-            {sidebarStyle !== "minimal" && <span>Logout</span>}
-          </button>
-        </div>
-      </motion.div>
-
-      <div className="main-content" ref={mainContentRef}>
-        <div className="status-bar-wrapper">
-          <motion.div
-            drag
-            dragConstraints={{ left: -100, right: 100, top: 0, bottom: 400 }}
-            dragElastic={0.1}
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="status-bar"
-            whileDrag={{ cursor: "grabbing", scale: 1.02, boxShadow: "0 15px 45px rgba(0,0,0,0.6)" }}
-          >
-            {/* Level Badge */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: "800" }}>
-              <div style={{ background: "var(--accent-soft)", color: "var(--accent)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>LVL {userLevel}</div>
-              {leaderboard.length > 0 && user && (
-                <div style={{ background: "var(--input-bg)", color: "var(--text)", padding: "2px 8px", borderRadius: "6px", fontSize: "10px" }}>
-                  #{leaderboard.sort((a, b) => (b.xp || 0) - (a.xp || 0)).findIndex(p => p.uid === user.uid) + 1}
-                </div>
-              )}
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800" }}>
-              <Zap size={14} color="var(--accent)" />
-              <span style={{ color: "var(--accent)" }}>{sessionXP} <span className="mobile-hide">XP SESSION</span></span>
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: "800", color: "white" }}>
-              <Clock size={14} />
-              <span>{sessionTime}m</span>
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-
-            {/* Streak & Goal & Wins */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#f59e0b" }}>
-                <Flame size={14} />
-                <span>{streakCount}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#ec4899" }}>
-                <span style={{ fontSize: "10px" }}>W</span>
-                <span>{dailyCompleted}</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: "800", color: "#3b82f6" }}>
-                <Trophy size={14} />
-                <span>{Math.round(goalProgressPct)}%</span>
-              </div>
-            </div>
-            <div className="mobile-sep" style={{ width: "1px", height: "12px", background: "var(--border)" }} />
-
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              {[
-                { id: "lofi", icon: <Music size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", label: "Lofi Focus" },
-                { id: "rain", icon: <CloudRain size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", label: "Rainy Day" },
-                { id: "focus", icon: <Brain size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", label: "Deep Work" },
-                { id: "chill", icon: <Coffee size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", label: "Chill Vibes" },
-                { id: "synth", icon: <Zap size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", label: "Synth Night" },
-                { id: "wind", icon: <Wind size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3", label: "Forest Wind" },
-                { id: "waves", icon: <Waves size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3", label: "Deep Sea" },
-                { id: "zen", icon: <Sparkles size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3", label: "Ultra Zen 💎", premium: true },
-                { id: "ocean", icon: <Heart size={14} />, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3", label: "Ocean Mist 💎", premium: true },
-              ].map(track => {
-                const hasAccess = !track.premium || memTier === "ultra" || memTier === "pro";
-                return (
-                  <button
-                    key={track.id}
-                    title={hasAccess ? track.label : "Premium Only 💎"}
-                    onClick={() => hasAccess && setActiveAudio(activeAudio === track.url ? null : track.url)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: activeAudio === track.url ? "var(--accent)" : hasAccess ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
-                      cursor: hasAccess ? "pointer" : "not-allowed",
-                      display: "grid",
-                      placeItems: "center",
-                      transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                      transform: activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)",
-                      animation: activeAudio === track.url ? "music-pulse 2s infinite ease-in-out" : "none"
-                    }}
-                    onMouseEnter={(e) => { if (hasAccess) { e.currentTarget.style.color = "white"; if (activeAudio !== track.url) e.currentTarget.style.transform = "scale(1.3) translateY(-2px)"; } }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = activeAudio === track.url ? "var(--accent)" : hasAccess ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)";
-                      e.currentTarget.style.transform = activeAudio === track.url ? "scale(1.25) translateY(-2px)" : "scale(1)";
-                    }}
-                  >
-                    {track.icon}
-                  </button>
-                );
-              })}
-              <div style={{ width: "1px", height: "12px", background: "var(--border)", margin: "0 4px" }} />
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                style={{ background: "transparent", border: "none", color: "white", cursor: "pointer", display: "grid", placeItems: "center" }}
-              >
-                {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
-              </button>
-            </div>
-            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 10px var(--accent)", animation: "pulse 2s infinite" }} />
-          </motion.div>
-          {activeAudio && <audio src={activeAudio} autoPlay loop style={{ display: "none" }} />}
-        </div>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mobile-header"
-        >
-          <h1 style={{ fontSize: "18px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI <span style={{ color: "var(--accent)" }}>LEARN</span></h1>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div 
-              className="xp-badge"
-              onClick={(e) => {
-                const emojis = ["⭐", "✨", "🔥", "💥", "🎉", "🚀", "💫", "🏆"];
-                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-                const el = document.createElement("div");
-                el.className = "xp-float-emoji";
-                el.textContent = emoji;
-                el.style.left = `${e.clientX - 10}px`;
-                el.style.top = `${e.clientY - 10}px`;
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 1000);
-              }}
-              style={{ fontSize: "11px", fontWeight: "800", background: "var(--accent-grad)", color: "white", padding: "6px 12px", borderRadius: "20px", boxShadow: "0 4px 12px rgba(var(--accent-rgb), 0.3)", cursor: "pointer", userSelect: "none", transition: "transform 0.15s", display: "flex", alignItems: "center", gap: "4px" }}>
-              ⚡ {userXP} XP
-            </div>
-            {mobileQuickSettings && (
-              <button onClick={() => setView("settings")} style={{ background: "var(--input-bg)", border: "1px solid var(--border)", padding: "8px", borderRadius: "12px", color: "var(--text)", cursor: "pointer" }}>
-                <Settings size={18} />
-              </button>
-            )}
+            <span>⌕ Search chapters, formulas, notes…</span>
+            <span className="sa-kbd">⌘K</span>
           </div>
-        </motion.div>
 
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "12px" }}>
+            <span className="sa-badge sa-b-jade">🔥 {streakCount}</span>
+            <span className="sa-badge sa-b-amber">⚡ {userXP.toLocaleString()} XP</span>
+            <div
+              className="sa-av sa-av-user"
+              onClick={() => setView("settings")}
+              style={{ cursor: "pointer" }}
+              title={getUserName(user)}
+            />
+          </div>
+        </header>
+
+        {/* Scrollable View Body */}
+        <div className="sa-body">
         <AnimatePresence mode="wait">
           {view === "dashboard" && (
             <DynamicDashboard
@@ -4838,6 +4683,11 @@ function AppContent() {
               sortedFilteredBooks={sortedFilteredBooks}
               setCurBook={setCurBook}
               setView={setView}
+              libraryFilter={libraryFilter}
+              setLibraryFilter={setLibraryFilter}
+              completedLessons={completedLessons}
+              openLesson={openLesson}
+              resumeLesson={resumeLesson}
             />
           )}
 
@@ -4876,6 +4726,10 @@ function AppContent() {
               auth={auth}
               memTier={memTier}
               streakCount={streakCount}
+              dailyGoal={dailyGoal}
+              dailyCompleted={dailyCompleted}
+              updateDailyGoal={updateDailyGoal}
+              plusOnlyThemeIds={PLUS_ONLY_THEME_IDS}
               theme={theme}
               setTheme={setTheme}
               uiTheme={uiTheme}
@@ -4905,53 +4759,7 @@ function AppContent() {
             />
           )}
 
-          {view === "credits" && (
-            <motion.div
-              key="credits"
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: -20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="page-shell" style={{ maxWidth: "600px" }}
-            >
-              <button onClick={() => setView("settings")} className="btn-link" style={{ marginBottom: "24px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <ChevronLeft size={18} /> Back to Settings
-              </button>
-
-              <h1 className="page-title" style={{ marginBottom: "32px" }}>Credits 🏆</h1>
-
-              <div className="card" style={{ padding: "40px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-                <div style={{ padding: "20px", borderRadius: "50%", background: "var(--accent-soft)", color: "var(--accent)", width: "80px", height: "80px", display: "grid", placeItems: "center" }}>
-                  <Heart size={40} fill="currentColor" />
-                </div>
-
-                <div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "900", fontFamily: "var(--font-syne)" }}>PAJJI LEARN</h2>
-                  <p style={{ color: "var(--muted)", maxWidth: "300px", margin: "12px auto" }}>Built with passion for modern students.</p>
-                </div>
-
-                <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  <div>
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Lead Developer</p>
-                    <p style={{ fontSize: "20px", fontWeight: "700" }}>Rushan</p>
-                  </div>
-
-                  <div>
-                    <p style={{ fontSize: "11px", fontWeight: "800", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>Main Tester</p>
-                    <p style={{ fontSize: "20px", fontWeight: "700" }}>Arjun</p>
-                  </div>
-                </div>
-
-                <div style={{ height: "1px", width: "60%", background: "var(--border)" }} />
-
-                <p style={{ fontSize: "14px", fontWeight: "700", fontStyle: "italic", opacity: 0.8 }}>
-
-                </p>
-              </div>
-            </motion.div>
-          )}
+          {view === "credits" && <CreditsView onBack={() => setView("settings")} />}
 
           {view === "membership" && (
             <DynamicMembership
@@ -4998,7 +4806,7 @@ function AppContent() {
                     style={{ position: "absolute", inset: -20, border: "2px dashed #FFD700", borderRadius: "50%", opacity: 0.3 }} 
                   />
                 </div>
-                <h1 style={{ fontSize: "min(80px, 12vw)", fontWeight: "900", color: "#FFD700", fontFamily: "var(--font-syne)", letterSpacing: "-3px", textShadow: "0 0 40px rgba(255,215,0,0.5)", margin: 0 }}>LEGENDARY MASTER</h1>
+                <h1 style={{ fontSize: "min(80px, 12vw)", fontWeight: "900", color: "#FFD700", fontFamily: "var(--disp)", letterSpacing: "-3px", textShadow: "0 0 40px rgba(255,215,0,0.5)", margin: 0 }}>LEGENDARY MASTER</h1>
                 <p style={{ fontSize: "28px", color: "white", opacity: 0.9, fontWeight: "800", marginTop: "16px" }}>+200 XP (Ultra 2× Bonus ⚡)</p>
                 <motion.p 
                   initial={{ opacity: 0 }} 
@@ -5014,25 +4822,15 @@ function AppContent() {
         </AnimatePresence>
 
         {view === "chapters" && curBook && (
-          <div className="page-shell" style={{ maxWidth: "880px" }}>
-            <button onClick={() => setView("library")} className="btn-link" style={{ marginBottom: "16px" }}>← Library 📚</button>
-            <div className="page-header">
-              <h1 className="page-title">{curBook.title}</h1>
-              {isOwner && <button onClick={addLesson} className="btn btn-primary">+ Add Lesson</button>}
-            </div>
-            {(curBook.chapters || []).map((ch: any) => (
-              <div key={ch.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "18px 24px" }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: "17px", fontWeight: "700" }}>{ch.title}</span>
-                  {completedLessons.includes(ch.id) && <span style={{ marginLeft: "12px", fontSize: "11px", color: "var(--accent)", fontWeight: "900", background: "var(--accent-soft)", padding: "2px 8px", borderRadius: "10px" }}>✓ MASTERED</span>}
-                </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={() => openLesson(curBook, ch)} className="btn btn-primary" style={{ padding: "8px 20px" }}>Study</button>
-                  {isOwner && (<button onClick={() => { setCurChapter(ch); setTempChapter(ch); setView("edit"); }} className="btn btn-secondary" style={{ padding: "8px 12px" }}>✎</button>)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <ChapterListView
+            book={curBook}
+            completedLessons={completedLessons}
+            isOwner={isOwner}
+            onBack={() => setView("library")}
+            onAddLesson={addLesson}
+            onStudy={(chapter) => openLesson(curBook, chapter)}
+            onEdit={(chapter) => { setCurChapter(chapter); setTempChapter(chapter); setView("edit"); }}
+          />
         )}
 
         {view === "study" && curChapter && (
@@ -5111,6 +4909,8 @@ function AppContent() {
             lessonPinnedPoints={lessonPinnedPoints}
             removePinnedKeyPoint={removePinnedKeyPoint}
             lessonFlashcards={lessonFlashcards}
+            chapterMenu={chapterMenu}
+            openChapterById={openChapterById}
             flashcardIndex={flashcardIndex}
             setFlashcardIndex={setFlashcardIndex}
             flashcardReveal={flashcardReveal}
@@ -5157,7 +4957,7 @@ function AppContent() {
           <div className="firework-burst">🎆🎇</div>
         )}
         {themeUnlockShowcase && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 1204, background: "rgba(2,6,23,0.55)", display: "grid", placeItems: "center" }}>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1204, background: "rgba(0,0,0,0.55)", display: "grid", placeItems: "center" }}>
             <div className="card" style={{ maxWidth: "360px", textAlign: "center", padding: "22px" }}>
               <p style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: "900" }}>Theme Unlocked</p>
               <h3 style={{ fontSize: "24px", marginTop: "8px", marginBottom: "8px", color: "var(--accent)" }}>✨ {themeUnlockShowcase.label}</h3>
@@ -5182,6 +4982,20 @@ function AppContent() {
             ))}
           </div>
         )}
+        {view === "study" && !curChapter && (
+          <div className="page-shell" style={{ maxWidth: "none", padding: "26px 30px" }}>
+            <h1 className="sa-h1" style={{ marginBottom: "20px" }}>Flashcards</h1>
+            <div style={{ border: "1px dashed var(--line-2)", borderRadius: "var(--r-m)", padding: "44px 24px", textAlign: "center", maxWidth: "560px" }}>
+              <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text)" }}>Flashcards are coming soon</p>
+              <p style={{ margin: "6px auto 0", maxWidth: "380px", fontSize: "13px", color: "var(--dim)" }}>
+                Cards you generate from a lesson's notes are not saved yet. Until they persist, open a lesson and revise from its notes, quiz or AI explanation.
+              </p>
+              <button onClick={() => setView("library")} className="btn btn-secondary" style={{ marginTop: "16px" }}>
+                Browse lessons
+              </button>
+            </div>
+          </div>
+        )}
         {achievementToast && (
           <>
             <div className="achievement-confetti">
@@ -5198,13 +5012,62 @@ function AppContent() {
                 </span>
               ))}
             </div>
-            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "white", fontWeight: "800", boxShadow: "0 8px 18px rgba(var(--accent-rgb),0.28)" }}>
+            <div style={{ position: "fixed", right: "20px", bottom: "20px", zIndex: 1201, padding: "12px 16px", borderRadius: "14px", border: "1px solid rgba(var(--accent-rgb),0.6)", background: "var(--accent)", color: "var(--ink-on-accent)", fontWeight: "800", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
               🏆 {achievementToast}
             </div>
           </>
         )}
         <CommandPalette />
+        </div>
+
+        {/* ── Mobile Pinned Tab Bar (Mockup: .mob bottom bar) ── */}
+        <nav className="sa-mob-bottom-bar" aria-label="Mobile navigation">
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "dashboard" ? "on" : ""}`}
+            onClick={() => setView("dashboard")}
+          >
+            <span className="sa-mob-tab-icon">▦</span>
+            <span className="sa-mob-tab-lbl">Home</span>
+          </button>
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "library" || view === "chapters" ? "on" : ""}`}
+            onClick={() => setView("library")}
+          >
+            <span className="sa-mob-tab-icon">▤</span>
+            <span className="sa-mob-tab-lbl">Library</span>
+          </button>
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "study" ? "on" : ""}`}
+            onClick={() => setView("study")}
+          >
+            <span className="sa-mob-tab-icon">✦</span>
+            <span className="sa-mob-tab-lbl">Cards</span>
+          </button>
+          <button
+            type="button"
+            className="sa-mob-tab"
+            onClick={() => { window.location.href = "/focus-flight"; }}
+          >
+            <span className="sa-mob-tab-icon">✈</span>
+            <span className="sa-mob-tab-lbl">Focus</span>
+          </button>
+          <button
+            type="button"
+            className={`sa-mob-tab ${view === "leaderboard" ? "on" : ""}`}
+            onClick={() => {
+              setView("leaderboard");
+              fetchLeaderboard();
+            }}
+          >
+            <span className="sa-mob-tab-icon">▲</span>
+            <span className="sa-mob-tab-lbl">Ranks</span>
+          </button>
+        </nav>
       </div>
-    </div>
+    </AppShell>
   );
 }
+
